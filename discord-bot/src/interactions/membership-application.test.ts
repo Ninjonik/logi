@@ -128,6 +128,14 @@ function backend(
             args: Record<string, unknown>
         ) => {
             const name = getFunctionName(reference)
+            if (name === "discordMembershipEffects:open") return "operation"
+            if (name === "discordMembershipEffects:begin")
+                return { state: "execute", token: "effect" }
+            if (name.startsWith("discordMembershipEffects:")) return true
+            if (name === "membershipDecisions:prepareSubmission") {
+                writes.push({ name, args })
+                return "assignment-1"
+            }
             writes.push({ name, args })
             return results[name] ?? { ok: true }
         }
@@ -540,6 +548,7 @@ test("Odeslat přihlášku creates the thread, the intro and the card (L6-41..46
                 ok: true,
                 submission: {
                     draftId: "draft1",
+                    claimToken: "submission-claim",
                     source: "discord",
                     config: {
                         guildId: "123456789012345678",
@@ -616,7 +625,7 @@ test("Odeslat přihlášku creates the thread, the intro and the card (L6-41..46
         writes.map((write) => write.name),
         [
             "membershipApplications:claimApplicationSubmission",
-            "userAssignments:upsertByServerDiscordId",
+            "membershipDecisions:prepareSubmission",
             "discordMembership:createMembershipApplicationThread",
             "discordMembership:updateMembershipApplicationTranscriptMessage",
             "players:linkDiscordPlatformId",

@@ -14,6 +14,7 @@ import {
     roleFailureError,
 } from "./role-failure-reports"
 import { reportClanDiscordError } from "../error-reporting"
+import { startOwnedInterval } from "../runtime/task-owner"
 import { makeFunctionReference } from "convex/server"
 import type { Client } from "discord.js"
 import { env } from "../environment"
@@ -112,6 +113,12 @@ let roleFailures: ReturnType<typeof createRoleFailureReporter> | null = null
 /** One grouped errors-channel report per clan for role changes an admin must fix (L5-14). */
 function roleFailureReporter(client: Client) {
     roleFailures ??= createRoleFailureReporter({
+        failed: (error, report) =>
+            logWarn("managed-roles", "Grouped role failure report failed", {
+                guildId: report.guildId,
+                roleId: report.roleId,
+                error,
+            }),
         // The role and Discord's answer pick "role above Logi", "role
         // deleted" or the missing permission (L5-14, L5-21).
         report: (report) =>
@@ -228,10 +235,7 @@ export function startManagedRoleWorker(client: Client) {
             running = false
         }
     }
-    const timer = setInterval(() => {
-        void tick()
-    }, 10_000)
-    timer.unref()
-    void tick()
-    return () => clearInterval(timer)
+    return startOwnedInterval(tick, 10_000, (error) =>
+        console.warn("[sync/managed-member-roles.ts] Worker pass failed", error)
+    )
 }

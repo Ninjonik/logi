@@ -226,6 +226,10 @@ type Payload = {
     assignments: unknown[]
     userDisplayNames: Record<string, string>
 }
+type IndexResult = {
+    events: unknown[]
+    rosters: Array<{ id: string; updatedAt: string }>
+}
 
 const botEventIds = [
     "events:closed",
@@ -277,6 +281,88 @@ test("the event index reads the events the bot acts on through status_gameEnd an
     )
     assert.deepEqual(indexesOf(calls, "events"), ["status_gameEnd"])
     assert.deepEqual(indexesOf(calls, "rosters"), ["eventId"])
+})
+
+test("compact event subscriptions omit roster bodies but preserve change detection and legacy readers", async (t) => {
+    const discord = await import("../../../convex/discordSync")
+    const ctx = fixture(t)
+    const large = Array.from({ length: 1000 }, (_, i) => ({
+        id: `member-${i}`,
+        roleName: "Player",
+    }))
+    ctx.db.tables.rosters[0].squads = [{ name: "large", players: large }]
+    const legacy: IndexResult = await invoke(discord.listEventSyncIndex, ctx, {
+        secret,
+    })
+    const compact: IndexResult = await invoke(discord.listEventSyncIndex, ctx, {
+        secret,
+        compact: true,
+    })
+    assert.deepEqual(compact.events, legacy.events)
+    assert.deepEqual(
+        compact.rosters.map((row) => row.id),
+        legacy.rosters.map((row) => row.id)
+    )
+    assert.ok(
+        compact.rosters.every(
+            (row) => Object.keys(row).sort().join() === "eventId,id,updatedAt"
+        )
+    )
+    assert.ok(
+        JSON.stringify(compact).length < JSON.stringify(legacy).length / 5
+    )
+    const roster = ctx.db.tables.rosters[0]
+    roster.updatedAt = "2099-01-01T00:00:00.000Z"
+    const updated: IndexResult = await invoke(discord.listEventSyncIndex, ctx, {
+        secret,
+        compact: true,
+    })
+    assert.equal(
+        updated.rosters.find((row) => row.id === roster._id)?.updatedAt,
+        roster.updatedAt
+    )
+})
+
+test("calendar refresh reads no roster or people data and keeps fresh links and tenant checks", async (t) => {
+    const discord = await import("../../../convex/discordSync")
+    const ctx = fixture(t)
+    const calls = spyReads(ctx)
+    const args = { secret, guildId: "guild-a", eventId: "events:upcoming" }
+    const first = await invoke(discord.getCalendarEventContext, ctx, args)
+    assert.equal(first.event.competitionRound, 2)
+    assert.equal(first.event.id, args.eventId)
+    assert.ok(!("signUps" in first.event))
+    assert.ok(!("serverPassword" in first.event))
+    assert.ok(
+        calls.every(
+            (call) =>
+                call.table === "discordEventSyncs" ||
+                call.table === "competitionFixtures"
+        )
+    )
+    const state = ctx.db.tables.discordEventSyncs.find(
+        (row) => row.eventId === args.eventId
+    )!
+    state.announcementChannelId = "channel-new"
+    state.announcementMessageId = "message-new"
+    const second = await invoke(discord.getCalendarEventContext, ctx, args)
+    assert.equal(second.syncState.announcementMessageId, "message-new")
+    assert.equal(
+        await invoke(discord.getCalendarEventContext, ctx, {
+            ...args,
+            guildId: "other",
+        }),
+        null
+    )
+    ctx.db.tables.events.find((row) => row._id === args.eventId)!.isDraft = true
+    assert.equal(await invoke(discord.getCalendarEventContext, ctx, args), null)
+    await assert.rejects(
+        invoke(discord.getCalendarEventContext, ctx, {
+            ...args,
+            secret: "wrong",
+        }),
+        /Unauthorized/
+    )
 })
 
 test("the event index needs the internal secret", async (t) => {

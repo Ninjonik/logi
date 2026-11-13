@@ -112,6 +112,9 @@ export async function queueEventRecaps(
             userRecordId: user._id,
             discordUserId: user.discordId,
             status: "pending",
+            deliveryState: "ready",
+            deliveryDueAt: Date.now(),
+            deliveryAttempts: 0,
             previousTen: baseline.matches
                 ? {
                       matches: baseline.matches,

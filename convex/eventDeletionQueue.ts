@@ -7,6 +7,45 @@ export async function queueEventDiscordDeletion(
     eventId: string,
     resources: EventDiscordDeletion
 ) {
+    const id = ctx.db.normalizeId("events", eventId)
+    const receipts = id
+        ? await ctx.db
+              .query("discordEventResources")
+              .withIndex("eventId_key", (q) => q.eq("eventId", id))
+              .collect()
+        : []
+    // A create receipt may have committed before the outer sync saved its IDs.
+    resources = {
+        ...resources,
+        channelIds: [
+            ...new Set([
+                ...resources.channelIds,
+                ...receipts
+                    .filter(
+                        (row) =>
+                            row.guildId === resources.guildId &&
+                            row.state === "bound" &&
+                            row.key !== "scheduled-event" &&
+                            row.resourceId
+                    )
+                    .map((row) => row.resourceId!),
+            ]),
+        ],
+        scheduledEventIds: [
+            ...new Set([
+                ...resources.scheduledEventIds,
+                ...receipts
+                    .filter(
+                        (row) =>
+                            row.guildId === resources.guildId &&
+                            row.state === "bound" &&
+                            row.key === "scheduled-event" &&
+                            row.resourceId
+                    )
+                    .map((row) => row.resourceId!),
+            ]),
+        ],
+    }
     if (
         !resources.messages.length &&
         !resources.channelIds.length &&

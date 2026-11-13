@@ -24,6 +24,7 @@ export type RoleFailureReport = {
 
 export type RoleFailureReporterPorts = {
     report(report: RoleFailureReport): Promise<void>
+    failed(error: unknown, report: RoleFailureReport): void
     schedule(run: () => void, delayMs: number): void
 }
 
@@ -61,17 +62,16 @@ export function createRoleFailureReporter(
         const entry = pending.get(key)
         pending.delete(key)
         if (!entry?.memberIds.size) return
-        void ports
-            .report({
-                guildId: entry.guildId,
-                ...(entry.roleId ? { roleId: entry.roleId } : {}),
-                memberIds: [...entry.memberIds],
-                reasons: [...entry.reasons],
-                ...(entry.discordCode !== undefined
-                    ? { discordCode: entry.discordCode }
-                    : {}),
-            })
-            .catch(() => undefined)
+        const report = {
+            guildId: entry.guildId,
+            ...(entry.roleId ? { roleId: entry.roleId } : {}),
+            memberIds: [...entry.memberIds],
+            reasons: [...entry.reasons],
+            ...(entry.discordCode !== undefined
+                ? { discordCode: entry.discordCode }
+                : {}),
+        }
+        void ports.report(report).catch((error) => ports.failed(error, report))
     }
     return {
         /** Records one member's failed role change; true when it will be reported. */

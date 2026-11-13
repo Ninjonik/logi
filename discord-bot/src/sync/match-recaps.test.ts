@@ -87,6 +87,22 @@ function mockQueries(
 ) {
     ;(t.mock.method as (...args: unknown[]) => unknown)(
         ConvexReactClient.prototype,
+        "mutation",
+        async (
+            reference: Parameters<typeof getFunctionName>[0],
+            args: unknown
+        ) => {
+            const name = getFunctionName(reference)
+            calls.push([name.endsWith("markSent") ? "mark" : name, args])
+            if (name.endsWith(":claim"))
+                return prepared
+                    ? { ...(prepared as object), token: "recap-token" }
+                    : null
+            return { ok: true }
+        }
+    )
+    ;(t.mock.method as (...args: unknown[]) => unknown)(
+        ConvexReactClient.prototype,
         "query",
         async (
             reference: Parameters<typeof getFunctionName>[0],
@@ -132,13 +148,6 @@ test("actual recap runner uses Discord subject, rechecks eligibility and keeps t
     const calls: unknown[] = [],
         targets: string[] = []
     mockQueries(t as never, delivery, calls)
-    t.mock.method(
-        ConvexReactClient.prototype,
-        "mutation",
-        async (_reference: unknown, args: unknown) => {
-            calls.push(["mark", args])
-        }
-    )
     let sent: { components: ContainerBuilder[] } | undefined
     const client = {
         users: {
@@ -161,7 +170,7 @@ test("actual recap runner uses Discord subject, rechecks eligibility and keeps t
             (call) =>
                 JSON.stringify(call) ===
                 JSON.stringify([
-                    "matchRecaps:prepareDelivery",
+                    "matchRecapDelivery:claim",
                     {
                         secret: "dev-internal-auth-secret",
                         recapId: delivery.recapId,
@@ -183,34 +192,51 @@ test("actual recap runner uses Discord subject, rechecks eligibility and keeps t
             secret: "dev-internal-auth-secret",
             recapId: delivery.recapId,
             discordUserId: delivery.discordUserId,
+            deliveryToken: "recap-token",
         },
     ])
 })
 
 test("unsubscribe or relink during Discord lookup stops a previously listed recap", async (t) => {
     let sent = false
-    mockQueries(t as never, null)
-    t.mock.method(ConvexReactClient.prototype, "mutation", async () =>
-        assert.fail("No sent marker")
+    let lookedUp = false,
+        checked = false
+    mockQueries(t as never)
+    t.mock.method(
+        ConvexReactClient.prototype,
+        "mutation",
+        async (reference: Parameters<typeof getFunctionName>[0]) => {
+            const name = getFunctionName(reference)
+            if (name.endsWith(":claim"))
+                return { ...delivery, token: "recap-token" }
+            if (name.endsWith(":begin")) {
+                assert.equal(lookedUp, true)
+                checked = true
+                return { ok: false }
+            }
+            assert.fail("No send receipt after opt-out")
+        }
     )
     const client = {
         users: {
-            fetch: async () => ({
-                send: async () => {
-                    sent = true
-                },
-            }),
+            fetch: async () => {
+                lookedUp = true
+                return {
+                    send: async () => {
+                        sent = true
+                    },
+                }
+            },
         },
     } as unknown as Client
     await processMatchRecaps(client, "events:one")
     assert.equal(sent, false)
+    assert.equal(checked, true)
 })
 
 test("failed Discord sends never create a sent marker", async (t) => {
-    mockQueries(t as never)
-    t.mock.method(ConvexReactClient.prototype, "mutation", async () =>
-        assert.fail("No sent marker after failure")
-    )
+    const calls: unknown[] = []
+    mockQueries(t as never, delivery, calls)
     let attempts = 0
     const client = {
         users: {
@@ -224,6 +250,7 @@ test("failed Discord sends never create a sent marker", async (t) => {
     } as unknown as Client
     await processMatchRecaps(client, "events:one")
     assert.equal(attempts, 1)
+    assert.ok(!calls.some((call) => Array.isArray(call) && call[0] === "mark"))
 })
 
 test("legacy delivery records cannot trigger a Discord lookup", async (t) => {

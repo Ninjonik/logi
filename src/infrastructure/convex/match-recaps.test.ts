@@ -1,3 +1,4 @@
+import * as delivery from "../../../convex/matchRecapDelivery"
 import { invoke, testContext } from "./testing/database"
 import * as recaps from "../../../convex/matchRecaps"
 import * as players from "../../../convex/players"
@@ -49,8 +50,147 @@ const list = (ctx: ReturnType<typeof fixture>) =>
     invoke(recaps.listPendingForEvent, ctx, {
         secret,
         eventId,
-        deliveryVersion: 2,
+        deliveryVersion: 3,
     })
+
+test("recap send boundary survives a lost success receipt and rejects stale acknowledgments", async (t) => {
+    const now = Date.parse("2026-11-13T10:00:00Z")
+    t.mock.timers.enable({ apis: ["Date"], now })
+    const ctx = fixture()
+    ctx.db.seed("discordConfigs", {
+        _id: "discordConfigs:recap",
+        guildId: "guilds:a",
+    })
+    await queue(ctx)
+    const [candidate] = await list(ctx)
+    const args = { secret, recapId: candidate.recapId, eventId, discordUserId }
+    const first = await invoke(delivery.claim, ctx, args)
+    assert.ok(first.token)
+    assert.equal(await invoke(delivery.claim, ctx, args), null)
+    await invoke(delivery.begin, ctx, {
+        secret,
+        recapId: candidate.recapId,
+        token: first.token,
+    })
+    // Discord accepted the message, but neither success nor failure was recorded.
+    t.mock.timers.setTime(now + 300_001)
+    await invoke(delivery.due, ctx, { secret })
+    assert.equal(ctx.db.tables.matchRecaps[0].deliveryState, "uncertain")
+    assert.deepEqual(await list(ctx), [])
+    assert.equal(await invoke(delivery.claim, ctx, args), null)
+    assert.deepEqual(
+        await invoke(recaps.markSent, ctx, {
+            ...args,
+            deliveryToken: first.token,
+        }),
+        { ok: false }
+    )
+    assert.deepEqual(
+        (
+            await invoke(delivery.inspect, ctx, {
+                secret,
+                guildId: "guilds:a",
+                eventId,
+                cursor: null,
+            })
+        ).page[0].receipt,
+        "uncertain"
+    )
+    await assert.rejects(
+        invoke(delivery.reconcile, ctx, {
+            secret,
+            guildId: "other",
+            recapId: candidate.recapId,
+            operator: "operator",
+            evidence: "Actual Discord confirmation",
+            action: "confirm",
+        }),
+        /not found/
+    )
+    await invoke(delivery.reconcile, ctx, {
+        secret,
+        guildId: "guilds:a",
+        recapId: candidate.recapId,
+        operator: "operator",
+        evidence: "Verified the actual Discord message",
+        action: "confirm",
+        messageId: "100000000000000002",
+    })
+    assert.equal(ctx.db.tables.matchRecaps[0].deliveryState, "confirmed")
+    assert.equal(ctx.db.tables.matchRecapDeliveryAudits.length, 1)
+})
+
+test("pre-send recap crash backs off, fences the old owner and rechecks an opt-out before sending", async (t) => {
+    const now = Date.parse("2026-11-13T10:00:00Z")
+    t.mock.timers.enable({ apis: ["Date"], now })
+    const ctx = fixture()
+    ctx.db.seed("discordConfigs", {
+        _id: "discordConfigs:recap",
+        guildId: "guilds:a",
+    })
+    await queue(ctx)
+    const [candidate] = await list(ctx)
+    const args = { secret, recapId: candidate.recapId, eventId, discordUserId }
+    const first = await invoke(delivery.claim, ctx, args)
+    t.mock.timers.setTime(now + 300_001)
+    await invoke(delivery.due, ctx, { secret })
+    assert.equal(ctx.db.tables.matchRecaps[0].deliveryState, "ready")
+    assert.equal(await invoke(delivery.claim, ctx, args), null)
+    t.mock.timers.setTime(now + 360_002)
+    const second = await invoke(delivery.claim, ctx, args)
+    assert.notEqual(first.token, second.token)
+    assert.deepEqual(
+        await invoke(delivery.begin, ctx, {
+            secret,
+            recapId: candidate.recapId,
+            token: first.token,
+        }),
+        { ok: false }
+    )
+    ctx.db.tables.users[0].matchRecapNotificationsEnabled = false
+    assert.deepEqual(
+        await invoke(delivery.begin, ctx, {
+            secret,
+            recapId: candidate.recapId,
+            token: second.token,
+        }),
+        { ok: false }
+    )
+    assert.equal(ctx.db.tables.matchRecaps[0].deliveryState, "ready")
+})
+
+test("recap pre-send retries stop after five attempts and legacy rows never enter automatic delivery", async (t) => {
+    const now = Date.parse("2026-11-13T10:00:00Z")
+    t.mock.timers.enable({ apis: ["Date"], now })
+    const ctx = fixture()
+    await queue(ctx)
+    const [candidate] = await list(ctx)
+    const args = { secret, recapId: candidate.recapId, eventId, discordUserId }
+    for (let attempt = 1; attempt <= 5; attempt++) {
+        const claimed = await invoke(delivery.claim, ctx, args)
+        assert.ok(claimed?.token)
+        await invoke(delivery.fail, ctx, {
+            secret,
+            recapId: candidate.recapId,
+            token: claimed.token,
+            outcome: "pre_send",
+        })
+        if (attempt < 5)
+            t.mock.timers.setTime(ctx.db.tables.matchRecaps[0].deliveryDueAt)
+    }
+    assert.equal(ctx.db.tables.matchRecaps[0].deliveryState, "failed")
+    delete ctx.db.tables.matchRecaps[0].deliveryState
+    assert.deepEqual(await list(ctx), [])
+    assert.equal(await invoke(delivery.claim, ctx, args), null)
+    assert.deepEqual(
+        await invoke(recaps.listPendingForEvent, ctx, {
+            secret,
+            eventId,
+            deliveryVersion: 2,
+        }),
+        []
+    )
+})
 
 test("recap queue validator accepts optional nullable cash baselines from captureBaselines", () => {
     const mutation = recaps.queueForPublishedResult
@@ -65,6 +205,36 @@ test("recap queue validator accepts optional nullable cash baselines from captur
         },
         optional: true,
     })
+})
+
+test("recap discovery is bounded and defers blocked rows without hiding a different event", async (t) => {
+    const now = Date.parse("2026-11-13T10:00:00Z")
+    t.mock.timers.enable({ apis: ["Date"], now })
+    const ctx = fixture()
+    for (let index = 0; index < 12; index++)
+        ctx.db.seed("matchRecaps", {
+            _id: `matchRecaps:blocked${index}`,
+            eventId,
+            status: "pending",
+            deliveryState: "ready",
+            deliveryDueAt: now,
+        })
+    ctx.db.seed("matchRecaps", {
+        _id: "matchRecaps:next",
+        eventId: "events:next",
+        status: "pending",
+        deliveryState: "ready",
+        deliveryDueAt: now,
+    })
+    assert.deepEqual(await invoke(delivery.due, ctx, { secret }), [eventId])
+    await invoke(delivery.deferEvent, ctx, { secret, eventId })
+    assert.deepEqual(await invoke(delivery.due, ctx, { secret }), [
+        "events:next",
+    ])
+    await assert.rejects(
+        invoke(delivery.due, ctx, { secret: "wrong" }),
+        /Unauthorized/
+    )
 })
 
 for (const cashDelta of [undefined, null, 125] as const) {
@@ -93,6 +263,7 @@ for (const cashDelta of [undefined, null, 125] as const) {
             { queued: 1 }
         )
         const { userId: _userId, ...expected } = baselines[0]
+        assert.equal(_userId, "imported-player")
         assert.deepEqual(ctx.db.tables.matchRecaps[0].previousTen, expected)
         assert.equal(expected.cashDelta, cashDelta)
     })
@@ -153,6 +324,15 @@ test("unbound legacy pending recaps are withheld instead of guessing a recipient
     assert.deepEqual(await list(ctx), [])
 })
 
+for (const field of ["isDraft", "sharedAccessRevoked"] as const) {
+    test(`recap recovery withholds a queued event after ${field}`, async () => {
+        const ctx = fixture()
+        await queue(ctx)
+        ctx.db.tables.events[0][field] = true
+        assert.deepEqual(await list(ctx), [])
+    })
+}
+
 test("notification preference resolves the authenticated Discord subject, not a colliding imported ID", async () => {
     const ctx = fixture()
     ctx.db.seed("users", {
@@ -185,7 +365,13 @@ test("delivery preparation checks event, recipient, opt-out and sent state indep
     const ctx = fixture()
     await queue(ctx)
     const [candidate] = await list(ctx)
-    const args = { secret, eventId, recapId: candidate.recapId, discordUserId }
+    const args = {
+        secret,
+        eventId,
+        recapId: candidate.recapId,
+        discordUserId,
+        deliveryVersion: 3,
+    }
     assert.equal(
         (await invoke(recaps.prepareDelivery, ctx, args)).userId,
         "imported-player"
@@ -207,6 +393,17 @@ test("delivery preparation checks event, recipient, opt-out and sent state indep
     ctx.db.tables.users[0].matchRecapNotificationsEnabled = false
     assert.equal(await invoke(recaps.prepareDelivery, ctx, args), null)
     ctx.db.tables.users[0].matchRecapNotificationsEnabled = true
+    ctx.db.seed("discordConfigs", {
+        _id: "discordConfigs:recap",
+        guildId: "guilds:a",
+    })
+    const claim = await invoke(delivery.claim, ctx, args)
+    assert.ok(claim?.token)
+    await invoke(delivery.begin, ctx, {
+        secret,
+        recapId: candidate.recapId,
+        token: claim.token,
+    })
     await invoke(recaps.markSent, ctx, {
         secret,
         recapId: candidate.recapId,
@@ -217,6 +414,7 @@ test("delivery preparation checks event, recipient, opt-out and sent state indep
         secret,
         recapId: candidate.recapId,
         discordUserId,
+        deliveryToken: claim.token,
     })
     assert.equal(ctx.db.tables.matchRecaps[0].status, "sent")
     assert.equal(await invoke(recaps.prepareDelivery, ctx, args), null)

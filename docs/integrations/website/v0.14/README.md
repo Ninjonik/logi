@@ -92,6 +92,12 @@ semantics. A missing legacy `confirmed` value means unconfirmed. These states
 are not a proof that someone played, and absence of a slot is not a no-show.
 Training completion remains independently `passed`, `failed` or null.
 
+The dashboard's sign-up and attendance view groups its existing event participants
+and game memberships by status, including attendees awaiting roster placement.
+This is a dashboard projection; the published roster summary continues to expose
+its existing participation and roster fields, without dashboard grouping or an
+aggregate unanswered audience.
+
 ## Collected-session statistics, not career statistics
 
 Each `player-stat-summaries` record identifies one durable `gameSessions` row.

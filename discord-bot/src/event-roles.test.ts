@@ -1,3 +1,4 @@
+import { ConvexReactClient } from "convex/react"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -142,4 +143,138 @@ test("a match role Discord refuses is reported once with the role and the match 
         quiet.push(input)
     })
     assert.deepEqual(quiet, [])
+})
+
+for (const status of ["registration", "concluded"] as const) {
+    test(`role lookup failures retain ${status} bindings without provisioning`, async () => {
+        let creates = 0
+        const reports: ClanErrorReportInput[] = []
+        const guild = fakeGuild("none")
+        Object.assign(guild.roles, {
+            fetch: async () => {
+                throw Object.assign(new Error("unavailable"), { status: 503 })
+            },
+            create: async () => {
+                creates++
+                throw new Error("unexpected provision")
+            },
+        })
+        const record = {
+            ...event,
+            id: "event-1",
+            status,
+            attendeeRoleId: PLAYERS_ROLE,
+            reserveRoleId: RESERVES_ROLE,
+            participants: [],
+        } as unknown as EventRecord
+        const result = await syncEventRoles(
+            guild,
+            record,
+            null,
+            "en",
+            async (report) => {
+                reports.push(report)
+            }
+        )
+        assert.deepEqual(result, {
+            attendeeRoleId: PLAYERS_ROLE,
+            reserveRoleId: RESERVES_ROLE,
+        })
+        assert.equal(creates, 0)
+        assert.equal(reports.length, 1)
+    })
+}
+
+test("failed role deletion retains bindings for retry", async () => {
+    const guild = fakeGuild("none")
+    Object.assign(guild.roles, {
+        fetch: async () => ({
+            delete: async () => {
+                throw new Error("permission denied")
+            },
+        }),
+    })
+    const record = {
+        ...event,
+        id: "event-1",
+        status: "concluded",
+        attendeeRoleId: PLAYERS_ROLE,
+        reserveRoleId: RESERVES_ROLE,
+        participants: [],
+    } as unknown as EventRecord
+    const result = await syncEventRoles(
+        guild,
+        record,
+        null,
+        "en",
+        async () => {}
+    )
+    assert.deepEqual(result, {
+        attendeeRoleId: PLAYERS_ROLE,
+        reserveRoleId: RESERVES_ROLE,
+    })
+})
+
+test("existing participant roles are fetched once each", async () => {
+    const guild = fakeGuild("none")
+    const fetch = guild.roles.fetch.bind(guild.roles)
+    let reads = 0
+    Object.assign(guild.roles, {
+        fetch: async (id: string) => {
+            reads++
+            return fetch(id)
+        },
+    })
+    const record = {
+        ...event,
+        id: "event-1",
+        status: "registration",
+        attendeeRoleId: PLAYERS_ROLE,
+        reserveRoleId: RESERVES_ROLE,
+        participants: [],
+    } as unknown as EventRecord
+    await syncEventRoles(guild, record, null, "en", async () => {})
+    assert.equal(reads, 2)
+})
+
+test("a successfully created role is remembered before the second provision fails", async (t) => {
+    const writes: Record<string, unknown>[] = []
+    t.mock.method(
+        ConvexReactClient.prototype,
+        "mutation",
+        async (_reference: unknown, args: Record<string, unknown>) => {
+            writes.push(args)
+            return null
+        }
+    )
+    const guild = fakeGuild("none")
+    let creates = 0
+    Object.assign(guild.roles, {
+        fetch: async () => {
+            throw { code: 10011 }
+        },
+        create: async () => {
+            if (++creates === 2) throw new Error("Discord unavailable")
+            return { id: "new-attendee", name: "players", members: new Map() }
+        },
+    })
+    const record = {
+        ...event,
+        id: "event-1",
+        status: "registration",
+        attendeeRoleId: PLAYERS_ROLE,
+        reserveRoleId: RESERVES_ROLE,
+        participants: [],
+    } as unknown as EventRecord
+    const result = await syncEventRoles(
+        guild,
+        record,
+        null,
+        "en",
+        async () => {}
+    )
+    assert.equal(result.attendeeRoleId, "new-attendee")
+    assert.equal(writes.length, 1)
+    assert.equal(writes[0]?.attendeeRoleId, "new-attendee")
+    assert.equal(writes[0]?.reserveRoleId, RESERVES_ROLE)
 })

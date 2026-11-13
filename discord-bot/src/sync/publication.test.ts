@@ -1,11 +1,17 @@
+import { ChannelType, type Client } from "discord.js"
+import { ConvexReactClient } from "convex/react"
+import { getFunctionName } from "convex/server"
+import { closeConvexClient } from "../convex"
+import test, { afterEach } from "node:test"
 import assert from "node:assert/strict"
-import test from "node:test"
+afterEach(closeConvexClient)
 
 import {
     PublicationChannelError,
     PublicationPermissionError,
     publicationDeliveryError,
     publicationSource,
+    publishManagedMessage,
 } from "./publication"
 import { PublicationNotSent } from "../../../src/application/discord-publications/publish"
 
@@ -43,6 +49,80 @@ test("a failed delivery uses the errors channel's words, never the English inter
             /Discord delivery failed|permissions missing|PublicationNotSent/
         )
         assert.ok(text.length <= 240)
+    }
+})
+
+test("the real publication adapter recovers a deleted previous channel and preserves unreadable bindings", async (t) => {
+    for (const code of [10003, 50013, 0]) {
+        let creates = 0
+        const states: Array<Record<string, unknown>> = []
+        t.mock.method(ConvexReactClient.prototype, "query", async () => ({
+            defaultLanguage: "en",
+        }))
+        t.mock.method(
+            ConvexReactClient.prototype,
+            "mutation",
+            async (
+                reference: Parameters<typeof getFunctionName>[0],
+                args: Record<string, unknown>
+            ) => {
+                if (getFunctionName(reference) === "discordPublications:claim")
+                    return {
+                        id: "publication",
+                        fence: 1,
+                        channelId: "old",
+                        messageId: "old-message",
+                        pending: null,
+                        hash: null,
+                    }
+                states.push(args)
+                return null
+            }
+        )
+        const guild = {
+            channels: {
+                fetch: async (id: string) => {
+                    if (id === "old")
+                        throw Object.assign(Error("unavailable"), {
+                            code,
+                            status: code === 50013 ? 403 : 503,
+                        })
+                    return {
+                        type: ChannelType.GuildText,
+                        isTextBased: () => true,
+                        permissionsFor: () => ({ has: () => true }),
+                        send: async () => {
+                            creates++
+                            return { id: "new-message" }
+                        },
+                    }
+                },
+            },
+            members: { fetchMe: async () => ({}) },
+        }
+        const client = {
+            user: { id: "bot" },
+            guilds: { fetch: async () => guild },
+        } as unknown as Client
+        const operation = publishManagedMessage(client, {
+            guildId: "guild",
+            key: "calendar",
+            revision: 1,
+            channelId: "new",
+            message: { content: "updated" },
+        })
+        if (code === 10003) {
+            assert.equal(await operation, "new-message")
+            assert.equal(creates, 1)
+            assert.ok(states.some((state) => state.messageId === null))
+        } else {
+            await assert.rejects(operation)
+            assert.equal(creates, 0)
+            assert.equal(
+                states.some((state) => state.messageId === null),
+                false
+            )
+        }
     }
 })
 

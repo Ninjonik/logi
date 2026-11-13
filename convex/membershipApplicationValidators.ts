@@ -100,6 +100,9 @@ export const applicationDraftFields = {
         v.union(v.literal("queued"), v.literal("claimed"), v.literal("failed"))
     ),
     claimedUntil: v.optional(v.number()),
+    submissionClaimToken: v.optional(v.string()),
+    resumableSubmission: v.optional(v.boolean()),
+    provisionedAssignmentId: v.optional(v.id("userAssignments")),
     submissionError: v.optional(v.string()),
     expiresAt: v.number(),
     createdAt: v.string(),

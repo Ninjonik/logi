@@ -12,11 +12,18 @@
  */
 
 import {
+    DurableDelivery,
+    confirmedDmRefusal,
+    UnattemptedDelivery,
+} from "../runtime/durable-delivery"
+import {
     MessageFlags,
     TextDisplayBuilder,
     type Client,
     type Guild,
 } from "discord.js"
+import { TaskOwner, startOwnedInterval } from "../runtime/task-owner"
+import { withRequestLease } from "../runtime/request-lease"
 
 import {
     changedRecipients,
@@ -51,6 +58,7 @@ import { convex, references } from "../convex"
 import { env } from "../environment"
 
 export type ClaimedRosterChanges = {
+    claimToken?: string
     id: string
     eventId: string
     guildId: string
@@ -73,6 +81,7 @@ type PendingRequest = { id: string; eventId: string; guildId: string }
 /** What the bot needs from Discord, injectable for tests. */
 export type RosterChangePorts = {
     guild: Guild | null
+    prepareDm?(ids: string[]): Promise<Set<string>>
     sendDm(userId: string, message: unknown): Promise<boolean>
     publishDigest(input: {
         channelId: string
@@ -133,7 +142,7 @@ export async function deliverRosterChanges(input: {
         current,
         roster.reservePlayerIds
     )
-    const recipients = request.notifyPlayers
+    let recipients = request.notifyPlayers
         ? changedRecipients(changes, new Set(request.memberIds))
         : []
     const digestChanges = request.postDigest
@@ -143,6 +152,10 @@ export async function deliverRosterChanges(input: {
               roster.reservePlayerIds
           )
         : []
+    if (ports.prepareDm) {
+        const allowed = await ports.prepareDm(recipients)
+        recipients = recipients.filter((id) => allowed.has(id))
+    }
     const names = await memberNames(
         ports.guild,
         [
@@ -250,15 +263,21 @@ export function discordRosterChangePorts(
     return {
         guild,
         async sendDm(userId, message) {
-            const user = await client.users.fetch(userId).catch(() => null)
+            const user = await client.users.fetch(userId).catch((error) => {
+                if (confirmedDmRefusal(error)) return null
+                throw new UnattemptedDelivery("Recipient lookup failed")
+            })
             if (!user) return false
             return await user
                 .send(message as Parameters<typeof user.send>[0])
                 .then(() => true)
-                .catch(() => false)
+                .catch((error) => {
+                    if (confirmedDmRefusal(error)) return false
+                    throw error
+                })
         },
         async publishDigest(input) {
-            await publishManagedMessage(client, {
+            const messageId = await publishManagedMessage(client, {
                 guildId: event.guildId,
                 key: rosterChangesKey(event.id),
                 revision: input.revision,
@@ -267,12 +286,17 @@ export function discordRosterChangePorts(
                 legacyMessageId: input.legacyMessageId,
                 message: input.message,
             })
+            if (!messageId)
+                throw new UnattemptedDelivery(
+                    "Digest publication is not confirmed"
+                )
         },
         async mention(input) {
             const channel = await client.channels
                 .fetch(input.channelId)
                 .catch(() => null)
-            if (!channel?.isSendable()) return
+            if (!channel?.isSendable())
+                throw new UnattemptedDelivery("Mention channel is unavailable")
             // Edits never ping, so a re-publish mentions in a reply to the roster.
             await channel.send({
                 components: [
@@ -298,6 +322,8 @@ export function discordRosterChangePorts(
  * A backend without the queue only logs; the rest of the bot keeps running.
  */
 export class RosterChangeRequestService {
+    private readonly tasks = new TaskOwner()
+    private stopPoll?: () => Promise<void>
     private unsubscribe?: () => void
     private readonly processing = new Set<string>()
 
@@ -308,7 +334,12 @@ export class RosterChangeRequestService {
         ) => Promise<SyncPayload | null>
     ) {}
 
-    async start() {
+    start() {
+        return this.tasks.run(() => this.initialize())
+    }
+
+    private async initialize() {
+        if (this.tasks.stopped) return
         const watch = convex.watchQuery(references.listPendingRosterChanges, {
             secret: env.internalSecret,
         })
@@ -323,8 +354,28 @@ export class RosterChangeRequestService {
                 })
                 return
             }
-            if (pending) void this.processAll(pending)
+            if (pending)
+                void this.tasks
+                    .run(() => this.processAll(pending))
+                    .catch((error) =>
+                        logError("request-worker", "Request batch failed", {
+                            error,
+                        })
+                    )
         })
+        this.stopPoll = startOwnedInterval(
+            async () => {
+                const pending = (await convex.query(
+                    references.listPendingRosterChanges,
+                    { secret: env.internalSecret }
+                )) as PendingRequest[]
+                await this.tasks.run(() => this.processAll(pending))
+            },
+            30_000,
+            (error) =>
+                logWarn("request-worker", "Retry poll failed", { error }),
+            false
+        )
         const pending = (await convex.query(
             references.listPendingRosterChanges,
             { secret: env.internalSecret }
@@ -335,10 +386,13 @@ export class RosterChangeRequestService {
 
     stop() {
         this.unsubscribe?.()
+        this.unsubscribe = undefined
+        return Promise.all([this.stopPoll?.(), this.tasks.stop()])
     }
 
     private async processAll(pending: PendingRequest[]) {
         for (const request of pending) {
+            if (this.tasks.stopped) break
             if (this.processing.has(request.id)) continue
             this.processing.add(request.id)
             try {
@@ -355,6 +409,8 @@ export class RosterChangeRequestService {
             claimed = (await convex.mutation(references.claimRosterChanges, {
                 secret: env.internalSecret,
                 requestId: request.id,
+                fenced: true,
+                resumable: true,
             })) as ClaimedRosterChanges | null
         } catch (error) {
             logError("roster-changes", "Failed to claim a request", {
@@ -370,17 +426,59 @@ export class RosterChangeRequestService {
             const guild = await this.client.guilds
                 .fetch(claimed.guildId)
                 .catch(() => null)
-            const outcome = await deliverRosterChanges({
-                payload,
-                request: claimed,
-                ports: discordRosterChangePorts(this.client, guild, {
-                    id: claimed.eventId,
-                    guildId: claimed.guildId,
-                }),
-            })
+            const outcome = await withRequestLease(
+                "roster",
+                claimed,
+                async () => {
+                    const delivery = new DurableDelivery({
+                        kind: "roster",
+                        id: claimed.id,
+                        token: claimed.claimToken!,
+                    })
+                    const ports = discordRosterChangePorts(this.client, guild, {
+                        id: claimed.eventId,
+                        guildId: claimed.guildId,
+                    })
+                    return deliverRosterChanges({
+                        payload,
+                        request: claimed,
+                        ports: {
+                            ...ports,
+                            prepareDm: (ids) =>
+                                delivery.prepare("request", ids),
+                            sendDm: async (...args) => {
+                                return (
+                                    (await delivery.effect(
+                                        "request",
+                                        `dm:${args[0]}`,
+                                        () => ports.sendDm(...args)
+                                    )) === "sent"
+                                )
+                            },
+                            publishDigest: async (...args) => {
+                                return delivery.effect(
+                                    "request",
+                                    "digest",
+                                    async () => {
+                                        await ports.publishDigest(...args)
+                                    }
+                                )
+                            },
+                            mention: async (...args) => {
+                                await delivery.effect(
+                                    "request",
+                                    "mention",
+                                    () => ports.mention(...args)
+                                )
+                            },
+                        },
+                    })
+                }
+            )
             await convex.mutation(references.completeRosterChanges, {
                 secret: env.internalSecret,
                 requestId: claimed.id,
+                claimToken: claimed.claimToken,
                 ...outcome,
             })
             logInfo("roster-changes", "Sent roster changes", {
@@ -400,6 +498,7 @@ export class RosterChangeRequestService {
                 .mutation(references.failRosterChanges, {
                     secret: env.internalSecret,
                     requestId: claimed.id,
+                    claimToken: claimed.claimToken,
                     error: "send_failed",
                 })
                 .catch((failure) =>

@@ -250,7 +250,7 @@ test("shared categories are owned by the game they name", () => {
             status: "active",
             membershipCategoryId: "hll",
         }),
-        ["clan"]
+        []
     )
     assert.deepEqual(
         managedRolePolicy(shared, "hell_let_loose_vietnam").roleIds,
@@ -263,4 +263,26 @@ test("shared categories are owned by the game they name", () => {
         "hll-member",
         "wdg-recruit",
     ])
+})
+
+test("category-less recruit uses the only matching game category", () => {
+    const policy = managedRolePolicy(config, "hell_let_loose")
+    assert.deepEqual(
+        desiredMembershipRoles(policy, { type: "member", status: "recruit" }),
+        ["clan", "recruit"]
+    )
+    const ambiguous = structuredClone(config)
+    ambiguous.membershipSettings.categories.push({
+        id: "other",
+        recruitRoleIds: ["other"],
+        finalRoleIds: [],
+        supportRoleIds: [],
+    })
+    assert.deepEqual(
+        desiredMembershipRoles(managedRolePolicy(ambiguous, "hell_let_loose"), {
+            type: "member",
+            status: "recruit",
+        }),
+        []
+    )
 })

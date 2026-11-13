@@ -13,15 +13,9 @@ function fake(overrides: Partial<SubmitApplicationPorts> = {}) {
             calls.push("assignment")
             return "assignment-1"
         },
-        removeAssignment: async (id) => {
-            calls.push(`remove-assignment:${id}`)
-        },
         createThread: async () => {
             calls.push("thread")
             return { id: "thread-1" }
-        },
-        deleteThread: async (id) => {
-            calls.push(`delete-thread:${id}`)
         },
         addMembers: async () => {
             calls.push("members")
@@ -71,7 +65,7 @@ test("a submit creates the membership, thread, record, intro and card in order",
     ])
 })
 
-test("no thread: the membership is rolled back and nothing is left (L4-23)", async () => {
+test("an uncertain thread response preserves membership for reconciliation", async () => {
     const { ports, calls } = fake({
         createThread: async () => {
             throw new Error("Missing Access")
@@ -81,23 +75,16 @@ test("no thread: the membership is rolled back and nothing is left (L4-23)", asy
         ok: false,
         failedAt: "thread",
     })
-    assert.deepEqual(calls, [
-        "assignment",
-        "report:thread",
-        "remove-assignment:assignment-1",
-    ])
+    assert.deepEqual(calls, ["assignment", "report:thread"])
 })
 
-test("no record: the thread is deleted and the membership rolled back", async () => {
+test("an ambiguous record response preserves the remembered thread and membership", async () => {
     const { ports, calls } = fake({ recordApplication: async () => null })
     assert.deepEqual(await submitApplication(ports), {
         ok: false,
         failedAt: "record",
     })
-    assert.deepEqual(calls.slice(-2), [
-        "delete-thread:thread-1",
-        "remove-assignment:assignment-1",
-    ])
+    assert.deepEqual(calls, ["assignment", "thread", "members"])
 })
 
 test("no membership: nothing else happens", async () => {

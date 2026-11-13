@@ -315,10 +315,11 @@ export const decide = mutation({
 
 /**
  * The bot claims due decision DMs. Each claim is leased so a second bot pass
- * does not send the same DM; an unconfirmed lease becomes due again.
+ * does not send the same DM. Only claims that never crossed the durable send
+ * boundary can resume; interrupted/legacy sends require operator evidence.
  */
 export const claimNotifications = mutation({
-    args: { secret: v.string() },
+    args: { secret: v.string(), durable: v.optional(v.boolean()) },
     handler: async (ctx, args) => {
         assertBotSecret(args.secret)
         const now = Date.now()
@@ -333,6 +334,22 @@ export const claimNotifications = mutation({
         const claimed = []
         for (const row of due) {
             if ((row.notificationLeaseUntil ?? 0) > now) continue
+            // Old senders have no receipt. Never infer that an expired lease
+            // means Discord did not accept their DM.
+            if (
+                row.notificationDeliveryState === "started" ||
+                (!row.notificationDeliveryState && row.notificationAttempts > 0)
+            ) {
+                await ctx.db.patch(row._id, {
+                    notificationStatus: "failed",
+                    notificationDeliveryState: "uncertain",
+                    notificationNextAttemptAt: null,
+                    notificationLeaseUntil: null,
+                })
+                continue
+            }
+            // Legacy workers must not consume upgraded work without receipts.
+            if (row.notificationDeliveryState && !args.durable) continue
             // Every claim is a delivery attempt, so a DM whose outcome is never
             // recorded is retried a bounded number of times, not forever.
             const attempts = row.notificationAttempts + 1
@@ -348,6 +365,13 @@ export const claimNotifications = mutation({
                 notificationAttempts: attempts,
                 notificationLeaseUntil: now + NOTIFICATION_LEASE_MS,
                 notificationNextAttemptAt: now + NOTIFICATION_LEASE_MS,
+                ...(args.durable
+                    ? {
+                          notificationDeliveryState: "ready" as const,
+                          notificationClaimToken: `${row._id}:${attempts}:${now}`,
+                          notificationRecipientId: row.requestedBy,
+                      }
+                    : {}),
             })
             const [config, team, guild] = await Promise.all([
                 ctx.db
@@ -363,6 +387,9 @@ export const claimNotifications = mutation({
             ])
             claimed.push({
                 requestId: String(row._id),
+                ...(args.durable
+                    ? { claimToken: `${row._id}:${attempts}:${now}` }
+                    : {}),
                 discordUserId: row.requestedBy,
                 guildId: row.guildId,
                 language: config?.defaultLanguage ?? "en",
@@ -394,9 +421,12 @@ export const markNotified = mutation({
     args: {
         secret: v.string(),
         requestId: v.string(),
+        claimToken: v.optional(v.string()),
+        messageId: v.optional(v.string()),
         outcome: v.union(
             v.literal("sent"),
             v.literal("failed"),
+            v.literal("uncertain"),
             v.literal("undeliverable")
         ),
     },
@@ -405,22 +435,51 @@ export const markNotified = mutation({
         const id = ctx.db.normalizeId("teamRequests", args.requestId)
         const row = id ? await ctx.db.get(id) : null
         if (!row || row.notificationStatus !== "pending") return { ok: false }
+        if (
+            row.notificationDeliveryState &&
+            (!args.claimToken ||
+                args.claimToken !== row.notificationClaimToken ||
+                (row.notificationLeaseUntil ?? 0) <= Date.now() ||
+                (args.outcome !== "failed" &&
+                    row.notificationDeliveryState !== "started") ||
+                (args.outcome === "failed" &&
+                    row.notificationDeliveryState !== "ready"))
+        )
+            return { ok: false }
         if (args.outcome === "sent") {
             await ctx.db.patch(row._id, {
                 notificationStatus: "sent",
                 notificationSentAt: new Date().toISOString(),
                 notificationNextAttemptAt: null,
                 notificationLeaseUntil: null,
+                ...(row.notificationDeliveryState
+                    ? {
+                          notificationDeliveryState: "confirmed" as const,
+                          ...(args.messageId
+                              ? { notificationMessageId: args.messageId }
+                              : {}),
+                      }
+                    : {}),
             })
             return { ok: true }
         }
         // The claim already counted this attempt.
         const delay =
-            args.outcome === "undeliverable"
+            args.outcome === "undeliverable" || args.outcome === "uncertain"
                 ? null
                 : notificationRetryDelayMs(row.notificationAttempts)
         await ctx.db.patch(row._id, {
             notificationLeaseUntil: null,
+            ...(row.notificationDeliveryState
+                ? {
+                      notificationDeliveryState:
+                          args.outcome === "uncertain"
+                              ? ("uncertain" as const)
+                              : args.outcome === "undeliverable"
+                                ? ("refused" as const)
+                                : ("ready" as const),
+                  }
+                : {}),
             ...(delay === null
                 ? {
                       notificationStatus: "failed" as const,

@@ -39,6 +39,12 @@ import {
     type TicketAnswer,
 } from "../../../src/domain/discord-tickets/ticket-views"
 import {
+    MembershipEffects,
+    MembershipEffectLeaseLost,
+    type MembershipEffectPort,
+    type MembershipOperation,
+} from "../runtime/membership-effects"
+import {
     replyError,
     replyPrivately,
     reportToErrorsChannel,
@@ -47,11 +53,12 @@ import {
 } from "../ui/replies"
 import { getIntlLocaleForClanLanguage } from "../../../src/lib/clan-language/core"
 import { getTicketMessages } from "../../../src/lib/clan-language/tickets"
+import { missingDiscordResource } from "../runtime/discord-resource"
 import { PublicationChannelError } from "../sync/publication-errors"
-import { cleanupThread, resolveSupportMemberIds } from "./shared"
 import type { DiscordConfig, TicketCategory } from "../types"
 import type { InteractionFeature } from "./registry"
 import { messagePayload } from "../ui/message-kit"
+import { resolveSupportMemberIds } from "./shared"
 import { convex, references } from "../convex"
 import { logError, logWarn } from "../log"
 import { env } from "../environment"
@@ -63,6 +70,7 @@ export type CreatedTicket = {
 
 /** What tickets read and write; Convex in production, fakes in tests. */
 export type TicketPorts = {
+    effects(operation: MembershipOperation): MembershipEffectPort
     /** The clan's Discord configuration (language, ticket settings, style). */
     config(guildId: string): Promise<DiscordConfig | null>
     /** Stores the ticket and gives it the next number. */
@@ -252,7 +260,9 @@ export async function createTicket(
     const parentId = config.ticketSettings?.ticketParentChannelId
     const parent =
         guild && parentId
-            ? await guild.channels.fetch(parentId).catch(() => null)
+            ? await guild.channels
+                  .fetch(parentId)
+                  .catch(missingDiscordResource(10003))
             : null
     if (
         !guild ||
@@ -269,19 +279,128 @@ export async function createTicket(
         return
     }
 
+    const authorName =
+        (interaction.member &&
+        "displayName" in interaction.member &&
+        typeof interaction.member.displayName === "string"
+            ? interaction.member.displayName
+            : undefined) ??
+        interaction.user.globalName ??
+        interaction.user.username
+    const result = await provisionTicket({
+        guild,
+        guildId,
+        parent: parent as TextChannel,
+        config,
+        category,
+        answers,
+        ports,
+        userId: interaction.user.id,
+        userTag: interaction.user.tag,
+        authorName,
+        operationKey: `ticket-open:${interaction.id}`,
+        subjectId: interaction.id,
+        fail,
+    })
+    if (!result) return
+    await replyPrivately(
+        interaction,
+        ticketOpenedView({
+            copy,
+            ticketNumber: result.number,
+            threadId: result.threadId,
+            threadUrl: `https://discord.com/channels/${guildId}/${result.threadId}`,
+        }),
+        options
+    )
+}
+
+/** Ticket provisioning shared by interactive submission and bounded restart recovery. */
+export async function provisionTicket(input: {
+    assertRecovery?: () => Promise<void>
+    guild: Guild
+    guildId: string
+    parent: TextChannel
+    config: DiscordConfig
+    category: TicketCategory
+    answers: Array<TicketAnswer & { questionId: string }>
+    ports: TicketPorts
+    userId: string
+    userTag: string
+    authorName: string
+    operationKey: string
+    subjectId: string
+    fail(
+        report: Pick<ErrorsChannelReport, "error" | "channelId">
+    ): Promise<unknown>
+}) {
+    const {
+        guild,
+        guildId,
+        parent,
+        config,
+        category,
+        answers,
+        ports,
+        userId,
+        userTag,
+        authorName,
+        operationKey,
+        subjectId,
+        fail,
+    } = input
+    const copy = getTicketMessages(config.defaultLanguage)
+    const options = kitOptions(config)
+    const label = ticketCategoryLabel(category)
     let thread: ThreadChannel
+    const effects = ports.effects({
+        expectedKeys: ["thread", "members", "intro", "store-intro", "rename"],
+        requestJson: JSON.stringify({
+            categoryId: category.id,
+            answers,
+            authorName,
+            userTag,
+        }),
+        key: operationKey,
+        kind: "ticket-open",
+        guildId,
+        subjectId,
+        actorId: userId,
+    })
     try {
-        thread = await (parent as TextChannel).threads.create({
-            name: label.slice(0, 100),
-            autoArchiveDuration: 10080,
-            type: ChannelType.PrivateThread,
-            invitable: false,
-            reason: `Ticket ${category.id} opened by ${interaction.user.tag}`,
+        let createdThread: ThreadChannel | undefined
+        const receipt = await effects.effect("thread", "send", async () => {
+            createdThread = await (parent as TextChannel).threads.create({
+                name: label.slice(0, 100),
+                autoArchiveDuration: 10080,
+                type: ChannelType.PrivateThread,
+                invitable: false,
+                reason: `Ticket ${category.id} opened by ${userTag}`,
+            })
+            return { id: createdThread.id }
         })
+        const recovered =
+            createdThread ??
+            (receipt.resourceId
+                ? await guild.channels.fetch(receipt.resourceId)
+                : null)
+        if (!recovered?.isThread())
+            throw new Error(
+                "Remembered ticket thread is unavailable; operator reconciliation required"
+            )
+        if (
+            !createdThread &&
+            (recovered.ownerId !== guild.client.user?.id ||
+                recovered.parentId !== parent.id)
+        )
+            throw new Error(
+                "Remembered ticket thread ownership or parent mismatch"
+            )
+        thread = recovered
     } catch (error) {
         logError("interaction", "Failed to create ticket thread", {
             guildId,
-            userId: interaction.user.id,
+            userId,
             categoryId: category.id,
             error,
         })
@@ -292,19 +411,21 @@ export async function createTicket(
     await addTicketMembers(
         guild,
         thread,
-        interaction.user.id,
+        userId,
         category,
         label,
-        ports
+        ports,
+        effects
     )
 
     let created: CreatedTicket
     try {
+        await input.assertRecovery?.()
         created = await ports.createRecord({
             guildId,
             threadId: thread.id,
             parentChannelId: parent.id,
-            creatorId: interaction.user.id,
+            creatorId: userId,
             categoryId: category.id,
             answers,
         })
@@ -314,7 +435,8 @@ export async function createTicket(
             threadId: thread.id,
             error,
         })
-        await cleanupThread(thread, "Ticket record creation failed")
+        // Preserve a remembered thread after an ambiguous database response.
+        // Removing it could destroy a ticket whose transaction committed.
         await fail({ error, channelId: parent.id })
         return
     }
@@ -324,15 +446,15 @@ export async function createTicket(
     // A later step: the ticket is open and its author was told so, so the
     // entry names the ticket and its author and says it is not retried.
     const background = {
-        client: interaction.client,
+        client: guild.client,
         guildId,
         channelId: parent.id,
-        userId: interaction.user.id,
+        userId,
         categoryLabel,
         number,
     }
     const mentions = ticketIntroMentions({
-        authorId: interaction.user.id,
+        authorId: userId,
         supportRoleIds: category.supportRoleIds,
     })
     const intro = messagePayload(
@@ -341,14 +463,7 @@ export async function createTicket(
             ticketNumber: number,
             category: categoryLabel,
             titleTemplate: category.threadTitle,
-            authorName:
-                (interaction.member &&
-                "displayName" in interaction.member &&
-                typeof interaction.member.displayName === "string"
-                    ? interaction.member.displayName
-                    : undefined) ??
-                interaction.user.globalName ??
-                interaction.user.username,
+            authorName,
             openedAt: (ports.now ?? Date.now)(),
             answers,
             locale: getIntlLocaleForClanLanguage(config.defaultLanguage),
@@ -356,15 +471,17 @@ export async function createTicket(
         }),
         options
     )
-    const starter = await thread
-        .send({
-            ...intro,
-            components: [
-                new TextDisplayBuilder().setContent(mentions.content),
-                ...intro.components,
-            ],
-            allowedMentions: mentions.allowedMentions,
-        })
+    const starter = await effects
+        .effect("intro", "send", () =>
+            thread.send({
+                ...intro,
+                components: [
+                    new TextDisplayBuilder().setContent(mentions.content),
+                    ...intro.components,
+                ],
+                allowedMentions: mentions.allowedMentions,
+            })
+        )
         .catch(async (error) => {
             logError("interaction", "Failed to send ticket starter message", {
                 guildId,
@@ -377,17 +494,40 @@ export async function createTicket(
             )
             return null
         })
-    if (starter)
-        await ports.storeIntroMessage(thread.id, starter.id).catch((error) =>
-            logWarn("interaction", "Failed to store ticket intro message id", {
-                guildId,
-                threadId: thread.id,
-                error,
+    const starterId = starter?.resourceId
+    if (starterId)
+        await effects
+            .effect("store-intro", "reconcile", async () => {
+                await ports.storeIntroMessage(thread.id, starterId)
             })
-        )
+            .catch((error) =>
+                logWarn(
+                    "interaction",
+                    "Failed to store ticket intro message id",
+                    {
+                        guildId,
+                        threadId: thread.id,
+                        error,
+                    }
+                )
+            )
 
-    await thread
-        .setName(ticketThreadName(copy, categoryLabel, number))
+    await effects
+        .effect(
+            "rename",
+            "reconcile",
+            async () => {
+                await thread.setName(
+                    ticketThreadName(copy, categoryLabel, number)
+                )
+            },
+            false,
+            {
+                threadId: thread.id,
+                action: "rename",
+                value: ticketThreadName(copy, categoryLabel, number),
+            }
+        )
         .catch(async (error) => {
             logWarn("interaction", "Failed to rename ticket thread", {
                 guildId,
@@ -400,16 +540,8 @@ export async function createTicket(
             )
         })
 
-    await replyPrivately(
-        interaction,
-        ticketOpenedView({
-            copy,
-            ticketNumber: number,
-            threadId: thread.id,
-            threadUrl: `https://discord.com/channels/${guildId}/${thread.id}`,
-        }),
-        options
-    )
+    await effects.complete()
+    return { number, threadId: thread.id }
 }
 
 /**
@@ -422,36 +554,54 @@ async function addTicketMembers(
     authorId: string,
     category: TicketCategory,
     categoryLabel: string,
-    ports: TicketPorts
+    ports: TicketPorts,
+    effects: MembershipEffectPort
 ) {
-    await guild.members.fetch().catch(() => null)
-    const memberIds = [
-        ...new Set([
-            authorId,
-            ...resolveSupportMemberIds(guild, category.supportRoleIds),
-        ]),
-    ]
-    for (const memberId of memberIds)
-        await thread.members.add(memberId).catch(async (error) => {
-            logWarn("interaction", "Failed to add ticket thread member", {
-                guildId: guild.id,
-                threadId: thread.id,
-                memberId,
-                error,
-            })
-            await reportToErrorsChannel(
-                {
-                    client: thread.client,
-                    guildId: guild.id,
-                    error,
-                    source: "ticketSupport",
-                    channelId: thread.parentId ?? undefined,
-                    userId: authorId,
-                    categoryLabel,
-                },
-                ports.reporter
-            )
-        })
+    await effects.effect("members", "reconcile", async () => {
+        if (category.supportRoleIds.length) await guild.members.fetch()
+        const memberIds = [
+            ...new Set([
+                authorId,
+                ...resolveSupportMemberIds(guild, category.supportRoleIds),
+            ]),
+        ]
+        for (const memberId of memberIds)
+            await effects
+                .effect(
+                    `member:${memberId}`,
+                    "reconcile",
+                    async () => {
+                        await thread.members.add(memberId)
+                    },
+                    false,
+                    { threadId: thread.id, action: "member", value: memberId }
+                )
+                .catch(async (error) => {
+                    if (error instanceof MembershipEffectLeaseLost) throw error
+                    logWarn(
+                        "interaction",
+                        "Failed to add ticket thread member",
+                        {
+                            guildId: guild.id,
+                            threadId: thread.id,
+                            memberId,
+                            error,
+                        }
+                    )
+                    await reportToErrorsChannel(
+                        {
+                            client: thread.client,
+                            guildId: guild.id,
+                            error,
+                            source: "ticketSupport",
+                            channelId: thread.parentId ?? undefined,
+                            userId: authorId,
+                            categoryLabel,
+                        },
+                        ports.reporter
+                    )
+                })
+    })
 }
 
 /** Routes the panel's buttons and select and the category window. */
@@ -476,7 +626,8 @@ export function ticketInteractions(
 }
 
 /** Tickets wired to Convex. */
-export const ticketsFeature = ticketInteractions(() => ({
+export const convexTicketPorts: TicketPorts = {
+    effects: (operation) => new MembershipEffects(operation),
     config: async (guildId) =>
         (await convex.query(references.getConfigByDiscordGuildId, {
             secret: env.internalSecret,
@@ -494,4 +645,5 @@ export const ticketsFeature = ticketInteractions(() => ({
             transcriptMessageId: messageId,
         })
     },
-}))
+}
+export const ticketsFeature = ticketInteractions(() => convexTicketPorts)

@@ -39,6 +39,11 @@ import {
     syncAnnouncement,
 } from "../events/announcement-sync"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
+import {
+    syncForumChannel,
+    concludeEventForum,
+    fetchEventChannel,
+} from "../forum"
 import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import type { BotErrorSource } from "../../../src/domain/discord-messages/bot-errors"
 import { finishAnnouncementMigration } from "../events/announcement-migration"
@@ -46,7 +51,6 @@ import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { fetchRosterImageAttachment } from "./roster-image-attachment"
 import { buildRosterImageUrl, getRosterImageVersion } from "../utils"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
-import { syncForumChannel, concludeEventForum } from "../forum"
 import { syncSquadVoiceChannels } from "../events/squad-voice"
 import { reportClanDiscordError } from "../error-reporting"
 import { syncSignupThread } from "../events/signup-thread"
@@ -214,7 +218,7 @@ export async function syncPayloadEvents(
     client: Client,
     queuedEventIds: Set<string>,
     payload: SyncPayload,
-    options: { syncRoles: boolean } = { syncRoles: true }
+    options: { syncRoles: boolean; strict?: boolean } = { syncRoles: true }
 ) {
     for (const event of payload.events) {
         const state = payload.syncStates.find(
@@ -263,6 +267,7 @@ export async function syncPayloadEvents(
                 lastRosterUpdatedAt: roster?.updatedAt,
                 lastConfigUpdatedAt: payload.config.updatedAt,
                 lastCalendarSyncVersion: getCalendarSyncVersion(event),
+                resourceProtocol: 1,
                 lastSyncedAt: new Date().toISOString(),
             })
             continue
@@ -325,6 +330,7 @@ export async function syncPayloadEvents(
                 source: eventSyncErrorSource(error),
                 eventId: event.id,
             })
+            if (options.strict) throw error
         }
     }
 }
@@ -629,6 +635,7 @@ async function syncEvent(
                     lastRosterUpdatedAt: state?.lastRosterUpdatedAt,
                     lastConfigUpdatedAt: state?.lastConfigUpdatedAt,
                     lastCalendarSyncVersion: state?.lastCalendarSyncVersion,
+                    resourceProtocol: 1,
                     lastSyncedAt: new Date().toISOString(),
                     secret: env.internalSecret,
                     eventId: event.id as never,
@@ -714,6 +721,7 @@ async function syncEvent(
                     lastConfigUpdatedAt: payload.config.updatedAt,
                     lastCalendarSyncVersion: getCalendarSyncVersion(event),
                     squadVoiceChannelIds,
+                    resourceProtocol: 1,
                     lastSyncedAt: new Date().toISOString(),
                 })
             }
@@ -787,9 +795,10 @@ async function syncEvent(
         isMessageEnabled(payload.config, "scheduledEvent")
     ) {
         try {
-            const meetingChannel = await guild.channels
-                .fetch(payload.config.meetingChannelId)
-                .catch(() => null)
+            const meetingChannel = await fetchEventChannel(
+                guild,
+                payload.config.meetingChannelId
+            )
             const scheduledSyncResult = await syncScheduledDiscordEvent({
                 guild,
                 event,
@@ -879,6 +888,7 @@ async function syncEvent(
         lastConfigUpdatedAt: payload.config.updatedAt,
         lastCalendarSyncVersion: getCalendarSyncVersion(event),
         squadVoiceChannelIds,
+        resourceProtocol: 1,
         lastSyncedAt: new Date().toISOString(),
     })
     logInfo("event-sync", "Persisted event sync state", {

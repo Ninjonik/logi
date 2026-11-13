@@ -2,8 +2,8 @@
  * Turns a claimed, complete application into its private thread (L6-B04,
  * L4-B02): the membership first, then the thread, its people, the record
  * with the application number, the intro and the card. A failure before the
- * record exists leaves nothing behind (no thread, no membership); later
- * steps are best effort because the application already exists.
+ * record exists retains remembered resources for recovery. A failed response
+ * cannot prove that Discord or the record transaction did not commit.
  */
 
 export type SubmitApplicationStep =
@@ -18,9 +18,7 @@ export type SubmitApplicationStep =
 export type SubmitApplicationPorts = {
     /** Creates the pending (or recruit) membership; null when it failed. */
     createAssignment(): Promise<string | null>
-    removeAssignment(assignmentId: string): Promise<void>
     createThread(): Promise<{ id: string } | null>
-    deleteThread(threadId: string): Promise<void>
     addMembers(threadId: string): Promise<void>
     /** Stores the application and returns its number; null when it failed. */
     recordApplication(input: {
@@ -73,12 +71,6 @@ export async function submitApplication(
         null
     )
     if (!thread) {
-        await attempt(
-            ports,
-            "assignment",
-            () => ports.removeAssignment(assignmentId),
-            undefined
-        )
         return { ok: false, failedAt: "thread" }
     }
 
@@ -96,18 +88,6 @@ export async function submitApplication(
         null
     )
     if (!record) {
-        await attempt(
-            ports,
-            "thread",
-            () => ports.deleteThread(thread.id),
-            undefined
-        )
-        await attempt(
-            ports,
-            "assignment",
-            () => ports.removeAssignment(assignmentId),
-            undefined
-        )
         return { ok: false, failedAt: "record" }
     }
 

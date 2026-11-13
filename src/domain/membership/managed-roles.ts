@@ -8,6 +8,7 @@ type Category = {
     id: string
     /** Missing values are legacy Hell Let Loose categories. */
     gameId?: GameId
+    assignmentType?: RoleAssignment["type"]
     recruitRoleIds: string[]
     finalRoleIds: string[]
     includeClanRoleForRecruit?: boolean
@@ -94,6 +95,21 @@ export function appliesAsRecruit(
  * applicant holds only the category's recruit roles ("Dát roli Rekrut hned
  * po odeslání"); the clan role comes with acceptance (N4-32, N4-40).
  */
+export function resolveRoleCategory(
+    policy: ManagedRolePolicy,
+    assignment: RoleAssignment
+) {
+    const categories = policy.settings?.categories ?? []
+    if (assignment.membershipCategoryId)
+        return categories.find(
+            (category) => category.id === assignment.membershipCategoryId
+        )
+    const matches = categories.filter(
+        (category) => (category.assignmentType ?? "member") === assignment.type
+    )
+    return matches.length === 1 ? matches[0] : undefined
+}
+
 export function desiredMembershipRoles(
     policy: ManagedRolePolicy,
     assignment: RoleAssignment | null,
@@ -106,9 +122,8 @@ export function desiredMembershipRoles(
         !syncsMembershipRoles(policy.settings)
     )
         return []
-    const category = policy.settings.categories.find(
-        (row) => row.id === assignment.membershipCategoryId
-    )
+    const category = resolveRoleCategory(policy, assignment)
+    if (!category) return []
     if (options.applicant && assignment.status === "recruit")
         return unique(category?.recruitRoleIds ?? [])
     const includesClanRole =

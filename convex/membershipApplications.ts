@@ -101,7 +101,13 @@ async function liveDraft(ctx: Ctx, guildId: string, creatorId: string) {
     const now = Date.now()
     return (
         drafts
-            .filter((draft) => draft.expiresAt > now)
+            .filter(
+                (draft) =>
+                    draft.expiresAt > now ||
+                    draft.provisionedAssignmentId ||
+                    draft.submissionStatus === "queued" ||
+                    draft.submissionStatus === "claimed"
+            )
             .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null
     )
 }
@@ -117,7 +123,10 @@ async function ownDraft(
     return draft &&
         draft.guildId === guildId &&
         draft.creatorId === creatorId &&
-        draft.expiresAt > Date.now()
+        (draft.expiresAt > Date.now() ||
+            draft.provisionedAssignmentId ||
+            draft.submissionStatus === "queued" ||
+            draft.submissionStatus === "claimed")
         ? draft
         : null
 }
@@ -360,6 +369,7 @@ async function saveWindow(
         : await liveDraft(ctx, input.guildId, input.userId)
     if (input.draftId && !draft) return { ok: false, reason: "expired" }
     if (
+        draft?.provisionedAssignmentId ||
         draft?.submissionStatus === "queued" ||
         (draft?.submissionStatus === "claimed" &&
             (draft.claimedUntil ?? 0) > Date.now())
@@ -399,6 +409,7 @@ async function saveWindow(
             submissionStatus: undefined,
             submissionError: undefined,
             claimedUntil: undefined,
+            submissionClaimToken: undefined,
         })
         return result.ok
             ? { ok: true, draftId: String(draft._id), answers: result.answers }
@@ -453,6 +464,10 @@ export const discardApplicationDraft = mutation({
             args.guildId,
             args.userId
         )
+        if (draft?.provisionedAssignmentId)
+            throw new Error(
+                "Application provisioning requires reconciliation before cancellation"
+            )
         if (draft) await ctx.db.delete(draft._id)
         return { ok: true }
     },
@@ -514,7 +529,18 @@ async function submissionCheck(
         game
     )
     if (open) return { ok: false, reason: "open-application", ...open }
-    if (assignedGames.some((assigned) => matchesGameScope(assigned, game)))
+    const provisioned = draft.provisionedAssignmentId
+        ? await ctx.db.get(draft.provisionedAssignmentId)
+        : null
+    const ownsProvisioned =
+        provisioned &&
+        provisioned.serverId === draft.guildId &&
+        provisioned.userId === draft.creatorId &&
+        (provisioned.gameId ?? "hell_let_loose") === game
+    if (
+        !ownsProvisioned &&
+        assignedGames.some((assigned) => matchesGameScope(assigned, game))
+    )
         return { ok: false, reason: "in-clan" }
     return {
         ok: true,
@@ -538,6 +564,7 @@ export const claimApplicationSubmission = mutation({
         userId: v.string(),
         draftId: v.string(),
         source: sourceValidator,
+        fenced: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -548,15 +575,18 @@ export const claimApplicationSubmission = mutation({
             args.userId
         )
         if (!draft) return { ok: false as const, reason: "expired" as const }
+        if (draft.resumableSubmission && !args.fenced)
+            return { ok: false as const, reason: "busy" as const }
         const now = Date.now()
         const staleClaim =
             draft.submissionStatus === "claimed" &&
             (draft.claimedUntil ?? 0) <= now
         const claimable =
-            args.source === "web"
+            draft.source === args.source &&
+            (args.source === "web"
                 ? draft.source === "web" &&
                   (draft.submissionStatus === "queued" || staleClaim)
-                : draft.submissionStatus === undefined || staleClaim
+                : draft.submissionStatus === undefined || staleClaim)
         if (!claimable) return { ok: false as const, reason: "busy" as const }
         const check = await submissionCheck(ctx, draft)
         if (!check.ok) {
@@ -569,7 +599,12 @@ export const claimApplicationSubmission = mutation({
         }
         await ctx.db.patch(draft._id, {
             submissionStatus: "claimed",
+            resumableSubmission:
+                draft.resumableSubmission || args.fenced || undefined,
             claimedUntil: now + 2 * 60 * 1000,
+            submissionClaimToken: args.fenced
+                ? `${draft._id}:${now}`
+                : undefined,
         })
         const { setup, answers, verifiedSteamId, plan, category } = check
         const guild = await getGuildByDiscordId(ctx, draft.guildId)
@@ -578,6 +613,7 @@ export const claimApplicationSubmission = mutation({
             ok: true as const,
             submission: {
                 draftId: String(draft._id),
+                claimToken: args.fenced ? `${draft._id}:${now}` : undefined,
                 source: draft.source,
                 config: normalizeConfigDoc(setup.config),
                 clanName: guild?.name ?? "",
@@ -605,6 +641,7 @@ export const releaseApplicationSubmission = mutation({
     args: {
         secret: v.string(),
         draftId: v.string(),
+        claimToken: v.optional(v.string()),
         error: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
@@ -615,6 +652,17 @@ export const releaseApplicationSubmission = mutation({
         )
         const draft = id ? await ctx.db.get(id) : null
         if (!draft) return { ok: true }
+        if (draft.resumableSubmission && !args.claimToken) return { ok: false }
+        if (draft.submissionClaimToken !== args.claimToken) return { ok: false }
+        if (draft.provisionedAssignmentId) {
+            await ctx.db.patch(draft._id, {
+                submissionStatus: "claimed",
+                claimedUntil: Date.now() + 60_000,
+                submissionClaimToken: undefined,
+                submissionError: "reconciliation_pending",
+            })
+            return { ok: true }
+        }
         await ctx.db.patch(
             draft._id,
             draft.source === "web"
@@ -622,10 +670,12 @@ export const releaseApplicationSubmission = mutation({
                       submissionStatus: "failed",
                       submissionError: (args.error ?? "failed").slice(0, 120),
                       claimedUntil: undefined,
+                      submissionClaimToken: undefined,
                   }
                 : {
                       submissionStatus: undefined,
                       claimedUntil: undefined,
+                      submissionClaimToken: undefined,
                   }
         )
         return { ok: true }
@@ -641,8 +691,15 @@ export const listQueuedWebApplications = query({
             (["queued", "claimed"] as const).map((status) =>
                 ctx.db
                     .query("membershipApplicationFormDrafts")
-                    .withIndex("submissionStatus", (q) =>
-                        q.eq("submissionStatus", status)
+                    .withIndex("source_submissionStatus_claimedUntil", (q) =>
+                        status === "claimed"
+                            ? q
+                                  .eq("source", "web")
+                                  .eq("submissionStatus", status)
+                                  .lte("claimedUntil", Date.now())
+                            : q
+                                  .eq("source", "web")
+                                  .eq("submissionStatus", status)
                     )
                     .take(25)
             )
@@ -676,12 +733,18 @@ async function applicationByThread(ctx: Ctx, threadId: string) {
  * who decided what.
  */
 export const claimApplicationDecision = mutation({
-    args: { secret: v.string(), threadId: v.string() },
+    args: {
+        secret: v.string(),
+        threadId: v.string(),
+        fenced: v.optional(v.boolean()),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const application = await applicationByThread(ctx, args.threadId)
         if (!application)
             return { ok: false as const, reason: "missing" as const }
+        if (application.resumableDecision && !args.fenced)
+            return { ok: false as const, reason: "busy" as const }
         if (application.status === "closed")
             return {
                 ok: false as const,
@@ -692,21 +755,35 @@ export const claimApplicationDecision = mutation({
         const now = Date.now()
         if ((application.decisionLeaseUntil ?? 0) > now)
             return { ok: false as const, reason: "busy" as const }
+        const claimToken = args.fenced ? `${application._id}:${now}` : undefined
         await ctx.db.patch(application._id, {
             decisionLeaseUntil: now + 60_000,
+            decisionClaimToken: claimToken,
+            resumableDecision:
+                application.resumableDecision || args.fenced || undefined,
         })
-        return { ok: true as const }
+        return { ok: true as const, claimToken }
     },
 })
 
 export const releaseApplicationDecision = mutation({
-    args: { secret: v.string(), threadId: v.string() },
+    args: {
+        secret: v.string(),
+        threadId: v.string(),
+        claimToken: v.optional(v.string()),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const application = await applicationByThread(ctx, args.threadId)
-        if (application?.status === "open")
+        if (application?.resumableDecision && !args.claimToken)
+            return { ok: false }
+        if (
+            application?.status === "open" &&
+            application.decisionClaimToken === args.claimToken
+        )
             await ctx.db.patch(application._id, {
                 decisionLeaseUntil: undefined,
+                decisionClaimToken: undefined,
             })
         return { ok: true }
     },
@@ -897,9 +974,14 @@ export const deleteExpiredDrafts = internalMutation({
             .take(100)
         for (const draft of expired)
             if (
+                !draft.provisionedAssignmentId &&
                 draft.submissionStatus !== "queued" &&
                 draft.submissionStatus !== "claimed"
             )
                 await ctx.db.delete(draft._id)
+            else
+                await ctx.db.patch(draft._id, {
+                    expiresAt: Date.now() + APPLICATION_DRAFT_TTL_MS,
+                })
     },
 })

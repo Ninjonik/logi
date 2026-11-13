@@ -73,6 +73,7 @@ export class ApplicationStateCache {
         { state: ApplicantState; at: number }
     >()
     private unsubscribe?: () => void
+    private liveDefinitions = false
 
     constructor(private readonly now: () => number = Date.now) {}
 
@@ -90,6 +91,7 @@ export class ApplicationStateCache {
     /** Replaces the known definitions with a fresh list from Convex. */
     applyDefinitions(rows: unknown) {
         if (!Array.isArray(rows)) return
+        this.liveDefinitions = true
         const next = new Map<string, ApplicationDefinition>()
         for (const row of rows) {
             if (!isDefinitionRow(row)) continue
@@ -107,14 +109,15 @@ export class ApplicationStateCache {
     /** Remembers a state the bot just read; the clan part refreshes the definition too. */
     remember(guildId: string, userId: string, state: ApplicationState | null) {
         if (!state) {
-            this.definitions.delete(guildId)
+            if (!this.liveDefinitions) this.definitions.delete(guildId)
             this.applicants.delete(`${guildId}:${userId}`)
             return
         }
         const applicant = Object.fromEntries(
             APPLICANT_KEYS.map((key) => [key, state[key]])
         ) as ApplicantState
-        this.definitions.set(guildId, clanPart(state))
+        if (!this.liveDefinitions)
+            this.definitions.set(guildId, clanPart(state))
         this.setApplicant(guildId, userId, applicant)
     }
 
@@ -131,8 +134,10 @@ export class ApplicationStateCache {
     /** The applicant's recent state, or undefined when unknown or too old. */
     applicant(guildId: string, userId: string) {
         const entry = this.applicants.get(`${guildId}:${userId}`)
-        if (!entry || this.now() - entry.at > APPLICANT_STATE_TTL_MS)
+        if (!entry || this.now() - entry.at > APPLICANT_STATE_TTL_MS) {
+            this.applicants.delete(`${guildId}:${userId}`)
             return undefined
+        }
         return entry.state
     }
 
@@ -167,6 +172,7 @@ export class ApplicationStateCache {
     reset() {
         this.definitions.clear()
         this.applicants.clear()
+        this.liveDefinitions = false
     }
 
     private setApplicant(
@@ -175,11 +181,18 @@ export class ApplicationStateCache {
         state: ApplicantState
     ) {
         const at = this.now()
-        // Old entries go, so the map stays small.
-        for (const [key, entry] of this.applicants)
-            if (at - entry.at > APPLICANT_STATE_TTL_MS)
-                this.applicants.delete(key)
-        this.applicants.set(`${guildId}:${userId}`, { state, at })
+        const key = `${guildId}:${userId}`
+        this.applicants.delete(key)
+        this.applicants.set(key, { state, at })
+        // Ordered insertion gives constant-cost expiry/eviction, including bursts.
+        for (const [oldest, entry] of this.applicants) {
+            if (
+                this.applicants.size <= 1000 &&
+                at - entry.at <= APPLICANT_STATE_TTL_MS
+            )
+                break
+            this.applicants.delete(oldest)
+        }
     }
 }
 

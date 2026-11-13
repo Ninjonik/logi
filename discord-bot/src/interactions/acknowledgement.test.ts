@@ -7,6 +7,7 @@ import {
 } from "discord.js"
 import {
     protectInteraction,
+    stopPreparedModals,
     handlePreparedModalButton,
     PreparedModalExpired,
 } from "./acknowledgement"
@@ -15,6 +16,7 @@ import test, { afterEach, type TestContext } from "node:test"
 import { replyPrivately } from "../ui/replies"
 import { closeConvexClient } from "../convex"
 import { runInteraction } from "./registry"
+import { EventEmitter } from "node:events"
 afterEach(closeConvexClient)
 import assert from "node:assert/strict"
 
@@ -25,18 +27,27 @@ function fixture(
     let initialCalls = 0
     let modalClick: ButtonInteraction | undefined
     let rejectCollector = false
+    let holdCollector = false
     let collectorFilter: ((click: ButtonInteraction) => boolean) | undefined
     let nextId = 0
     const message = (id: string) => ({
         id,
-        awaitMessageComponent: async (options: {
+        createMessageComponentCollector: (options: {
             filter: (click: ButtonInteraction) => boolean
         }) => {
             collectorFilter = options.filter
-            if (rejectCollector) throw new Error("collector timeout")
-            assert.ok(modalClick)
-            assert.equal(options.filter(modalClick), true)
-            return modalClick
+            const collector = new EventEmitter()
+            Object.assign(collector, { stop: () => collector.emit("end") })
+            queueMicrotask(() => {
+                if (holdCollector) return
+                if (!rejectCollector) {
+                    assert.ok(modalClick)
+                    assert.equal(options.filter(modalClick), true)
+                    collector.emit("collect", modalClick)
+                }
+                collector.emit("end")
+            })
+            return collector
         },
     })
     function captureModal(options: unknown) {
@@ -127,6 +138,9 @@ function fixture(
         original,
         calls,
         source: original as unknown as ButtonInteraction,
+        hold: () => {
+            holdCollector = true
+        },
         expire: () => {
             rejectCollector = true
         },
@@ -456,5 +470,21 @@ test("a prepared slash-command form keeps its message-free submission semantics"
     assert.deepEqual(
         submit.calls.map((c) => c.method),
         ["reply"]
+    )
+})
+
+test("shutdown cancels a prepared modal collector without waiting five minutes", async (t) => {
+    const f = slow(t, "command")
+    f.hold()
+    const opening = f.interaction.showModal(new ModalBuilder())
+    const expired = assert.rejects(opening, PreparedModalExpired)
+    // Let the private prompt and its collector be installed.
+    for (let i = 0; i < 12; i++) await Promise.resolve()
+    stopPreparedModals()
+    await expired
+    await f.finish()
+    assert.equal(
+        f.calls.some((call) => call.method === "freshModal"),
+        false
     )
 })

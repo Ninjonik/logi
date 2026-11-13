@@ -7,6 +7,13 @@ import { Callout, Steps } from "nextra/components"
 
 # Matches
 
+Event discussions, scheduled Discord events and squad voice resources keep durable
+creation receipts. After a restart, Logi reuses confirmed resources. Uncertain
+creation is held for operator verification instead of risking duplicates. Older
+events with missing resource IDs can also need review. A verified squad-category
+rejection still permits voice channels in the configured category; an uncertain
+response does not.
+
 A match is a competitive event with additional match details. Members can use the list to find upcoming or previous matches. Managers can create, edit, prepare and conclude matches; Logi's global administrators link matches to competition fixtures.
 
 ## The match list
@@ -480,9 +487,11 @@ settings**. Turning recaps off edits the same DM and applies to every clan the
 player belongs to in Logi; **Turn on recaps** reverses it.
 Turning recaps off blocks pending delivery while that preference is disabled.
 An account link that no longer matches the queued recipient also blocks delivery;
-old queued recaps without a recorded recipient are withheld. These are best-effort
-notifications: a message already in flight may arrive after opting out, and a
-failure between sending and recording success can cause a duplicate.
+old queued recaps without delivery receipts are withheld for operator review.
+These are best-effort notifications: a message already in flight may arrive after
+opting out. If a crash loses Discord's confirmation, the send remains uncertain
+and is not automatically repeated. Operators can reconcile it using concrete
+evidence. Work interrupted before sending can retry with bounded backoff.
 
 ## League fixtures and local clan events
 

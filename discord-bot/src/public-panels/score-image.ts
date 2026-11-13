@@ -12,6 +12,7 @@ import {
     panelImageFileName,
     type RenderedImageState,
 } from "../../../src/domain/discord-publications/panel-graphics"
+import { cancelResponse, readResponseBytes } from "../runtime/download"
 
 /** A rendered panel image ready to attach to the panel message. */
 export type PanelImageAttachment = {
@@ -143,13 +144,14 @@ export function webPanelImageRequest(config: {
 }) {
     const send = config.fetch ?? fetch
     return async (request: PanelImageRequest): Promise<Uint8Array> => {
+        const signal = AbortSignal.timeout(config.timeoutMs ?? 45_000)
         const response = await send(
             new URL("/api/discord/panel-image", config.origin),
             {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({ secret: config.secret, request }),
-                signal: AbortSignal.timeout(config.timeoutMs ?? 45_000),
+                signal,
             }
         )
         const length = Number(response.headers.get("content-length"))
@@ -157,11 +159,10 @@ export function webPanelImageRequest(config: {
             !response.ok ||
             response.headers.get("content-type") !== "image/png" ||
             (Number.isFinite(length) && length > MAX_IMAGE_BYTES)
-        )
+        ) {
+            cancelResponse(response)
             throw new Error(`Panel image unavailable (${response.status}).`)
-        const bytes = new Uint8Array(await response.arrayBuffer())
-        if (bytes.byteLength > MAX_IMAGE_BYTES)
-            throw new Error("Panel image too large.")
-        return bytes
+        }
+        return readResponseBytes(response, MAX_IMAGE_BYTES, signal)
     }
 }

@@ -118,6 +118,10 @@ export const matchDetailMessages = {
                 "{present} přišlo · {excused} omluveno · {absent} nepřišlo",
             reserveCounts: "{present} přišlo · {absent} ne",
             playerCount: "{count} hráčů",
+            roleEligibilityUnknown:
+                "Po?adovan? role Discordu nejsou v tomto seznamu ov??eny.",
+            unplacedTitle: "P?ihl??en? ?ekaj?c? na za?azen? do soupisky",
+            signedUp: "P?ihl??en",
             memberCount: "{count} hráčů",
             loadFromVoice: "Načíst z hlasového kanálu",
             loadingFromVoice: "Čtu hlasový kanál…",

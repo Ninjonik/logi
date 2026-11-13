@@ -12,6 +12,11 @@ import {
 import { resolveScheduledEventEndTime } from "../../src/domain/events/scheduled-event-content"
 import { deriveScheduledEventLifecycle } from "../../src/domain/discord-sync/rules"
 
+import {
+    provisionEventResource,
+    boundEventResources,
+} from "./runtime/event-resource"
+import { missingDiscordResource } from "./runtime/discord-resource"
 import { reportClanDiscordError } from "./error-reporting"
 import type { EventRecord } from "./types"
 import { logWarn } from "./log"
@@ -80,9 +85,20 @@ export async function syncScheduledDiscordEvent(input: {
         event,
         content,
         meetingChannel,
-        scheduledEventId,
+        scheduledEventId: storedScheduledEventId,
         desiredLifecycle,
     } = input
+    let scheduledEventId = storedScheduledEventId
+    if (
+        !scheduledEventId &&
+        (desiredLifecycle === "completed" || desiredLifecycle === "canceled")
+    ) {
+        const receipts = await boundEventResources(guild.id, event.id)
+        scheduledEventId =
+            receipts.find(
+                (row) => row.key === "scheduled-event" && row.state === "bound"
+            )?.resourceId ?? undefined
+    }
     const isSupportedMeetingChannel =
         meetingChannel?.type === ChannelType.GuildVoice ||
         meetingChannel?.type === ChannelType.GuildStageVoice
@@ -103,8 +119,11 @@ export async function syncScheduledDiscordEvent(input: {
     const scheduledStartTime = new Date(event.meetingStart)
     const scheduledEndTime = resolveScheduledEventEndTime(event)
     let scheduledEvent = scheduledEventId
-        ? await guild.scheduledEvents.fetch(scheduledEventId).catch(() => null)
+        ? await guild.scheduledEvents
+              .fetch(scheduledEventId)
+              .catch(missingDiscordResource(10070))
         : null
+    let createdNow = false
 
     // Discord does not allow an active/terminal scheduled event to return to
     // Scheduled or have its schedule edited. Logi events can legitimately be
@@ -146,46 +165,73 @@ export async function syncScheduledDiscordEvent(input: {
             }
         }
 
-        scheduledEvent = await guild.scheduledEvents
-            .create({
-                name: content.name,
-                description: content.description,
-                scheduledStartTime,
-                scheduledEndTime,
-                privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
-                entityType: GuildScheduledEventEntityType.Voice,
-                channel: eventChannel.id,
-            })
-            .catch((error) => {
-                const discordError = getDiscordErrorDetails(error)
-                logWarn(
-                    "scheduled-events",
-                    "Failed to create scheduled Discord event",
-                    {
-                        guildId: guild.id,
-                        eventId: event.id,
-                        channelId: eventChannel.id,
-                        operation: "create",
-                        scheduledEventName: event.name,
-                        desiredLifecycle,
-                        ...discordError,
-                    }
+        scheduledEvent = await provisionEventResource({
+            guildId: guild.id,
+            eventId: event.id,
+            key: "scheduled-event",
+            find: async (id) => {
+                const found = await guild.scheduledEvents
+                    .fetch({ guildScheduledEvent: id, force: true })
+                    .catch(missingDiscordResource(10070))
+                if (
+                    !found ||
+                    found.status === GuildScheduledEventStatus.Completed ||
+                    found.status === GuildScheduledEventStatus.Canceled
                 )
-                void reportClanDiscordError({
-                    client: guild.client,
-                    guildId: guild.id,
-                    error,
-                    action: `Create the scheduled event for "${event.name}"`,
-                    location: "Scheduled events",
-                    scope: "scheduled-events",
-                    target: event.name,
-                    details: {
-                        eventId: event.id,
-                        channelId: eventChannel.id,
-                    },
+                    return null
+                if (
+                    found.status === GuildScheduledEventStatus.Active &&
+                    desiredLifecycle === "scheduled"
+                ) {
+                    await found.edit({
+                        status: GuildScheduledEventStatus.Completed,
+                    })
+                    return null
+                }
+                return found
+            },
+            create: () => {
+                createdNow = true
+                return guild.scheduledEvents.create({
+                    name: content.name,
+                    description: content.description,
+                    scheduledStartTime,
+                    scheduledEndTime,
+                    privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
+                    entityType: GuildScheduledEventEntityType.Voice,
+                    channel: eventChannel.id,
                 })
-                return null
+            },
+        }).catch((error) => {
+            const discordError = getDiscordErrorDetails(error)
+            logWarn(
+                "scheduled-events",
+                "Failed to create scheduled Discord event",
+                {
+                    guildId: guild.id,
+                    eventId: event.id,
+                    channelId: eventChannel.id,
+                    operation: "create",
+                    scheduledEventName: event.name,
+                    desiredLifecycle,
+                    ...discordError,
+                }
+            )
+            void reportClanDiscordError({
+                client: guild.client,
+                guildId: guild.id,
+                error,
+                action: `Create the scheduled event for "${event.name}"`,
+                location: "Scheduled events",
+                scope: "scheduled-events",
+                target: event.name,
+                details: {
+                    eventId: event.id,
+                    channelId: eventChannel.id,
+                },
             })
+            throw error
+        })
         if (!scheduledEvent) {
             return {
                 scheduledEventId: undefined,
@@ -194,7 +240,11 @@ export async function syncScheduledDiscordEvent(input: {
                     : undefined,
             }
         }
-    } else if (scheduledEvent.status === GuildScheduledEventStatus.Scheduled) {
+    }
+    if (
+        !createdNow &&
+        scheduledEvent?.status === GuildScheduledEventStatus.Scheduled
+    ) {
         scheduledEvent = await scheduledEvent
             .edit({
                 name: content.name,
@@ -314,7 +364,9 @@ export async function syncScheduledDiscordEvent(input: {
 
     return {
         scheduledEventId: scheduledEvent.id,
-        scheduledEventStatus: desiredLifecycle,
+        scheduledEventStatus: getScheduledLifecycleFromDiscordStatus(
+            scheduledEvent.status
+        ),
     }
 }
 
@@ -324,7 +376,7 @@ export async function cancelScheduledDiscordEvent(
 ) {
     const scheduledEvent = await guild.scheduledEvents
         .fetch(scheduledEventId)
-        .catch(() => null)
+        .catch(missingDiscordResource(10070))
     if (!scheduledEvent) {
         return false
     }
@@ -348,7 +400,7 @@ export async function cancelScheduledDiscordEvent(
                         scheduledEventId,
                     },
                 })
-                return null
+                throw error
             })
     }
 

@@ -213,13 +213,33 @@ export async function syncPlatformStatus(client: Client) {
 }
 
 /** Checks the Logi services every 5 minutes (L5-B06). */
-export function startPlatformStatusMonitor(client: Client) {
-    const run = () =>
-        syncPlatformStatus(client).catch((error) =>
-            logError("platform-status", "Failed to sync platform status", {
-                error,
+export function startPlatformStatusMonitor(
+    client: Client,
+    pass = () => syncPlatformStatus(client)
+) {
+    let running: Promise<void> | undefined
+    let stopped = false
+    const run = () => {
+        if (stopped || running) return running
+        running = pass()
+            .catch((error) =>
+                logError("platform-status", "Failed to sync platform status", {
+                    error,
+                })
+            )
+            .finally(() => {
+                running = undefined
             })
-        )
-    run()
-    return setInterval(run, SERVICE_STATUS_INTERVAL_SECONDS * 1000)
+        return running
+    }
+    void run()
+    const timer = setInterval(() => {
+        void run()
+    }, SERVICE_STATUS_INTERVAL_SECONDS * 1000)
+    timer.unref()
+    return async () => {
+        stopped = true
+        clearInterval(timer)
+        await running
+    }
 }

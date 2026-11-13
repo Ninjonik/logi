@@ -54,6 +54,7 @@ import type * as drafts from "../../convex/playerReportDrafts"
 import { readReportObservation } from "./public-panels/worker"
 import { clanStyleForGuild } from "./runtime/clan-language"
 import type * as reports from "../../convex/playerReports"
+import { startOwnedInterval } from "./runtime/task-owner"
 import { env } from "./environment"
 import { convex } from "./convex"
 
@@ -737,8 +738,7 @@ export function startReportRecovery(client: Client) {
             running = false
         }
     }
-    const timer = setInterval(() => void tick(), 30_000)
-    timer.unref()
-    void tick()
-    return () => clearInterval(timer)
+    return startOwnedInterval(tick, 30_000, (error) =>
+        console.warn("[player-reports.ts] Worker pass failed", error)
+    )
 }

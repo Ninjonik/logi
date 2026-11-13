@@ -16,6 +16,7 @@ import {
     debriefThreadName,
     matchesDebriefThreadName,
 } from "../../src/domain/events/debrief-thread"
+import { cancelResponse, readResponseBytes } from "./runtime/download"
 
 import {
     attendanceNoticeView,
@@ -153,9 +154,11 @@ async function buildDiscordAttachments(message: TopicMessage) {
 
     const files: AttachmentBuilder[] = []
     let totalSize = 0
+    const signal = AbortSignal.timeout(45_000)
     for (const [index, sourceUrl] of message.attachments.entries()) {
-        const response = await fetch(sourceUrl)
+        const response = await fetch(sourceUrl, { signal })
         if (!response.ok) {
+            cancelResponse(response)
             throw new Error(
                 `Unable to download attachment (${response.status}).`
             )
@@ -165,12 +168,22 @@ async function buildDiscordAttachments(message: TopicMessage) {
             Number.isFinite(contentLength) &&
             contentLength > DISCORD_LEVEL_ZERO_ATTACHMENT_MAX_BYTES
         ) {
+            cancelResponse(response)
             throw new Error(
                 "Attachment exceeds Discord's 20 MiB level-0 limit."
             )
         }
 
-        const content = Buffer.from(await response.arrayBuffer())
+        const content = Buffer.from(
+            await readResponseBytes(
+                response,
+                Math.min(
+                    DISCORD_LEVEL_ZERO_ATTACHMENT_MAX_BYTES,
+                    DISCORD_MESSAGE_MAX_UPLOAD_BYTES - totalSize
+                ),
+                signal
+            )
+        )
         if (content.byteLength > DISCORD_LEVEL_ZERO_ATTACHMENT_MAX_BYTES) {
             throw new Error(
                 "Attachment exceeds Discord's 20 MiB level-0 limit."
@@ -431,11 +444,11 @@ export async function syncForumChannel(input: {
     const copy = getRosterMessages(config.defaultLanguage)
     const forumName = buildMatchForumName(config, event)
     const existingForumChannel = forumChannelId
-        ? await guild.channels.fetch(forumChannelId).catch(() => null)
+        ? await fetchEventChannel(guild, forumChannelId)
         : null
     const guildChannels = existingForumChannel
         ? null
-        : await guild.channels.fetch().catch(() => null)
+        : await guild.channels.fetch()
     const recoveredForumChannel = existingForumChannel
         ? null
         : findRecoverableEventForum(

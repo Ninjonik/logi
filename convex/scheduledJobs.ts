@@ -8,6 +8,8 @@ import {
 } from "../src/domain/events/scheduled-job-policy"
 import { lastSignupReminderAt } from "../src/infrastructure/convex/signup-reminder-state"
 import { announcementRefreshTimes } from "../src/domain/events/announcement-state"
+import { enqueueScheduledDispatch } from "./discordScheduledDispatch"
+import { paginationOptsValidator } from "convex/server"
 import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./_generated/server"
 import { v } from "convex/values"
@@ -18,7 +20,11 @@ function assertSecret(secret: string) {
 const EVENT_CONCLUSION_RESERVE_MS = 15 * 60 * 1000
 
 export const claimDue = mutation({
-    args: { secret: v.string(), limit: v.optional(v.number()) },
+    args: {
+        secret: v.string(),
+        limit: v.optional(v.number()),
+        fenced: v.optional(v.boolean()),
+    },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
         const now = new Date()
@@ -33,6 +39,7 @@ export const claimDue = mutation({
             .take(500)
         const claimed: Array<{
             id: string
+            claimVersion: number
             eventId: string
             kind:
                 | "close-registration"
@@ -88,14 +95,17 @@ export const claimDue = mutation({
                 }
             }
             if (claimed.length >= limit) continue
+            const claimVersion = job.attempts + 1
             await ctx.db.patch(job._id, {
                 status: "processing",
-                attempts: job.attempts + 1,
+                attempts: claimVersion,
+                fenced: args.fenced,
                 claimedAt: nowIso,
                 updatedAt: nowIso,
             })
             claimed.push({
                 id: String(job._id),
+                claimVersion,
                 eventId: String(job.eventId),
                 kind: job.kind,
             })
@@ -106,12 +116,32 @@ export const claimDue = mutation({
 })
 
 export const complete = mutation({
-    args: { secret: v.string(), jobId: v.id("eventScheduleJobs") },
+    args: {
+        secret: v.string(),
+        jobId: v.id("eventScheduleJobs"),
+        claimVersion: v.optional(v.number()),
+        durable: v.optional(v.boolean()),
+        changedEventIds: v.optional(v.array(v.string())),
+        scoreEventIds: v.optional(v.array(v.string())),
+    },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
         const job = await ctx.db.get(args.jobId)
+        if (
+            !job ||
+            job.status !== "processing" ||
+            (job.fenced && job.attempts !== args.claimVersion)
+        )
+            return false
+        if (args.durable)
+            await enqueueScheduledDispatch(
+                ctx,
+                job,
+                args.changedEventIds ?? [],
+                args.scoreEventIds ?? []
+            )
         await ctx.db.delete(args.jobId)
-        if (job?.kind !== "signup-reminder") return
+        if (job?.kind !== "signup-reminder") return true
 
         const event = await ctx.db.get(job.eventId)
         const now = new Date()
@@ -122,7 +152,7 @@ export const complete = mutation({
                 .length ||
             event.status !== "registration"
         ) {
-            return
+            return true
         }
         const registrationEndMs = new Date(event.registrationEnd).getTime()
         const dueAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
@@ -130,7 +160,7 @@ export const complete = mutation({
             !Number.isFinite(registrationEndMs) ||
             dueAt.getTime() >= registrationEndMs
         ) {
-            return
+            return true
         }
         const nowIso = now.toISOString()
         await ctx.db.insert("eventScheduleJobs", {
@@ -142,34 +172,109 @@ export const complete = mutation({
             createdAt: nowIso,
             updatedAt: nowIso,
         })
+        return true
     },
 })
 
 export const release = mutation({
-    args: { secret: v.string(), jobId: v.id("eventScheduleJobs") },
+    args: {
+        secret: v.string(),
+        jobId: v.id("eventScheduleJobs"),
+        claimVersion: v.optional(v.number()),
+    },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
-        await ctx.db.patch(args.jobId, {
+        const job = await ctx.db.get(args.jobId)
+        if (
+            !job ||
+            job.status !== "processing" ||
+            (job.fenced && job.attempts !== args.claimVersion)
+        )
+            return false
+        await ctx.db.patch(job._id, {
             status: "pending",
             claimedAt: undefined,
             updatedAt: new Date().toISOString(),
         })
+        return true
     },
 })
 
-// Called on bot startup. It removes legacy jobs that can never do useful work
-// and returns jobs abandoned by a crash to the pending queue.
-export const recoverQueue = mutation({
-    args: { secret: v.string() },
+/** Keep the batch leased while earlier jobs or backend requests are slow. */
+export const renew = mutation({
+    args: {
+        secret: v.string(),
+        claims: v.array(
+            v.object({
+                jobId: v.id("eventScheduleJobs"),
+                claimVersion: v.number(),
+            })
+        ),
+    },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
+        if (args.claims.length > 100)
+            throw new Error("Too many scheduled claims")
         const now = new Date()
-        const nowIso = now.toISOString()
-        const jobs = await ctx.db.query("eventScheduleJobs").collect()
-        let removed = 0
-        let released = 0
+        const owned: string[] = []
+        for (const claim of args.claims) {
+            const job = await ctx.db.get(claim.jobId)
+            if (
+                !job ||
+                job.status !== "processing" ||
+                !job.fenced ||
+                job.attempts !== claim.claimVersion ||
+                isExpiredScheduledJobClaim(job.claimedAt, now)
+            )
+                continue
+            await ctx.db.patch(job._id, {
+                claimedAt: now.toISOString(),
+                updatedAt: now.toISOString(),
+            })
+            owned.push(String(job._id))
+        }
+        return owned
+    },
+})
 
-        for (const job of jobs) {
+// Periodic indexed expiry recovery plus one bounded page of obsolete-row cleanup.
+export const recoverQueue = mutation({
+    args: {
+        secret: v.string(),
+        paginationOpts: v.optional(paginationOptsValidator),
+    },
+    handler: async (ctx, args) => {
+        assertSecret(args.secret)
+        const now = new Date(),
+            nowIso = now.toISOString()
+        const cutoff = new Date(now.getTime() - 5 * 60_000).toISOString()
+        const [legacy, expired, page] = await Promise.all([
+            ctx.db
+                .query("eventScheduleJobs")
+                .withIndex("status_claimedAt", (q) =>
+                    q.eq("status", "processing").eq("claimedAt", undefined)
+                )
+                .take(50),
+            ctx.db
+                .query("eventScheduleJobs")
+                .withIndex("status_claimedAt", (q) =>
+                    q.eq("status", "processing").lt("claimedAt", cutoff)
+                )
+                .take(100),
+            ctx.db.query("eventScheduleJobs").paginate({
+                cursor: args.paginationOpts?.cursor ?? null,
+                numItems: Math.max(
+                    1,
+                    Math.min(args.paginationOpts?.numItems ?? 100, 100)
+                ),
+            }),
+        ])
+        let removed = 0,
+            released = 0
+        const seen = new Set<string>()
+        for (const job of [...legacy, ...expired, ...page.page]) {
+            if (seen.has(String(job._id))) continue
+            seen.add(String(job._id))
             const event = await ctx.db.get(job.eventId)
             if (
                 !event ||
@@ -181,7 +286,7 @@ export const recoverQueue = mutation({
                 })
             ) {
                 await ctx.db.delete(job._id)
-                removed += 1
+                removed++
             } else if (
                 job.status === "processing" &&
                 isExpiredScheduledJobClaim(job.claimedAt, now)
@@ -191,11 +296,15 @@ export const recoverQueue = mutation({
                     claimedAt: undefined,
                     updatedAt: nowIso,
                 })
-                released += 1
+                released++
             }
         }
-
-        return { removed, released }
+        return {
+            removed,
+            released,
+            continueCursor: page.continueCursor,
+            isDone: page.isDone,
+        }
     },
 })
 

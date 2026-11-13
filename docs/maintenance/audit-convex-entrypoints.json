@@ -1,0 +1,5462 @@
+{
+  "note": "Mechanical exported function and authorization-token discovery. Guards may be delegated; presence is not proof of adequate authority.",
+  "entries": [
+    {
+      "file": "convex/apiHousekeeping.ts",
+      "name": "pruneExpired",
+      "kind": "internalMutation",
+      "line": 15,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/apiKeyAuth.ts",
+      "name": "authenticateKey",
+      "kind": "query",
+      "line": 30,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/apiKeyAuth.ts",
+      "name": "recordKeyUse",
+      "kind": "mutation",
+      "line": 53,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/articles.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 10,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/articles.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 24,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/articles.ts",
+      "name": "save",
+      "kind": "mutation",
+      "line": 32,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/articles.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 53,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/bugReportGithub.ts",
+      "name": "sync",
+      "kind": "internalAction",
+      "line": 21,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/bugReportGithub.ts",
+      "name": "refresh",
+      "kind": "action",
+      "line": 57,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/bugReportGithubStore.ts",
+      "name": "claim",
+      "kind": "internalMutation",
+      "line": 6,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/bugReportGithubStore.ts",
+      "name": "finish",
+      "kind": "internalMutation",
+      "line": 20,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/bugReportGithubStore.ts",
+      "name": "receive",
+      "kind": "mutation",
+      "line": 48,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/bugReports.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 30,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/bugReports.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 58,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/bugReports.ts",
+      "name": "updateStatus",
+      "kind": "mutation",
+      "line": 68,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/bugReports.ts",
+      "name": "attachment",
+      "kind": "query",
+      "line": 90,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/bugReports.ts",
+      "name": "cleanupUploads",
+      "kind": "mutation",
+      "line": 106,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/calendarFeed.ts",
+      "name": "getCalendarFeed",
+      "kind": "query",
+      "line": 11,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/calendarItems.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 9,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/calendarItems.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 57,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/clanMeta.ts",
+      "name": "refreshClanMeta",
+      "kind": "mutation",
+      "line": 111,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/clanPlayerHistory.ts",
+      "name": "searchClanPlayers",
+      "kind": "query",
+      "line": 55,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/clanPublicPage.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 114,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/clanPublicPage.ts",
+      "name": "competitionClanLinks",
+      "kind": "query",
+      "line": 221,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/clanPublicPage.ts",
+      "name": "setInviteUrl",
+      "kind": "mutation",
+      "line": 261,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/clanTeams.ts",
+      "name": "linked",
+      "kind": "query",
+      "line": 10,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/collectedPlayerStats.ts",
+      "name": "backfillPage",
+      "kind": "mutation",
+      "line": 8,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitionEnrollment.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 15,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/competitionEnrollment.ts",
+      "name": "execute",
+      "kind": "mutation",
+      "line": 22,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/competitionEnrollment.ts",
+      "name": "setWorkspaceMode",
+      "kind": "mutation",
+      "line": 35,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitionEnrollmentApi.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 78,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/competitionEnrollmentApi.ts",
+      "name": "execute",
+      "kind": "mutation",
+      "line": 99,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitionEnrollmentApi.ts",
+      "name": "mode",
+      "kind": "mutation",
+      "line": 122,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitionEnrollmentApi.ts",
+      "name": "readMode",
+      "kind": "query",
+      "line": 135,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/competitionMigrations.ts",
+      "name": "adoptGlobalTeams",
+      "kind": "internalMutation",
+      "line": 142,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "getPublic",
+      "kind": "query",
+      "line": 243,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "listPublicSlugs",
+      "kind": "query",
+      "line": 333,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "listClanFixtureLabels",
+      "kind": "query",
+      "line": 352,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "adminList",
+      "kind": "query",
+      "line": 411,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "adminGet",
+      "kind": "query",
+      "line": 437,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "linkCandidates",
+      "kind": "query",
+      "line": 570,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 660,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "update",
+      "kind": "mutation",
+      "line": 691,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "createDivision",
+      "kind": "mutation",
+      "line": 731,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "renameDivision",
+      "kind": "mutation",
+      "line": 764,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "reorderDivisions",
+      "kind": "mutation",
+      "line": 795,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "deleteDivision",
+      "kind": "mutation",
+      "line": 819,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "registerTeam",
+      "kind": "mutation",
+      "line": 851,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "registerTeams",
+      "kind": "mutation",
+      "line": 902,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "updateRegistration",
+      "kind": "mutation",
+      "line": 966,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "removeRegistration",
+      "kind": "mutation",
+      "line": 1026,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "createFixture",
+      "kind": "mutation",
+      "line": 1123,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "updateFixture",
+      "kind": "mutation",
+      "line": 1160,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "deleteFixture",
+      "kind": "mutation",
+      "line": 1220,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "linkEvent",
+      "kind": "mutation",
+      "line": 1241,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/competitions.ts",
+      "name": "seedEcl2026",
+      "kind": "mutation",
+      "line": 1319,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/dashboardSessions.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 15,
+      "guards": [
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/dashboardSessions.ts",
+      "name": "validate",
+      "kind": "query",
+      "line": 62,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/dashboardSessions.ts",
+      "name": "getUser",
+      "kind": "query",
+      "line": 80,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/dashboardSessions.ts",
+      "name": "revoke",
+      "kind": "mutation",
+      "line": 93,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/dashboardSessions.ts",
+      "name": "prune",
+      "kind": "internalMutation",
+      "line": 109,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/discordCommands.ts",
+      "name": "listGuildConfigs",
+      "kind": "query",
+      "line": 44,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordCommands.ts",
+      "name": "workspaceOf",
+      "kind": "query",
+      "line": 74,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordCommands.ts",
+      "name": "recordRegistration",
+      "kind": "mutation",
+      "line": 90,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordCommands.ts",
+      "name": "registrationForDashboard",
+      "kind": "query",
+      "line": 155,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordCommands.ts",
+      "name": "requestRegistration",
+      "kind": "mutation",
+      "line": 174,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordCommands.ts",
+      "name": "saveSettings",
+      "kind": "mutation",
+      "line": 238,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordConfig.ts",
+      "name": "getConfigByGuild",
+      "kind": "query",
+      "line": 26,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordConfig.ts",
+      "name": "getConfigByDiscordGuildId",
+      "kind": "query",
+      "line": 48,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordConfig.ts",
+      "name": "setMessageStyle",
+      "kind": "mutation",
+      "line": 72,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordConfig.ts",
+      "name": "upsertConfig",
+      "kind": "mutation",
+      "line": 115,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordConfig.ts",
+      "name": "updateTicketPanelState",
+      "kind": "mutation",
+      "line": 203,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordConfig.ts",
+      "name": "updateMembershipPanelState",
+      "kind": "mutation",
+      "line": 231,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordConfig.ts",
+      "name": "updateCalendarPanelState",
+      "kind": "mutation",
+      "line": 277,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordConfig.ts",
+      "name": "backfillDefaultLanguages",
+      "kind": "mutation",
+      "line": 308,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordErrorReports.ts",
+      "name": "context",
+      "kind": "query",
+      "line": 16,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordGameAccounts.ts",
+      "name": "getLinkContext",
+      "kind": "query",
+      "line": 13,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMatchForum.ts",
+      "name": "forumContext",
+      "kind": "query",
+      "line": 18,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "createTicketThread",
+      "kind": "mutation",
+      "line": 16,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "createMembershipApplicationThread",
+      "kind": "mutation",
+      "line": 77,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "getTicketThreadContext",
+      "kind": "query",
+      "line": 184,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "getMembershipApplicationThreadContext",
+      "kind": "query",
+      "line": 210,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "getMembershipApplicationByAssignment",
+      "kind": "query",
+      "line": 282,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "closeTicketThread",
+      "kind": "mutation",
+      "line": 297,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "closeMembershipApplicationThread",
+      "kind": "mutation",
+      "line": 333,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "updateTicketTranscriptMessage",
+      "kind": "mutation",
+      "line": 370,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMembership.ts",
+      "name": "updateMembershipApplicationTranscriptMessage",
+      "kind": "mutation",
+      "line": 391,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordMessageSettings.ts",
+      "name": "save",
+      "kind": "mutation",
+      "line": 15,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelBot.ts",
+      "name": "calendarPanel",
+      "kind": "query",
+      "line": 42,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanelBot.ts",
+      "name": "clanPlayers",
+      "kind": "query",
+      "line": 62,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelBot.ts",
+      "name": "runningMatch",
+      "kind": "query",
+      "line": 102,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelBot.ts",
+      "name": "competition",
+      "kind": "query",
+      "line": 186,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelBot.ts",
+      "name": "joinPage",
+      "kind": "query",
+      "line": 359,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelBot.ts",
+      "name": "passwordEnvelope",
+      "kind": "internalQuery",
+      "line": 420,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanelBot.ts",
+      "name": "guildContext",
+      "kind": "query",
+      "line": 447,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelBotWrites.ts",
+      "name": "heartbeat",
+      "kind": "mutation",
+      "line": 42,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelBotWrites.ts",
+      "name": "report",
+      "kind": "mutation",
+      "line": 82,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelBotWrites.ts",
+      "name": "purge",
+      "kind": "mutation",
+      "line": 125,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanelBotWrites.ts",
+      "name": "act",
+      "kind": "mutation",
+      "line": 140,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanelGraphics.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 45,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelGraphics.ts",
+      "name": "forBot",
+      "kind": "query",
+      "line": 113,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanelGraphicsWrites.ts",
+      "name": "update",
+      "kind": "mutation",
+      "line": 155,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanelGraphicsWrites.ts",
+      "name": "reportEmoji",
+      "kind": "mutation",
+      "line": 178,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanels.ts",
+      "name": "overview",
+      "kind": "query",
+      "line": 204,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanels.ts",
+      "name": "save",
+      "kind": "mutation",
+      "line": 275,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanels.ts",
+      "name": "act",
+      "kind": "mutation",
+      "line": 298,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanels.ts",
+      "name": "setServer",
+      "kind": "mutation",
+      "line": 330,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanels.ts",
+      "name": "testContext",
+      "kind": "internalQuery",
+      "line": 423,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanels.ts",
+      "name": "testFetch",
+      "kind": "action",
+      "line": 502,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanels.ts",
+      "name": "leaguePreview",
+      "kind": "query",
+      "line": 624,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPanels.ts",
+      "name": "refreshControl",
+      "kind": "mutation",
+      "line": 655,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPanelSecrets.ts",
+      "name": "serverPassword",
+      "kind": "action",
+      "line": 29,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/discordPlayerStats.ts",
+      "name": "account",
+      "kind": "query",
+      "line": 52,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPlayerStats.ts",
+      "name": "linkSteam",
+      "kind": "mutation",
+      "line": 65,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPlayerStats.ts",
+      "name": "history",
+      "kind": "query",
+      "line": 141,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPublications.ts",
+      "name": "claim",
+      "kind": "mutation",
+      "line": 13,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPublications.ts",
+      "name": "bindings",
+      "kind": "query",
+      "line": 176,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordPublications.ts",
+      "name": "save",
+      "kind": "mutation",
+      "line": 193,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPublications.ts",
+      "name": "finish",
+      "kind": "mutation",
+      "line": 214,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPublicPanels.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 27,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordPublicPanels.ts",
+      "name": "forGuild",
+      "kind": "query",
+      "line": 102,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/discordPublicPanels.ts",
+      "name": "resultsPage",
+      "kind": "query",
+      "line": 274,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/discordPublicPanelsAdmin.ts",
+      "name": "configure",
+      "kind": "mutation",
+      "line": 34,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordRosters.ts",
+      "name": "getRosterImageContext",
+      "kind": "query",
+      "line": 15,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordRosters.ts",
+      "name": "confirmRosterAttendanceFromMeetingChannel",
+      "kind": "mutation",
+      "line": 105,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSeed.ts",
+      "name": "dashboard",
+      "kind": "query",
+      "line": 53,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeed.ts",
+      "name": "savePlan",
+      "kind": "mutation",
+      "line": 85,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeed.ts",
+      "name": "startNow",
+      "kind": "mutation",
+      "line": 109,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeed.ts",
+      "name": "stopNow",
+      "kind": "mutation",
+      "line": 135,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeedBot.ts",
+      "name": "deliveryState",
+      "kind": "query",
+      "line": 143,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSeedBot.ts",
+      "name": "recordDelivery",
+      "kind": "mutation",
+      "line": 279,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSeedBot.ts",
+      "name": "recordCallPosted",
+      "kind": "mutation",
+      "line": 326,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeedBot.ts",
+      "name": "reportCallFailed",
+      "kind": "mutation",
+      "line": 348,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeedBot.ts",
+      "name": "roleOffer",
+      "kind": "query",
+      "line": 365,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSeedBot.ts",
+      "name": "startFromDiscord",
+      "kind": "mutation",
+      "line": 431,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeedBot.ts",
+      "name": "stopFromDiscord",
+      "kind": "mutation",
+      "line": 459,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeedBot.ts",
+      "name": "panelStates",
+      "kind": "query",
+      "line": 486,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSeedTick.ts",
+      "name": "evaluate",
+      "kind": "internalMutation",
+      "line": 21,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/discordSeedTick.ts",
+      "name": "evaluatePlan",
+      "kind": "internalMutation",
+      "line": 34,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "listSyncPayloads",
+      "kind": "query",
+      "line": 206,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "listGuildCacheSnapshot",
+      "kind": "query",
+      "line": 379,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "listGuildAssignments",
+      "kind": "query",
+      "line": 418,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "listEventSyncIndex",
+      "kind": "query",
+      "line": 436,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "getEventSyncContext",
+      "kind": "query",
+      "line": 468,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "getEventSignupContext",
+      "kind": "query",
+      "line": 524,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "getEventInteractionContext",
+      "kind": "query",
+      "line": 598,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "requestForumTopicResync",
+      "kind": "mutation",
+      "line": 649,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "updateEventSyncState",
+      "kind": "mutation",
+      "line": 681,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "updateRosterUpdateMessage",
+      "kind": "mutation",
+      "line": 781,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "upsertMemberAccess",
+      "kind": "mutation",
+      "line": 817,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/discordSync.ts",
+      "name": "removeMemberAccess",
+      "kind": "mutation",
+      "line": 856,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventAnnouncements.ts",
+      "name": "getContext",
+      "kind": "query",
+      "line": 123,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventAnnouncements.ts",
+      "name": "getImageContext",
+      "kind": "query",
+      "line": 199,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventAnnouncements.ts",
+      "name": "record",
+      "kind": "mutation",
+      "line": 296,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventAnnouncements.ts",
+      "name": "listMigrationDue",
+      "kind": "query",
+      "line": 354,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventAnnouncements.ts",
+      "name": "getAttendees",
+      "kind": "query",
+      "line": 417,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventAttendance.ts",
+      "name": "setExcuses",
+      "kind": "mutation",
+      "line": 14,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventDeletion.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 9,
+      "guards": [
+        "assertInternalSecret",
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventDeletion.ts",
+      "name": "pending",
+      "kind": "query",
+      "line": 26,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventDeletion.ts",
+      "name": "claim",
+      "kind": "mutation",
+      "line": 47,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventDeletion.ts",
+      "name": "finish",
+      "kind": "mutation",
+      "line": 66,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventDrafts.ts",
+      "name": "save",
+      "kind": "mutation",
+      "line": 177,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/eventDrafts.ts",
+      "name": "publish",
+      "kind": "mutation",
+      "line": 194,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/eventDrafts.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 208,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventDrafts.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 242,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventRecurrence.ts",
+      "name": "generateDue",
+      "kind": "mutation",
+      "line": 95,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventReminders.ts",
+      "name": "claimSignupRun",
+      "kind": "mutation",
+      "line": 24,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventReminders.ts",
+      "name": "requestManual",
+      "kind": "mutation",
+      "line": 104,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventReminders.ts",
+      "name": "listPending",
+      "kind": "query",
+      "line": 180,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventReminders.ts",
+      "name": "claim",
+      "kind": "mutation",
+      "line": 201,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventReminders.ts",
+      "name": "complete",
+      "kind": "mutation",
+      "line": 263,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/eventReminders.ts",
+      "name": "recordAutomatic",
+      "kind": "mutation",
+      "line": 293,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventReminders.ts",
+      "name": "latestOutcome",
+      "kind": "query",
+      "line": 342,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventReminders.ts",
+      "name": "fail",
+      "kind": "mutation",
+      "line": 397,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/eventResults.ts",
+      "name": "review",
+      "kind": "mutation",
+      "line": 251,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/eventResults.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 319,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/eventResults.ts",
+      "name": "listClanReviews",
+      "kind": "query",
+      "line": 384,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "upsert",
+      "kind": "mutation",
+      "line": 91,
+      "guards": [
+        "requiredRoleIds",
+        "assertInternalSecret",
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "getById",
+      "kind": "query",
+      "line": 261,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "findNoticeTarget",
+      "kind": "query",
+      "line": 315,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "findStartedNoticeEvent",
+      "kind": "query",
+      "line": 352,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "toggleSignUp",
+      "kind": "mutation",
+      "line": 368,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "reconcileStatuses",
+      "kind": "mutation",
+      "line": 400,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "applyEventScore",
+      "kind": "mutation",
+      "line": 431,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "conclude",
+      "kind": "mutation",
+      "line": 454,
+      "guards": [
+        "assertInternalSecret",
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "completeTraining",
+      "kind": "mutation",
+      "line": 482,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "appendAttendanceReminderLog",
+      "kind": "mutation",
+      "line": 512,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "upsertNotice",
+      "kind": "mutation",
+      "line": 532,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "setDiscordEventRoles",
+      "kind": "mutation",
+      "line": 557,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/events.ts",
+      "name": "setResult",
+      "kind": "mutation",
+      "line": 589,
+      "guards": [
+        "assertInternalSecret",
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/externalRegistration.ts",
+      "name": "register",
+      "kind": "mutation",
+      "line": 21,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation",
+        "requires"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameCatalog.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 55,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameCatalog.ts",
+      "name": "seedBuiltIns",
+      "kind": "mutation",
+      "line": 66,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameCatalog.ts",
+      "name": "upsert",
+      "kind": "mutation",
+      "line": 137,
+      "guards": [
+        "authorizePlatformAdmin",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameData.ts",
+      "name": "configure",
+      "kind": "internalMutation",
+      "line": 130,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/gameData.ts",
+      "name": "configureForDashboard",
+      "kind": "mutation",
+      "line": 134,
+      "guards": [
+        "authorizeDashboardAdmin",
+        "requireVerifiedKey"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/gameData.ts",
+      "name": "listConnections",
+      "kind": "query",
+      "line": 142,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameData.ts",
+      "name": "claimNext",
+      "kind": "internalMutation",
+      "line": 175,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameData.ts",
+      "name": "finishSnapshot",
+      "kind": "internalMutation",
+      "line": 224,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataCollector.ts",
+      "name": "collectDue",
+      "kind": "internalAction",
+      "line": 43,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataCollector.ts",
+      "name": "collectHistoryDue",
+      "kind": "internalAction",
+      "line": 170,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataCredentialActions.ts",
+      "name": "testStored",
+      "kind": "action",
+      "line": 41,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataCredentialActions.ts",
+      "name": "migrateLegacy",
+      "kind": "internalAction",
+      "line": 87,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataCredentialActions.ts",
+      "name": "reencrypt",
+      "kind": "internalAction",
+      "line": 146,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataCredentialMigration.ts",
+      "name": "legacyCandidates",
+      "kind": "internalQuery",
+      "line": 49,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataCredentialMigration.ts",
+      "name": "adoptLegacyCredential",
+      "kind": "internalMutation",
+      "line": 144,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataCredentialMigration.ts",
+      "name": "credentialsPage",
+      "kind": "internalQuery",
+      "line": 206,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataCredentialMigration.ts",
+      "name": "replaceCiphertext",
+      "kind": "internalMutation",
+      "line": 250,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataCredentialMigration.ts",
+      "name": "removeOperatorSourceKey",
+      "kind": "internalMutation",
+      "line": 284,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataCredentials.ts",
+      "name": "envelope",
+      "kind": "internalQuery",
+      "line": 28,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataCredentials.ts",
+      "name": "reportFailure",
+      "kind": "internalMutation",
+      "line": 56,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataHistory.ts",
+      "name": "claimNext",
+      "kind": "internalMutation",
+      "line": 67,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataHistory.ts",
+      "name": "commit",
+      "kind": "internalMutation",
+      "line": 171,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataHistory.ts",
+      "name": "storedComplete",
+      "kind": "internalQuery",
+      "line": 287,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataHistory.ts",
+      "name": "fail",
+      "kind": "internalMutation",
+      "line": 312,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 117,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "reserveTest",
+      "kind": "mutation",
+      "line": 279,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 328,
+      "guards": [
+        "authorizeDashboardAdmin",
+        "requirement",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "rename",
+      "kind": "mutation",
+      "line": 452,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "setCredential",
+      "kind": "mutation",
+      "line": 497,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "removeCredential",
+      "kind": "mutation",
+      "line": 588,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "setEnabled",
+      "kind": "mutation",
+      "line": 623,
+      "guards": [
+        "authorizeDashboardAdmin",
+        "requireVerifiedKey"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 655,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "reserveStoredTest",
+      "kind": "internalMutation",
+      "line": 678,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/gameDataSources.ts",
+      "name": "recordStoredTest",
+      "kind": "internalMutation",
+      "line": 726,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameHistoryBackfill.ts",
+      "name": "hllPage",
+      "kind": "internalMutation",
+      "line": 14,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameHistoryReads.ts",
+      "name": "read",
+      "kind": "query",
+      "line": 18,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameHistoryRetention.ts",
+      "name": "read",
+      "kind": "query",
+      "line": 25,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/gameHistoryRetention.ts",
+      "name": "configure",
+      "kind": "mutation",
+      "line": 38,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/gameHistoryRetention.ts",
+      "name": "prune",
+      "kind": "internalMutation",
+      "line": 77,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/gameHistoryRetention.ts",
+      "name": "pruneDue",
+      "kind": "internalMutation",
+      "line": 145,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/groups.ts",
+      "name": "listForGuild",
+      "kind": "query",
+      "line": 24,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/groups.ts",
+      "name": "getById",
+      "kind": "query",
+      "line": 48,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/groups.ts",
+      "name": "upsert",
+      "kind": "mutation",
+      "line": 60,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/groups.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 87,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/guildGames.ts",
+      "name": "enable",
+      "kind": "mutation",
+      "line": 12,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "visibleForUser",
+      "kind": "query",
+      "line": 83,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "syncManagedGuilds",
+      "kind": "mutation",
+      "line": 150,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "getById",
+      "kind": "query",
+      "line": 256,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "setEnabledGames",
+      "kind": "mutation",
+      "line": 269,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "getByDiscordId",
+      "kind": "query",
+      "line": 311,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "resyncDashboardAdmins",
+      "kind": "mutation",
+      "line": 324,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "setPlayerAdminAccessInternal",
+      "kind": "mutation",
+      "line": 391,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "listAllInternal",
+      "kind": "query",
+      "line": 430,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "updateFrontendSettings",
+      "kind": "mutation",
+      "line": 445,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "backfillRosterScoreSettings",
+      "kind": "mutation",
+      "line": 555,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/guilds.ts",
+      "name": "saveMatchTemplates",
+      "kind": "mutation",
+      "line": 612,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/hllLiveData.ts",
+      "name": "read",
+      "kind": "action",
+      "line": 14,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/hllLiveReads.ts",
+      "name": "reserve",
+      "kind": "internalMutation",
+      "line": 93,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/hllLiveReads.ts",
+      "name": "finish",
+      "kind": "internalMutation",
+      "line": 177,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/hllLiveReads.ts",
+      "name": "prune",
+      "kind": "internalMutation",
+      "line": 240,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/housekeeping.ts",
+      "name": "pruneHistory",
+      "kind": "internalMutation",
+      "line": 236,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/housekeeping.ts",
+      "name": "removeWebhookDeliveries",
+      "kind": "internalMutation",
+      "line": 281,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/imageAssets.ts",
+      "name": "reserveUpload",
+      "kind": "mutation",
+      "line": 124,
+      "guards": [
+        "authorizeAssetScope"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/imageAssets.ts",
+      "name": "storeNormalized",
+      "kind": "action",
+      "line": 194,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/imageAssets.ts",
+      "name": "record",
+      "kind": "internalMutation",
+      "line": 226,
+      "guards": [
+        "authorizeAssetScope"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/imageAssets.ts",
+      "name": "resolvePublic",
+      "kind": "query",
+      "line": 289,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/imageAssets.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 305,
+      "guards": [
+        "authorizeAssetScope"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/imageAssets.ts",
+      "name": "cleanupUnattached",
+      "kind": "internalMutation",
+      "line": 330,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/integrationChanges.ts",
+      "name": "readChanges",
+      "kind": "query",
+      "line": 60,
+      "guards": [
+        "authorize",
+        "authorizeMembership"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/integrationChanges.ts",
+      "name": "readSyncRecord",
+      "kind": "query",
+      "line": 128,
+      "guards": [
+        "authorize",
+        "authorizeMembership"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "read",
+      "kind": "query",
+      "line": 47,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "save",
+      "kind": "mutation",
+      "line": 102,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "claim",
+      "kind": "internalMutation",
+      "line": 149,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "finish",
+      "kind": "internalMutation",
+      "line": 175,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "importFixture",
+      "kind": "internalMutation",
+      "line": 193,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "pendingCache",
+      "kind": "internalQuery",
+      "line": 479,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "acknowledgeCache",
+      "kind": "internalMutation",
+      "line": 487,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "credential",
+      "kind": "internalQuery",
+      "line": 496,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueAutoImport.ts",
+      "name": "previewTeams",
+      "kind": "internalQuery",
+      "line": 503,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueAutoImportJobs.ts",
+      "name": "save",
+      "kind": "action",
+      "line": 21,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueAutoImportJobs.ts",
+      "name": "collectDue",
+      "kind": "internalAction",
+      "line": 58,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueAutoImportJobs.ts",
+      "name": "readFixture",
+      "kind": "action",
+      "line": 150,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueDiscovery.ts",
+      "name": "configure",
+      "kind": "mutation",
+      "line": 45,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscovery.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 124,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscovery.ts",
+      "name": "manage",
+      "kind": "mutation",
+      "line": 183,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscovery.ts",
+      "name": "forGuild",
+      "kind": "query",
+      "line": 270,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscovery.ts",
+      "name": "inputSettings",
+      "kind": "query",
+      "line": 309,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueDiscovery.ts",
+      "name": "ingestMessage",
+      "kind": "mutation",
+      "line": 322,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscovery.ts",
+      "name": "pendingLinkReplies",
+      "kind": "query",
+      "line": 467,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscovery.ts",
+      "name": "markLinkReplied",
+      "kind": "mutation",
+      "line": 549,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryFixtureJobs.ts",
+      "name": "collectDue",
+      "kind": "internalAction",
+      "line": 21,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueDiscoveryFixtures.ts",
+      "name": "status",
+      "kind": "internalQuery",
+      "line": 33,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueDiscoveryFixtures.ts",
+      "name": "admitIndex",
+      "kind": "internalMutation",
+      "line": 42,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryFixtures.ts",
+      "name": "pruneFixtures",
+      "kind": "internalMutation",
+      "line": 115,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryFixtures.ts",
+      "name": "markReparse",
+      "kind": "internalMutation",
+      "line": 163,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryFixtures.ts",
+      "name": "claimFixture",
+      "kind": "internalMutation",
+      "line": 191,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryFixtures.ts",
+      "name": "finishFixture",
+      "kind": "internalMutation",
+      "line": 219,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryJobs.ts",
+      "name": "collectDue",
+      "kind": "internalAction",
+      "line": 15,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueDiscoveryPanels.ts",
+      "name": "forGuild",
+      "kind": "query",
+      "line": 21,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueDiscoveryQueue.ts",
+      "name": "status",
+      "kind": "internalQuery",
+      "line": 21,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryQueue.ts",
+      "name": "pruneReferences",
+      "kind": "internalMutation",
+      "line": 34,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryQueue.ts",
+      "name": "claimScan",
+      "kind": "internalMutation",
+      "line": 46,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryQueue.ts",
+      "name": "reserveIndexFetch",
+      "kind": "internalMutation",
+      "line": 79,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryQueue.ts",
+      "name": "finishScan",
+      "kind": "internalMutation",
+      "line": 108,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryQueue.ts",
+      "name": "enqueueIndex",
+      "kind": "internalMutation",
+      "line": 179,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryQueue.ts",
+      "name": "claimDue",
+      "kind": "internalMutation",
+      "line": 223,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueDiscoveryQueue.ts",
+      "name": "finishRead",
+      "kind": "internalMutation",
+      "line": 274,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueFixtureReads.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 40,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leagueFixtureReads.ts",
+      "name": "overview",
+      "kind": "query",
+      "line": 79,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueMatchData.ts",
+      "name": "read",
+      "kind": "action",
+      "line": 59,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/leagueMatches.ts",
+      "name": "reserve",
+      "kind": "internalMutation",
+      "line": 80,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/leagueMatches.ts",
+      "name": "finish",
+      "kind": "internalMutation",
+      "line": 206,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/leagueMatches.ts",
+      "name": "prune",
+      "kind": "internalMutation",
+      "line": 278,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/leaguePortal.ts",
+      "name": "profileAccess",
+      "kind": "query",
+      "line": 18,
+      "guards": [
+        "authorizeTeamProfile"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/leaguePortal.ts",
+      "name": "account",
+      "kind": "query",
+      "line": 44,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/leaguePortal.ts",
+      "name": "execute",
+      "kind": "mutation",
+      "line": 49,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/matchRecaps.ts",
+      "name": "queueForPublishedResult",
+      "kind": "mutation",
+      "line": 111,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/matchRecaps.ts",
+      "name": "listPendingForEvent",
+      "kind": "query",
+      "line": 132,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/matchRecaps.ts",
+      "name": "prepareDelivery",
+      "kind": "query",
+      "line": 157,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/matchRecaps.ts",
+      "name": "recapCard",
+      "kind": "query",
+      "line": 183,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/matchRecaps.ts",
+      "name": "markSent",
+      "kind": "mutation",
+      "line": 223,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/matchRecaps.ts",
+      "name": "captureBaselines",
+      "kind": "query",
+      "line": 244,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/matchStats.ts",
+      "name": "upsertForEvent",
+      "kind": "mutation",
+      "line": 200,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/matchStats.ts",
+      "name": "getByEventId",
+      "kind": "query",
+      "line": 276,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/matchStats.ts",
+      "name": "findByIdentity",
+      "kind": "query",
+      "line": 297,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/matchTeams.ts",
+      "name": "refreshSnapshot",
+      "kind": "mutation",
+      "line": 120,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/matchTemplates.ts",
+      "name": "save",
+      "kind": "mutation",
+      "line": 15,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/meetingAttendance.ts",
+      "name": "requestMeetingAttendanceConfirmation",
+      "kind": "mutation",
+      "line": 14,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/meetingAttendance.ts",
+      "name": "getMeetingAttendanceRequest",
+      "kind": "query",
+      "line": 52,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/meetingAttendance.ts",
+      "name": "listPendingMeetingAttendanceRequests",
+      "kind": "query",
+      "line": 60,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/meetingAttendance.ts",
+      "name": "claimMeetingAttendanceRequest",
+      "kind": "mutation",
+      "line": 71,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/meetingAttendance.ts",
+      "name": "completeMeetingAttendanceRequest",
+      "kind": "mutation",
+      "line": 116,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/meetingAttendance.ts",
+      "name": "failMeetingAttendanceRequest",
+      "kind": "mutation",
+      "line": 134,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "prepareLookup",
+      "kind": "mutation",
+      "line": 63,
+      "guards": [
+        "authorizeMembership"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "completeLookup",
+      "kind": "mutation",
+      "line": 146,
+      "guards": [
+        "authorizeMembership"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "ensureGuild",
+      "kind": "mutation",
+      "line": 243,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "invalidateGuild",
+      "kind": "mutation",
+      "line": 250,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "applyGateway",
+      "kind": "mutation",
+      "line": 295,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "reconciliationStart",
+      "kind": "query",
+      "line": 322,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "beginReconciliation",
+      "kind": "mutation",
+      "line": 330,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "applyReconciliationBatch",
+      "kind": "mutation",
+      "line": 398,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "finishReconciliation",
+      "kind": "mutation",
+      "line": 485,
+      "guards": [
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "listPolicies",
+      "kind": "query",
+      "line": 569,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "configurePolicy",
+      "kind": "mutation",
+      "line": 608,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberObservations.ts",
+      "name": "pruneReconciliations",
+      "kind": "internalMutation",
+      "line": 665,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberRoleOperations.ts",
+      "name": "claimNext",
+      "kind": "mutation",
+      "line": 419,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberRoleOperations.ts",
+      "name": "prepare",
+      "kind": "query",
+      "line": 525,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberRoleOperations.ts",
+      "name": "finish",
+      "kind": "mutation",
+      "line": 553,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberRoleOperations.ts",
+      "name": "listForGuild",
+      "kind": "query",
+      "line": 640,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/memberRoleOperations.ts",
+      "name": "pruneFinished",
+      "kind": "internalMutation",
+      "line": 692,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "listApplicationDefinitions",
+      "kind": "query",
+      "line": 306,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "getApplicationState",
+      "kind": "query",
+      "line": 326,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "saveApplicationWindow",
+      "kind": "mutation",
+      "line": 425,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "discardApplicationDraft",
+      "kind": "mutation",
+      "line": 441,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "claimApplicationSubmission",
+      "kind": "mutation",
+      "line": 534,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "releaseApplicationSubmission",
+      "kind": "mutation",
+      "line": 604,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "listQueuedWebApplications",
+      "kind": "query",
+      "line": 636,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "claimApplicationDecision",
+      "kind": "mutation",
+      "line": 678,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "releaseApplicationDecision",
+      "kind": "mutation",
+      "line": 702,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "markApplicationUndecided",
+      "kind": "mutation",
+      "line": 716,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "webApplicationPage",
+      "kind": "query",
+      "line": 768,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "saveWebApplicationWindow",
+      "kind": "mutation",
+      "line": 789,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "submitWebApplication",
+      "kind": "mutation",
+      "line": 809,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "webApplicationStatus",
+      "kind": "query",
+      "line": 841,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "attachMembershipPanelImage",
+      "kind": "mutation",
+      "line": 868,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/membershipApplications.ts",
+      "name": "deleteExpiredDrafts",
+      "kind": "internalMutation",
+      "line": 891,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "migratePlatformIds",
+      "kind": "mutation",
+      "line": 140,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "listWardogsAssignmentIds",
+      "kind": "query",
+      "line": 194,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "removeWardogsAssignmentsWithoutHllMembershipBatch",
+      "kind": "mutation",
+      "line": 215,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "removeWardogsAssignmentsWithoutHllMembership",
+      "kind": "action",
+      "line": 348,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "listRecentHllAssignmentIds",
+      "kind": "query",
+      "line": 417,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "removeRecentHllAssignmentsBatch",
+      "kind": "mutation",
+      "line": 443,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "removeRecentHllMemberships",
+      "kind": "action",
+      "line": 506,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "listUngroupedHllAssignmentIds",
+      "kind": "query",
+      "line": 560,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "removeUngroupedHllAssignmentsBatch",
+      "kind": "mutation",
+      "line": 587,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "removeUngroupedHllAssignments",
+      "kind": "action",
+      "line": 652,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "findWardogsRosterPeople",
+      "kind": "query",
+      "line": 706,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "addWardogsRosterAssignmentsBatch",
+      "kind": "mutation",
+      "line": 751,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "addWardogsRosterAssignments",
+      "kind": "action",
+      "line": 801,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "migrateEventResults",
+      "kind": "mutation",
+      "line": 840,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "migrateMembershipCategoryRoleArrays",
+      "kind": "mutation",
+      "line": 920,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/migrations.ts",
+      "name": "backfillClanApiReadProjections",
+      "kind": "mutation",
+      "line": 1004,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/peopleSummaries.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 86,
+      "guards": [
+        "authorize"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/peopleSummaries.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 101,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/peopleSummaries.ts",
+      "name": "reconcileResultLinks",
+      "kind": "internalMutation",
+      "line": 184,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "listClanUserIds",
+      "kind": "query",
+      "line": 353,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "refreshGuildOnly",
+      "kind": "mutation",
+      "line": 372,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "refreshPlayerForGuild",
+      "kind": "mutation",
+      "line": 385,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "matchClanUserIds",
+      "kind": "internalQuery",
+      "line": 473,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "matchRefreshTargets",
+      "kind": "internalQuery",
+      "line": 511,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "refreshInBackground",
+      "kind": "internalAction",
+      "line": 563,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "authorizeRefresh",
+      "kind": "internalQuery",
+      "line": 607,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "refreshForDashboard",
+      "kind": "action",
+      "line": 619,
+      "guards": [
+        "authorizeRefresh"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "getGuild",
+      "kind": "query",
+      "line": 663,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "getPlayer",
+      "kind": "query",
+      "line": 685,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/performanceHistory.ts",
+      "name": "getPlayers",
+      "kind": "query",
+      "line": 710,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/platformIdentityLinks.ts",
+      "name": "begin",
+      "kind": "mutation",
+      "line": 27,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/platformIdentityLinks.ts",
+      "name": "claim",
+      "kind": "mutation",
+      "line": 102,
+      "guards": [
+        "verifying"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/platformIdentityLinks.ts",
+      "name": "complete",
+      "kind": "mutation",
+      "line": 127,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/platformIdentityLinks.ts",
+      "name": "fail",
+      "kind": "mutation",
+      "line": 187,
+      "guards": [
+        "verifying"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/platformIdentityLinks.ts",
+      "name": "unlink",
+      "kind": "mutation",
+      "line": 200,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/platformIdentityLinks.ts",
+      "name": "cancelSession",
+      "kind": "mutation",
+      "line": 208,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/platformIdentityLinks.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 216,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/platformSettings.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 6,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/platformSettings.ts",
+      "name": "save",
+      "kind": "mutation",
+      "line": 14,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/platformSettings.ts",
+      "name": "updateBotState",
+      "kind": "mutation",
+      "line": 53,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/playerReportDrafts.ts",
+      "name": "createDraft",
+      "kind": "mutation",
+      "line": 17,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/playerReportDrafts.ts",
+      "name": "draft",
+      "kind": "query",
+      "line": 86,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/playerReportDrafts.ts",
+      "name": "submit",
+      "kind": "mutation",
+      "line": 101,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/playerReports.ts",
+      "name": "entry",
+      "kind": "query",
+      "line": 20,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/playerReports.ts",
+      "name": "claim",
+      "kind": "mutation",
+      "line": 53,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/playerReports.ts",
+      "name": "bind",
+      "kind": "mutation",
+      "line": 109,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/playerReports.ts",
+      "name": "complete",
+      "kind": "mutation",
+      "line": 124,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/playerReports.ts",
+      "name": "uncertain",
+      "kind": "mutation",
+      "line": 172,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/playerReports.ts",
+      "name": "release",
+      "kind": "mutation",
+      "line": 185,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/playerReports.ts",
+      "name": "pending",
+      "kind": "query",
+      "line": 201,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/playerReports.ts",
+      "name": "pruneDraft",
+      "kind": "internalMutation",
+      "line": 223,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "getById",
+      "kind": "query",
+      "line": 413,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "searchClanPlayers",
+      "kind": "query",
+      "line": 426,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "getClanPlayerProfile",
+      "kind": "query",
+      "line": 516,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "syncDiscordProfile",
+      "kind": "mutation",
+      "line": 623,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "markOnboardingSeen",
+      "kind": "mutation",
+      "line": 667,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "updatePlatformIds",
+      "kind": "mutation",
+      "line": 698,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "updateNote",
+      "kind": "mutation",
+      "line": 747,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "setPrimaryGuild",
+      "kind": "mutation",
+      "line": 769,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "setDefaultWorkspace",
+      "kind": "mutation",
+      "line": 799,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "resolveDefaultWorkspace",
+      "kind": "mutation",
+      "line": 952,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "clearPlatformIds",
+      "kind": "mutation",
+      "line": 971,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "updateProfile",
+      "kind": "mutation",
+      "line": 991,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "setMatchRecapNotifications",
+      "kind": "mutation",
+      "line": 1012,
+      "guards": [
+        "assertInternalSecret",
+        "authenticated"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "updateScore",
+      "kind": "mutation",
+      "line": 1033,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "upsertImportedProfile",
+      "kind": "mutation",
+      "line": 1069,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "linkDiscordPlatformId",
+      "kind": "mutation",
+      "line": 1125,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "unlinkDiscordPlatformId",
+      "kind": "mutation",
+      "line": 1140,
+      "guards": [
+        "assertInternalSecret",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "getDiscordPlatformLinkState",
+      "kind": "query",
+      "line": 1173,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "linkImportedDiscordProfile",
+      "kind": "mutation",
+      "line": 1194,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/players.ts",
+      "name": "mergeUsers",
+      "kind": "mutation",
+      "line": 1291,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/playerStats.ts",
+      "name": "upsertMatches",
+      "kind": "mutation",
+      "line": 147,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/playerStats.ts",
+      "name": "listForUser",
+      "kind": "query",
+      "line": 230,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/playerStats.ts",
+      "name": "listUserIdsForEvents",
+      "kind": "query",
+      "line": 246,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/playerStats.ts",
+      "name": "dedupeMatchesForEvents",
+      "kind": "mutation",
+      "line": 275,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/privacy.ts",
+      "name": "request",
+      "kind": "mutation",
+      "line": 6,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/privacy.ts",
+      "name": "exportForUser",
+      "kind": "query",
+      "line": 38,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "createKey",
+      "kind": "mutation",
+      "line": 84,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "revokeKey",
+      "kind": "mutation",
+      "line": 116,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanArticle",
+      "kind": "mutation",
+      "line": 132,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanEvent",
+      "kind": "mutation",
+      "line": 309,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanEventSignup",
+      "kind": "mutation",
+      "line": 504,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanGroup",
+      "kind": "mutation",
+      "line": 584,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanPreset",
+      "kind": "mutation",
+      "line": 711,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanRoster",
+      "kind": "mutation",
+      "line": 868,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanAssignment",
+      "kind": "mutation",
+      "line": 951,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanCalendarItem",
+      "kind": "mutation",
+      "line": 1102,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApi.ts",
+      "name": "mutateClanSettings",
+      "kind": "mutation",
+      "line": 1219,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApiReads.ts",
+      "name": "listKeys",
+      "kind": "query",
+      "line": 43,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApiReads.ts",
+      "name": "getClanMeta",
+      "kind": "query",
+      "line": 76,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApiReads.ts",
+      "name": "getClanSettings",
+      "kind": "query",
+      "line": 111,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApiReads.ts",
+      "name": "getClanPerformanceHistory",
+      "kind": "query",
+      "line": 171,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApiReads.ts",
+      "name": "getClanMatchByEvent",
+      "kind": "query",
+      "line": 221,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApiReads.ts",
+      "name": "getClanUser",
+      "kind": "query",
+      "line": 269,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApiReads.ts",
+      "name": "getClanResourcePage",
+      "kind": "query",
+      "line": 314,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicApiReads.ts",
+      "name": "getClanResource",
+      "kind": "query",
+      "line": 716,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicPreviews.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 6,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicPreviews.ts",
+      "name": "removeExpired",
+      "kind": "internalMutation",
+      "line": 30,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "name": "getPlayer",
+      "kind": "query",
+      "line": 119,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "name": "getPlayerMatch",
+      "kind": "query",
+      "line": 224,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "name": "getMatch",
+      "kind": "query",
+      "line": 254,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "name": "getClan",
+      "kind": "query",
+      "line": 328,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "name": "listClans",
+      "kind": "query",
+      "line": 416,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "name": "searchClans",
+      "kind": "query",
+      "line": 490,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "name": "listMatches",
+      "kind": "query",
+      "line": 556,
+      "guards": [
+        "assertInternalSecret",
+        "requiresProjectionFiltering"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicProfiles.ts",
+      "name": "searchPlayers",
+      "kind": "query",
+      "line": 684,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/publicStats.ts",
+      "name": "overview",
+      "kind": "query",
+      "line": 5,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/roleAccess.ts",
+      "name": "getOverview",
+      "kind": "query",
+      "line": 19,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/rosterChanges.ts",
+      "name": "request",
+      "kind": "mutation",
+      "line": 32,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/rosterChanges.ts",
+      "name": "status",
+      "kind": "query",
+      "line": 127,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/rosterChanges.ts",
+      "name": "listPending",
+      "kind": "query",
+      "line": 144,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/rosterChanges.ts",
+      "name": "claim",
+      "kind": "mutation",
+      "line": 166,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/rosterChanges.ts",
+      "name": "complete",
+      "kind": "mutation",
+      "line": 257,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/rosterChanges.ts",
+      "name": "fail",
+      "kind": "mutation",
+      "line": 276,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/rosters.ts",
+      "name": "upsert",
+      "kind": "mutation",
+      "line": 56,
+      "guards": [
+        "authorizeRosterManager"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/rosters.ts",
+      "name": "acknowledgeAttendance",
+      "kind": "mutation",
+      "line": 94,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/rosters.ts",
+      "name": "declineAttendance",
+      "kind": "mutation",
+      "line": 135,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/rosters.ts",
+      "name": "setAttendanceStatus",
+      "kind": "mutation",
+      "line": 180,
+      "guards": [
+        "authorizeRosterManager"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/rosters.ts",
+      "name": "deleteDraft",
+      "kind": "mutation",
+      "line": 207,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/scheduledJobs.ts",
+      "name": "claimDue",
+      "kind": "mutation",
+      "line": 20,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/scheduledJobs.ts",
+      "name": "complete",
+      "kind": "mutation",
+      "line": 108,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/scheduledJobs.ts",
+      "name": "release",
+      "kind": "mutation",
+      "line": 148,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/scheduledJobs.ts",
+      "name": "recoverQueue",
+      "kind": "mutation",
+      "line": 162,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/scheduledJobs.ts",
+      "name": "backfillMissing",
+      "kind": "mutation",
+      "line": 203,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/selfGroups.ts",
+      "name": "options",
+      "kind": "query",
+      "line": 17,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/selfGroups.ts",
+      "name": "set",
+      "kind": "mutation",
+      "line": 77,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/serverContext.ts",
+      "name": "getServerContext",
+      "kind": "query",
+      "line": 256,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/serverContext.ts",
+      "name": "getServerContextInternal",
+      "kind": "query",
+      "line": 273,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/serverDashboard.ts",
+      "name": "getRecentMatchSummaryInternal",
+      "kind": "query",
+      "line": 15,
+      "guards": [
+        "internalAuthSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/serverMetadata.ts",
+      "name": "getRosterById",
+      "kind": "query",
+      "line": 6,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/serverMetadata.ts",
+      "name": "getSquadPresetById",
+      "kind": "query",
+      "line": 18,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/serverMetadata.ts",
+      "name": "getTopicPresetById",
+      "kind": "query",
+      "line": 30,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/serverRosters.ts",
+      "name": "getRosterDetail",
+      "kind": "query",
+      "line": 26,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/serverSetup.ts",
+      "name": "resetHelperDataForGuild",
+      "kind": "mutation",
+      "line": 108,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/serverSetup.ts",
+      "name": "initializeDefaultHelperDataForGuild",
+      "kind": "mutation",
+      "line": 119,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatchApi.ts",
+      "name": "configureLocal",
+      "kind": "mutation",
+      "line": 7,
+      "guards": [
+        "assertInternalSecret",
+        "startIdempotentMutation"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "cacheScopes",
+      "kind": "query",
+      "line": 43,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 97,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "searchClans",
+      "kind": "query",
+      "line": 156,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "invite",
+      "kind": "mutation",
+      "line": 176,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "respond",
+      "kind": "mutation",
+      "line": 273,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "rosterContext",
+      "kind": "query",
+      "line": 392,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "revoke",
+      "kind": "mutation",
+      "line": 462,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "configureLocal",
+      "kind": "mutation",
+      "line": 530,
+      "guards": [
+        "requiredRoleIds",
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/sharedMatches.ts",
+      "name": "acceptanceContext",
+      "kind": "query",
+      "line": 599,
+      "guards": [
+        "authorizeDashboardAdmin",
+        "requiredRoleIds"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/signupActivity.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 7,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/squadPresets.ts",
+      "name": "upsert",
+      "kind": "mutation",
+      "line": 34,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/squadPresets.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 69,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/sso.ts",
+      "name": "listForGuild",
+      "kind": "query",
+      "line": 58,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/sso.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 77,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/sso.ts",
+      "name": "update",
+      "kind": "mutation",
+      "line": 125,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/sso.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 160,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/sso.ts",
+      "name": "getPublicClient",
+      "kind": "query",
+      "line": 178,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/sso.ts",
+      "name": "createCode",
+      "kind": "mutation",
+      "line": 202,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/sso.ts",
+      "name": "redeemCode",
+      "kind": "mutation",
+      "line": 267,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/sso.ts",
+      "name": "getProfile",
+      "kind": "query",
+      "line": 370,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "name": "listByGuild",
+      "kind": "query",
+      "line": 78,
+      "guards": [
+        "assertInternalSecret",
+        "resolveGuildAccess"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "name": "getById",
+      "kind": "query",
+      "line": 140,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "name": "getLiveById",
+      "kind": "query",
+      "line": 153,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "name": "getPublicById",
+      "kind": "query",
+      "line": 168,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 177,
+      "guards": [
+        "verifyClientGrant",
+        "resolveGuildAccess"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "name": "updateMeta",
+      "kind": "mutation",
+      "line": 228,
+      "guards": [
+        "verifyClientGrant",
+        "resolveGuildAccess"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "name": "updateState",
+      "kind": "mutation",
+      "line": 268,
+      "guards": [
+        "verifyClientGrant",
+        "resolveGuildAccess"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/stratmaps.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 307,
+      "guards": [
+        "assertInternalSecret",
+        "resolveGuildAccess"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/teamMigrations.ts",
+      "name": "legacyCollisionReport",
+      "kind": "internalQuery",
+      "line": 14,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/teamReads.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 62,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/teamReads.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 93,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "submit",
+      "kind": "mutation",
+      "line": 116,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "listMine",
+      "kind": "query",
+      "line": 129,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "cancel",
+      "kind": "mutation",
+      "line": 154,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "queue",
+      "kind": "query",
+      "line": 167,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 192,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "queueContext",
+      "kind": "query",
+      "line": 245,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "decide",
+      "kind": "mutation",
+      "line": 303,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "claimNotifications",
+      "kind": "mutation",
+      "line": 320,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/teamRequests.ts",
+      "name": "markNotified",
+      "kind": "mutation",
+      "line": 393,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 150,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 159,
+      "guards": [
+        "authorizeDashboardAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "adminList",
+      "kind": "query",
+      "line": 169,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "adminGet",
+      "kind": "query",
+      "line": 177,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "adminListState",
+      "kind": "query",
+      "line": 191,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "adminUsage",
+      "kind": "query",
+      "line": 317,
+      "guards": [
+        "authorizePlatformAdmin"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 354,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "update",
+      "kind": "mutation",
+      "line": 362,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "archive",
+      "kind": "mutation",
+      "line": 371,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "restore",
+      "kind": "mutation",
+      "line": 384,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "merge",
+      "kind": "mutation",
+      "line": 399,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/teams.ts",
+      "name": "importCatalogue",
+      "kind": "mutation",
+      "line": 408,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/topicPresets.ts",
+      "name": "upsert",
+      "kind": "mutation",
+      "line": 33,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/topicPresets.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 70,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/uploads.ts",
+      "name": "generateUploadUrl",
+      "kind": "mutation",
+      "line": 11,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/uploads.ts",
+      "name": "getUrl",
+      "kind": "query",
+      "line": 21,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "name": "listForServer",
+      "kind": "query",
+      "line": 101,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "name": "getById",
+      "kind": "query",
+      "line": 124,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "name": "getForServerUser",
+      "kind": "query",
+      "line": 136,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "name": "upsert",
+      "kind": "mutation",
+      "line": 159,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "name": "upsertByServerDiscordId",
+      "kind": "mutation",
+      "line": 233,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 298,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "name": "importDiscordMembers",
+      "kind": "mutation",
+      "line": 321,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/userAssignments.ts",
+      "name": "reassignImportedMember",
+      "kind": "mutation",
+      "line": 374,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/users.ts",
+      "name": "getUsersByIds",
+      "kind": "query",
+      "line": 8,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/users.ts",
+      "name": "listUsers",
+      "kind": "query",
+      "line": 27,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/users.ts",
+      "name": "updateServerDisplayName",
+      "kind": "mutation",
+      "line": 41,
+      "guards": [
+        "assertInternalSecret",
+        "required"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/warconData.ts",
+      "name": "read",
+      "kind": "action",
+      "line": 16,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/warconReads.ts",
+      "name": "reserve",
+      "kind": "internalMutation",
+      "line": 121,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/warconReads.ts",
+      "name": "finish",
+      "kind": "internalMutation",
+      "line": 230,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/warconReads.ts",
+      "name": "prune",
+      "kind": "internalMutation",
+      "line": 333,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/wardogsMatchReports.ts",
+      "name": "get",
+      "kind": "query",
+      "line": 6,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": false
+    },
+    {
+      "file": "convex/wardogsMatchReports.ts",
+      "name": "getForKey",
+      "kind": "query",
+      "line": 17,
+      "guards": [
+        "assertInternalSecret"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/webhookDispatcher.ts",
+      "name": "deliverDue",
+      "kind": "internalAction",
+      "line": 18,
+      "guards": [],
+      "db": false
+    },
+    {
+      "file": "convex/webhookQueue.ts",
+      "name": "beginDrain",
+      "kind": "internalMutation",
+      "line": 66,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhookQueue.ts",
+      "name": "claimDueDelivery",
+      "kind": "internalMutation",
+      "line": 136,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhookQueue.ts",
+      "name": "finishDelivery",
+      "kind": "internalMutation",
+      "line": 198,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhookQueue.ts",
+      "name": "endDrain",
+      "kind": "internalMutation",
+      "line": 259,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "name": "list",
+      "kind": "query",
+      "line": 16,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "name": "create",
+      "kind": "mutation",
+      "line": 32,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "name": "update",
+      "kind": "mutation",
+      "line": 60,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "name": "rotateSecret",
+      "kind": "mutation",
+      "line": 93,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "name": "listDeliveries",
+      "kind": "query",
+      "line": 113,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "name": "remove",
+      "kind": "mutation",
+      "line": 140,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/webhooks.ts",
+      "name": "enqueueTest",
+      "kind": "mutation",
+      "line": 158,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/websiteEventCommands.ts",
+      "name": "readEditor",
+      "kind": "query",
+      "line": 215,
+      "guards": [
+        "authorize"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/websiteEventCommands.ts",
+      "name": "execute",
+      "kind": "mutation",
+      "line": 251,
+      "guards": [
+        "authorize",
+        "requiredRoleIds"
+      ],
+      "db": true
+    },
+    {
+      "file": "convex/websiteEventCommands.ts",
+      "name": "configurePolicy",
+      "kind": "mutation",
+      "line": 588,
+      "guards": [],
+      "db": true
+    },
+    {
+      "file": "convex/websiteEventCommands.ts",
+      "name": "listPolicies",
+      "kind": "query",
+      "line": 662,
+      "guards": [],
+      "db": true
+    }
+  ]
+}

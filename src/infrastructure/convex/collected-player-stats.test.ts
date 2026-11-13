@@ -479,7 +479,7 @@ test("Wardogs recaps queue once for rostered linked players and wait for a publi
     )
     assert.equal(ctx.db.tables.matchRecaps.length, 1)
     const recaps = await import("../../../convex/matchRecaps")
-    const args = { secret, eventId: event._id, deliveryVersion: 2 }
+    const args = { secret, eventId: event._id, deliveryVersion: 3 }
     assert.deepEqual(await invoke(recaps.listPendingForEvent, ctx, args), [])
     ctx.db.seed("discordPublications", {
         _id: "discordPublications:a",
@@ -525,7 +525,7 @@ test("Wardogs corrections suppress queued delivery and never queue another recap
         confirmed
     )
     const recaps = await import("../../../convex/matchRecaps")
-    const args = { secret, eventId: event._id, deliveryVersion: 2 }
+    const args = { secret, eventId: event._id, deliveryVersion: 3 }
     assert.equal(
         (await invoke(recaps.listPendingForEvent, ctx, args)).length,
         1
@@ -587,10 +587,31 @@ test("Wardogs sent markers survive worker replays without another delivery", asy
     )
     const recaps = await import("../../../convex/matchRecaps")
     const recap = ctx.db.tables.matchRecaps[0]
+    const delivery = await import("../../../convex/matchRecapDelivery")
+    ctx.db.seed("discordConfigs", {
+        _id: "discordConfigs:recap",
+        guildId: event.guildId,
+    })
+    const claimed = await invoke(delivery.claim, ctx, {
+        secret,
+        recapId: recap._id,
+        eventId: event._id,
+        discordUserId: recap.discordUserId,
+    })
+    assert.ok(claimed?.token)
+    assert.deepEqual(
+        await invoke(delivery.begin, ctx, {
+            secret,
+            recapId: recap._id,
+            token: claimed.token,
+        }),
+        { ok: true }
+    )
     await invoke(recaps.markSent, ctx, {
         secret,
         recapId: recap._id,
         discordUserId: recap.discordUserId,
+        deliveryToken: claimed.token,
     })
     await invoke(recaps.queueForPublishedResult, ctx, {
         secret,
@@ -601,7 +622,7 @@ test("Wardogs sent markers survive worker replays without another delivery", asy
         await invoke(recaps.listPendingForEvent, ctx, {
             secret,
             eventId: event._id,
-            deliveryVersion: 2,
+            deliveryVersion: 3,
         }),
         []
     )

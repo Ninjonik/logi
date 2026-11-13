@@ -1,0 +1,2710 @@
+diff --git a/convex/eventReminders.ts b/convex/eventReminders.ts
+index c7e7df84..8e8e65d4 100644
+--- a/convex/eventReminders.ts
++++ b/convex/eventReminders.ts
+@@ -181,10 +181,26 @@ export const listPending = query({
+     args: { secret: v.string() },
+     handler: async (ctx, args) => {
+         assertInternalSecret(args.secret)
+-        const pending = await ctx.db
+-            .query("eventReminderRequests")
+-            .withIndex("status", (q) => q.eq("status", "pending"))
+-            .take(50)
++        const [queued, expired] = await Promise.all([
++            ctx.db
++                .query("eventReminderRequests")
++                .withIndex("status", (q) => q.eq("status", "pending"))
++                .take(25),
++            ctx.db
++                .query("eventReminderRequests")
++                .withIndex("status_claimedAt", (q) =>
++                    q
++                        .eq("status", "processing")
++                        .lt(
++                            "claimedAt",
++                            new Date(
++                                Date.now() - CLAIM_TIMEOUT_MS
++                            ).toISOString()
++                        )
++                )
++                .take(25),
++        ])
++        const pending = [...expired, ...queued]
+         return pending.map((request) => ({
+             id: String(request._id),
+             eventId: String(request.eventId),
+@@ -232,11 +248,16 @@ export const claim = mutation({
+             requested: request.recipientIds,
+             current: await currentRecipients(ctx, event, request.audience, now),
+         })
++        const fence = (request.fence ?? 0) + 1
+         await ctx.db.patch(request._id, {
+             status: "processing",
++            deliveryRecipientIds: recipientIds,
++            deliveryAttemptedIds: request.deliveryAttemptedIds ?? [],
+             claimedAt: now.toISOString(),
++            fence,
+         })
+         return {
++            fence,
+             id: String(request._id),
+             eventId: String(request.eventId),
+             guildId: request.guildId,
+@@ -249,13 +270,30 @@ export const claim = mutation({
+ async function finish(
+     ctx: MutationCtx,
+     requestId: string,
++    fence: number | undefined,
+     patch: Partial<Doc<"eventReminderRequests">>
+ ) {
+     const id = ctx.db.normalizeId("eventReminderRequests", requestId)
+     const request = id ? await ctx.db.get(id) : null
+-    if (!request || request.status !== "processing") return
++    if (
++        !request ||
++        request.status !== "processing" ||
++        (request.fence ?? 0) !== (fence ?? 0)
++    )
++        return
+     await ctx.db.patch(request._id as Id<"eventReminderRequests">, {
+         ...patch,
++        ...(request.deliveryAttemptedIds !== undefined
++            ? {
++                  uncertainUserIds: request.deliveryAttemptedIds.filter(
++                      (id) =>
++                          !request.deliverySentIds?.includes(id) &&
++                          !request.deliveryFailedIds?.includes(id)
++                  ),
++                  sentCount: request.deliverySentIds?.length ?? 0,
++                  failedUserIds: request.deliveryFailedIds ?? [],
++              }
++            : {}),
+         completedAt: new Date().toISOString(),
+     })
+ }
+@@ -264,13 +302,14 @@ export const complete = mutation({
+     args: {
+         secret: v.string(),
+         requestId: v.string(),
++        fence: v.optional(v.number()),
+         sentCount: v.number(),
+         // Recipients Discord refused (closed DMs); older bots omit it.
+         failedUserIds: v.optional(v.array(v.string())),
+     },
+     handler: async (ctx, args) => {
+         assertInternalSecret(args.secret)
+-        await finish(ctx, args.requestId, {
++        await finish(ctx, args.requestId, args.fence, {
+             status: "sent",
+             sentCount: Math.max(0, Math.floor(args.sentCount)),
+             ...(args.failedUserIds
+@@ -395,10 +434,15 @@ export const latestOutcome = query({
+ })
+ 
+ export const fail = mutation({
+-    args: { secret: v.string(), requestId: v.string(), error: v.string() },
++    args: {
++        secret: v.string(),
++        requestId: v.string(),
++        fence: v.optional(v.number()),
++        error: v.string(),
++    },
+     handler: async (ctx, args) => {
+         assertInternalSecret(args.secret)
+-        await finish(ctx, args.requestId, {
++        await finish(ctx, args.requestId, args.fence, {
+             status: "failed",
+             error: args.error.slice(0, 500),
+         })
+diff --git a/convex/rosterChanges.ts b/convex/rosterChanges.ts
+index 63e360aa..83c9eb51 100644
+--- a/convex/rosterChanges.ts
++++ b/convex/rosterChanges.ts
+@@ -1,6 +1,7 @@
+ import { v } from "convex/values"
+ 
+ import {
++    changedRecipients,
+     diffRosterPlaces,
+     rosterPlaces,
+     snapshotToPlaces,
+@@ -134,6 +135,7 @@ export const status = query({
+         return {
+             status: row.status,
+             dmSent: row.dmSentUserIds?.length ?? 0,
++            uncertainUserIds: row.uncertainUserIds ?? [],
+             dmFailedUserIds: row.dmFailedUserIds ?? [],
+             digestPosted: Boolean(row.digestPosted),
+         }
+@@ -145,10 +147,26 @@ export const listPending = query({
+     args: { secret: v.string() },
+     handler: async (ctx, args) => {
+         assertInternalSecret(args.secret)
+-        const pending = await ctx.db
+-            .query("rosterChangeRequests")
+-            .withIndex("status", (q) => q.eq("status", "pending"))
+-            .take(50)
++        const [queued, expired] = await Promise.all([
++            ctx.db
++                .query("rosterChangeRequests")
++                .withIndex("status", (q) => q.eq("status", "pending"))
++                .take(25),
++            ctx.db
++                .query("rosterChangeRequests")
++                .withIndex("status_claimedAt", (q) =>
++                    q
++                        .eq("status", "processing")
++                        .lt(
++                            "claimedAt",
++                            new Date(
++                                Date.now() - CLAIM_TIMEOUT_MS
++                            ).toISOString()
++                        )
++                )
++                .take(25),
++        ])
++        const pending = [...expired, ...queued]
+         return pending.map((row) => ({
+             id: String(row._id),
+             eventId: String(row.eventId),
+@@ -210,11 +228,35 @@ export const claim = mutation({
+             .query("userAssignments")
+             .withIndex("serverId", (q) => q.eq("serverId", event.guildId))
+             .collect()
++        const fence = (row.fence ?? 0) + 1
++        const allowed = new Set(
++            members
++                .map((member) => member.userId)
++                .filter(
++                    (id) =>
++                        roster.localPlayerIds === undefined ||
++                        roster.localPlayerIds.includes(id)
++                )
++        )
++        const recipientIds = row.notifyPlayers
++            ? changedRecipients(
++                  diffRosterPlaces(
++                      snapshotToPlaces(row.before),
++                      rosterPlaces(roster),
++                      roster.reservePlayerIds
++                  ),
++                  allowed
++              )
++            : []
+         await ctx.db.patch(row._id, {
+             status: "processing",
++            deliveryRecipientIds: recipientIds,
++            deliveryAttemptedIds: row.deliveryAttemptedIds ?? [],
+             claimedAt: now.toISOString(),
++            fence,
+         })
+         return {
++            fence,
+             id: String(row._id),
+             eventId: String(row.eventId),
+             guildId: row.guildId,
+@@ -243,13 +285,30 @@ export const claim = mutation({
+ async function finish(
+     ctx: MutationCtx,
+     requestId: string,
++    fence: number | undefined,
+     patch: Partial<Doc<"rosterChangeRequests">>
+ ) {
+     const id = ctx.db.normalizeId("rosterChangeRequests", requestId)
+     const row = id ? await ctx.db.get(id) : null
+-    if (!row || row.status !== "processing") return
++    if (
++        !row ||
++        row.status !== "processing" ||
++        (row.fence ?? 0) !== (fence ?? 0)
++    )
++        return
+     await ctx.db.patch(row._id as Id<"rosterChangeRequests">, {
+         ...patch,
++        ...(row.deliveryAttemptedIds !== undefined
++            ? {
++                  uncertainUserIds: row.deliveryAttemptedIds.filter(
++                      (id) =>
++                          !row.deliverySentIds?.includes(id) &&
++                          !row.deliveryFailedIds?.includes(id)
++                  ),
++                  dmSentUserIds: row.deliverySentIds ?? [],
++                  dmFailedUserIds: row.deliveryFailedIds ?? [],
++              }
++            : {}),
+         completedAt: new Date().toISOString(),
+     })
+ }
+@@ -258,13 +317,14 @@ export const complete = mutation({
+     args: {
+         secret: v.string(),
+         requestId: v.string(),
++        fence: v.optional(v.number()),
+         dmSentUserIds: v.array(v.string()),
+         dmFailedUserIds: v.array(v.string()),
+         digestPosted: v.boolean(),
+     },
+     handler: async (ctx, args) => {
+         assertInternalSecret(args.secret)
+-        await finish(ctx, args.requestId, {
++        await finish(ctx, args.requestId, args.fence, {
+             status: "sent",
+             dmSentUserIds: args.dmSentUserIds.slice(0, 500),
+             dmFailedUserIds: args.dmFailedUserIds.slice(0, 500),
+@@ -274,10 +334,15 @@ export const complete = mutation({
+ })
+ 
+ export const fail = mutation({
+-    args: { secret: v.string(), requestId: v.string(), error: v.string() },
++    args: {
++        secret: v.string(),
++        requestId: v.string(),
++        fence: v.optional(v.number()),
++        error: v.string(),
++    },
+     handler: async (ctx, args) => {
+         assertInternalSecret(args.secret)
+-        await finish(ctx, args.requestId, {
++        await finish(ctx, args.requestId, args.fence, {
+             status: "failed",
+             error: args.error.slice(0, 100),
+         })
+diff --git a/convex/schema.ts b/convex/schema.ts
+index cb471747..63e9e699 100644
+--- a/convex/schema.ts
++++ b/convex/schema.ts
+@@ -1383,6 +1383,12 @@ export default defineSchema({
+             v.literal("failed")
+         ),
+         claimedAt: v.optional(v.string()),
++        fence: v.optional(v.number()),
++        deliveryRecipientIds: v.optional(v.array(v.string())),
++        deliveryAttemptedIds: v.optional(v.array(v.string())),
++        deliverySentIds: v.optional(v.array(v.string())),
++        deliveryFailedIds: v.optional(v.array(v.string())),
++        uncertainUserIds: v.optional(v.array(v.string())),
+         completedAt: v.optional(v.string()),
+         sentCount: v.optional(v.number()),
+         // Recipients whose DM Discord refused (closed DMs, blocked bot);
+@@ -1392,6 +1398,7 @@ export default defineSchema({
+     })
+         .index("eventId_requestedAt", ["eventId", "requestedAt"])
+         .index("status", ["status"])
++        .index("status_claimedAt", ["status", "claimedAt"])
+         .index("requestedAt", ["requestedAt"]),
+     // Who the scheduled sign-up and attendance reminders did not reach (board
+     // L2-64): one row per match, kind and run (the attendance offset or the
+@@ -1443,6 +1450,12 @@ export default defineSchema({
+             v.literal("failed")
+         ),
+         claimedAt: v.optional(v.string()),
++        fence: v.optional(v.number()),
++        deliveryRecipientIds: v.optional(v.array(v.string())),
++        deliveryAttemptedIds: v.optional(v.array(v.string())),
++        deliverySentIds: v.optional(v.array(v.string())),
++        deliveryFailedIds: v.optional(v.array(v.string())),
++        uncertainUserIds: v.optional(v.array(v.string())),
+         completedAt: v.optional(v.string()),
+         dmSentUserIds: v.optional(v.array(v.string())),
+         dmFailedUserIds: v.optional(v.array(v.string())),
+@@ -1451,6 +1464,7 @@ export default defineSchema({
+     })
+         .index("eventId_requestedAt", ["eventId", "requestedAt"])
+         .index("status", ["status"])
++        .index("status_claimedAt", ["status", "claimedAt"])
+         .index("status_requestedAt", ["status", "requestedAt"]),
+     stratmaps: defineTable({
+         guildId: v.string(),
+diff --git a/discord-bot/src/commands/registration.ts b/discord-bot/src/commands/registration.ts
+index eb887e4b..cae4c2eb 100644
+--- a/discord-bot/src/commands/registration.ts
++++ b/discord-bot/src/commands/registration.ts
+@@ -10,6 +10,7 @@ import {
+ } from "../../../src/domain/discord-commands/command-settings"
+ import type { GuildCommandConfig } from "../../../src/domain/discord-commands/guild-config"
+ import type { GuildCommandConfigs } from "./guild-configs"
++import { mapConcurrent } from "../runtime/work-queue"
+ 
+ /** The parts of a discord.js `Guild` registration uses. */
+ export type RegistrationGuild = {
+@@ -100,6 +101,11 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
+     >()
+     const timers = new Map<string, unknown>()
+     const running = new Map<string, Promise<void>>()
++    const pending = new Map<
++        string,
++        { guild: RegistrationGuild; reason: RegistrationReason }
++    >()
++    let stopped = false
+     const schedule =
+         ports.schedule ??
+         ((callback: () => void, ms: number) => setTimeout(callback, ms))
+@@ -112,21 +118,25 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
+         guild: RegistrationGuild,
+         reason: RegistrationReason
+     ) {
+-        const config =
+-            ports.configs.peek(guild.id) ?? (await ports.configs.get(guild.id))
+-        const { language, settings } = registrationInput(
+-            config,
+-            guild.preferredLocale
+-        )
+-        const definitions = buildCommandDefinitions({ language, settings })
+-        const signature = commandDefinitionsSignature(definitions)
+-        const handledRequestAt = config?.registration.requestedAt ?? undefined
++        let config: GuildCommandConfig | null | undefined
+         const at = ports.now()
+-        // A save that changed nothing Discord shows: no call, still recorded.
+-        const unchanged =
+-            reason === "saved" &&
+-            registered.get(guild.id)?.signature === signature
++        let handledRequestAt: number | undefined
+         try {
++            config =
++                ports.configs.peek(guild.id) ??
++                (await ports.configs.get(guild.id))
++            const { language, settings } = registrationInput(
++                config,
++                guild.preferredLocale
++            )
++            const definitions = buildCommandDefinitions({ language, settings })
++            const signature = commandDefinitionsSignature(definitions)
++            handledRequestAt = config?.registration.requestedAt ?? undefined
++            // A save that changed nothing Discord shows: no call, still recorded.
++            const unchanged =
++                (reason === "saved" || reason === "ready") &&
++                (registered.get(guild.id)?.signature ??
++                    config?.registration.signature) === signature
+             if (!unchanged) await guild.commands.set(definitions)
+             registered.set(guild.id, { signature, language, handledRequestAt })
+             ports.log(
+@@ -183,12 +193,24 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
+         guild: RegistrationGuild,
+         reason: RegistrationReason
+     ) {
++        if (stopped) return Promise.resolve()
++        const before = pending.get(guild.id)
++        pending.set(guild.id, {
++            guild,
++            reason: before?.reason === "request" ? "request" : reason,
++        })
+         const current = running.get(guild.id)
+-        const next = (current ?? Promise.resolve())
+-            .then(() => register(guild, reason))
+-            .finally(() => {
+-                if (running.get(guild.id) === next) running.delete(guild.id)
+-            })
++        if (current) return current
++        const next = (async () => {
++            while (!stopped) {
++                const latest = pending.get(guild.id)
++                if (!latest) break
++                pending.delete(guild.id)
++                await register(latest.guild, latest.reason)
++            }
++        })().finally(() => {
++            if (running.get(guild.id) === next) running.delete(guild.id)
++        })
+         running.set(guild.id, next)
+         return next
+     }
+@@ -226,10 +248,20 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
+ 
+     return {
+         registerGuild,
++        async stop() {
++            stopped = true
++            for (const timer of timers.values()) cancel(timer)
++            timers.clear()
++            pending.clear()
++            await Promise.allSettled([...running.values()])
++            registered.clear()
++        },
+ 
+         /** Every server the bot is in, one after another (ClientReady). */
+         async registerAll(guilds: Iterable<RegistrationGuild>) {
+-            for (const guild of guilds) await registerGuild(guild, "ready")
++            await mapConcurrent([...guilds], 4, (guild) =>
++                registerGuild(guild, "ready")
++            )
+         },
+ 
+         /**
+@@ -237,6 +269,7 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
+          * definitions differ or that asked for it, after a short pause.
+          */
+         configsChanged(guildIds: readonly string[]) {
++            if (stopped) return
+             for (const guildId of guildIds) {
+                 const guild = ports.guild(guildId)
+                 if (!guild) continue
+diff --git a/discord-bot/src/commands/runtime.ts b/discord-bot/src/commands/runtime.ts
+index 0aa5d15f..b15e1694 100644
+--- a/discord-bot/src/commands/runtime.ts
++++ b/discord-bot/src/commands/runtime.ts
+@@ -81,8 +81,13 @@ function registrationFor(client: Client) {
+  */
+ export async function startCommandRegistration(client: Client) {
+     const registrar = registrationFor(client)
+-    await registrar.registerAll(client.guilds.cache.values())
+     guildCommandConfigs.start((guildIds) => registrar.configsChanged(guildIds))
++    await registrar.registerAll(client.guilds.cache.values())
++    return async () => {
++        guildCommandConfigs.stop()
++        await registrar.stop()
++        registration = null
++    }
+ }
+ 
+ /** GuildCreate: the bot was added to a server (M1-18). */
+diff --git a/discord-bot/src/convex.ts b/discord-bot/src/convex.ts
+index 45684614..a40e07f6 100644
+--- a/discord-bot/src/convex.ts
++++ b/discord-bot/src/convex.ts
+@@ -2,7 +2,9 @@ import { makeFunctionReference } from "convex/server"
+ import { ConvexReactClient } from "convex/react"
+ import WebSocket from "ws"
+ 
++import { Admission } from "./runtime/admission"
+ import { env } from "./environment"
++export const backendAdmission = new Admission(16, 512)
+ 
+ // Node 20 on the production host does not expose a global WebSocket.
+ // Convex's reactive client expects one for query watchers used by the bot.
+@@ -27,6 +29,17 @@ export const convex = new Proxy({} as ConvexReactClient, {
+             property,
+             receiver
+         )
++        if (
++            typeof value === "function" &&
++            (property === "query" ||
++                property === "mutation" ||
++                property === "action")
++        )
++            return (...args: unknown[]) =>
++                backendAdmission.run(
++                    async () => Reflect.apply(value, getConvexClient(), args),
++                    property
++                )
+         return typeof value === "function"
+             ? value.bind(getConvexClient())
+             : value
+diff --git a/discord-bot/src/discord-client.ts b/discord-bot/src/discord-client.ts
+index 30cd4f91..bc24a245 100644
+--- a/discord-bot/src/discord-client.ts
++++ b/discord-bot/src/discord-client.ts
+@@ -1,3 +1,4 @@
++import { installDiscordAdmission } from "./runtime/discord-admission"
+ import { Client, GatewayIntentBits, Partials } from "discord.js"
+ import { env } from "./environment"
+ 
+@@ -14,3 +15,5 @@ export const client = new Client({
+     ],
+     partials: [Partials.Message, Partials.Channel],
+ })
++
++export const discordAdmission = installDiscordAdmission(client.rest)
+diff --git a/discord-bot/src/index.ts b/discord-bot/src/index.ts
+index 540509a9..9b902e6a 100644
+--- a/discord-bot/src/index.ts
++++ b/discord-bot/src/index.ts
+@@ -1,7 +1,11 @@
++import { applicationStateCache } from "./interactions/membership-application-cache"
+ import { registerMembershipInvalidationEvents } from "./sync/membership-events"
+ import { startManagedRoleWorker } from "./sync/managed-member-roles"
+ import { startEventDeletionWorker } from "./sync/event-deletion"
++import { mapConcurrent } from "./runtime/work-queue"
++import { Services } from "./runtime/services"
+ import { Worker } from "node:worker_threads"
++import { closeConvexClient } from "./convex"
+ import { createRequire } from "node:module"
+ import { Events } from "discord.js"
+ 
+@@ -20,10 +24,10 @@ import { MeetingAttendanceRequestService } from "./meeting-attendance"
+ import { ManualReminderRequestService } from "./manual-reminders"
+ import { startPlatformStatusMonitor } from "./platform-status"
+ import { DiscordSyncService } from "./runtime/sync-service"
++import { client, discordAdmission } from "./discord-client"
+ import { createInteractionHandler } from "./interactions"
+ import { runInteraction } from "./interactions/registry"
+ import { logError, logInfo, logWarn } from "./log"
+-import { client } from "./discord-client"
+ import { env } from "./environment"
+ 
+ const syncService = new DiscordSyncService(client)
+@@ -67,94 +71,109 @@ const interactionHandler = createInteractionHandler({
+ })
+ 
+ function startFallbackWorker() {
+-    const fallbackWorker = new Worker(
+-        new URL("./runtime/fallback-worker.ts", import.meta.url),
+-        {
+-            execArgv: getWorkerExecArgv(),
+-        }
+-    )
+-
+-    fallbackWorker.on(
+-        "message",
+-        (message: {
+-            type: string
+-            eventIds?: string[]
+-            error?: string
+-            count?: number
+-            removed?: number
+-            released?: number
+-        }) => {
+-            if (message.type === "scheduledJobsRecovered") {
+-                logInfo("fallback-worker", "Recovered scheduled job queue", {
+-                    removed: message.removed ?? 0,
+-                    released: message.released ?? 0,
+-                })
+-                return
++    let stopped = false
++    let restart: ReturnType<typeof setTimeout> | undefined
++    let current: Worker | undefined
++    const launch = () => {
++        if (stopped) return
++        const fallbackWorker = new Worker(
++            new URL("./runtime/fallback-worker.ts", import.meta.url),
++            {
++                execArgv: getWorkerExecArgv(),
+             }
++        )
+ 
+-            if (message.type === "scheduledJobsClaimed") {
+-                logInfo("fallback-worker", "Claimed due scheduled jobs", {
+-                    count: message.count ?? 0,
+-                    eventIds: message.eventIds ?? [],
+-                })
+-                return
+-            }
++        fallbackWorker.on(
++            "message",
++            (message: {
++                type: string
++                eventIds?: string[]
++                error?: string
++                count?: number
++                removed?: number
++                released?: number
++            }) => {
++                if (message.type === "scheduledJobsRecovered") {
++                    logInfo(
++                        "fallback-worker",
++                        "Recovered scheduled job queue",
++                        {
++                            removed: message.removed ?? 0,
++                            released: message.released ?? 0,
++                        }
++                    )
++                    return
++                }
+ 
+-            if (message.type === "attendanceRemindersDue") {
+-                for (const eventId of message.eventIds ?? []) {
+-                    syncService.queueAttendanceReminder(eventId)
++                if (message.type === "scheduledJobsClaimed") {
++                    logInfo("fallback-worker", "Claimed due scheduled jobs", {
++                        count: message.count ?? 0,
++                        eventIds: message.eventIds ?? [],
++                    })
++                    return
+                 }
+-                syncService.triggerSoon(250)
+-                return
+-            }
+ 
+-            if (message.type === "signupRemindersDue") {
+-                for (const eventId of message.eventIds ?? []) {
+-                    syncService.queueSignupReminder(eventId)
++                if (message.type === "attendanceRemindersDue") {
++                    for (const eventId of message.eventIds ?? []) {
++                        syncService.queueAttendanceReminder(eventId)
++                    }
++                    syncService.triggerSoon(250)
++                    return
+                 }
+-                syncService.triggerSoon(250)
+-                return
+-            }
+ 
+-            if (message.type === "eventsChanged") {
+-                logInfo("fallback-worker", "Received changed events", {
+-                    eventIds: message.eventIds ?? [],
+-                    count: message.eventIds?.length ?? 0,
+-                })
+-                for (const eventId of message.eventIds ?? []) {
+-                    syncService.queueEventSync(eventId)
++                if (message.type === "signupRemindersDue") {
++                    for (const eventId of message.eventIds ?? []) {
++                        syncService.queueSignupReminder(eventId)
++                    }
++                    syncService.triggerSoon(250)
++                    return
+                 }
+-                syncService.triggerSoon(250)
+-                return
+-            }
+ 
+-            if (message.type === "fullResync") {
+-                logInfo("fallback-worker", "Requested full resync")
+-                syncService.requestFullResync()
+-                return
+-            }
++                if (message.type === "eventsChanged") {
++                    logInfo("fallback-worker", "Received changed events", {
++                        eventIds: message.eventIds ?? [],
++                        count: message.eventIds?.length ?? 0,
++                    })
++                    for (const eventId of message.eventIds ?? []) {
++                        syncService.queueEventSync(eventId)
++                    }
++                    syncService.triggerSoon(250)
++                    return
++                }
++
++                if (message.type === "fullResync") {
++                    logInfo("fallback-worker", "Requested full resync")
++                    syncService.requestFullResync()
++                    return
++                }
+ 
+-            if (message.type === "error") {
+-                logError("fallback-worker", "Worker reported an error", {
+-                    error: message.error,
++                if (message.type === "error") {
++                    logError("fallback-worker", "Worker reported an error", {
++                        error: message.error,
++                    })
++                }
++            }
++        )
++        fallbackWorker.on("error", (error) => {
++            logError("fallback-worker", "Worker crashed", { error })
++        })
++        fallbackWorker.on("exit", (code) => {
++            if (code !== 0 && !stopped) {
++                logWarn("fallback-worker", "Worker exited unexpectedly", {
++                    code,
+                 })
++                restart = setTimeout(launch, 1000)
+             }
+-        }
+-    )
+-    fallbackWorker.on("error", (error) => {
+-        logError("fallback-worker", "Worker crashed", { error })
+-    })
+-    fallbackWorker.on("exit", (code) => {
+-        if (code !== 0) {
+-            logWarn("fallback-worker", "Worker exited unexpectedly", { code })
+-            setTimeout(() => {
+-                logInfo("fallback-worker", "Restarting fallback worker")
+-                startFallbackWorker()
+-            }, 1000)
+-        }
+-    })
++        })
+ 
+-    return fallbackWorker
++        current = fallbackWorker
++    }
++    launch()
++    return async () => {
++        stopped = true
++        if (restart) clearTimeout(restart)
++        await current?.terminate()
++    }
+ }
+ 
+ import { startApplicationWebSubmissionWorker } from "./interactions/membership-web-submissions"
+@@ -166,112 +185,197 @@ import { startPublicPanelWorker } from "./public-panels/worker"
+ import { startReportRecovery } from "./player-reports"
+ import { startLeagueWorker } from "./league/worker"
+ import { startSeedWorker } from "./seed/worker"
+-client.once(Events.ClientReady, async (readyClient) => {
+-    startEventDeletionWorker(client, (guildId) => {
+-        syncService.queueGuildSync(guildId)
+-        syncService.triggerSoon(250)
+-    })
+-    startReportRecovery(client)
+-    startApplicationWebSubmissionWorker(client)
+-    // Clan application windows open without a backend read (3 s rule).
+-    startApplicationStateCache()
+-    startLeagueWorker(client)
+-    // A calendar request ("Obnovit teď", "Odeslat do kanálu") redraws it now.
+-    startPublicPanelWorker(client, {
+-        refreshCalendar: (guildId) => syncService.refreshCalendar(guildId),
++const services = new Services((name, error) =>
++    logError("bot", "Service start failed; will retry", { name, error })
++)
++let shuttingDown = false
++const activeEvents = new Set<Promise<unknown>>()
++function track<T>(operation: Promise<T>): Promise<T> {
++    const owned = operation.finally(() => {
++        activeEvents.delete(owned)
+     })
+-    startManagedRoleWorker(client)
+-    // Seed calls, control messages and intros (board P5).
+-    startSeedWorker(client)
+-    startTeamRequestNotificationWorker(client)
+-    startApplicationEmojiProvisioning(client)
+-    try {
+-        logInfo("bot", "Discord bot ready", {
+-            user: readyClient.user.tag,
+-            guildCount: readyClient.guilds.cache.size,
+-        })
++    activeEvents.add(owned)
++    return owned
++}
+ 
+-        for (const guild of readyClient.guilds.cache.values())
+-            await invalidateMembershipGuild(guild.id)
+-        // Slash commands in every server, then again whenever the clan
+-        // language or the command settings change (M1-17, M1-19, M1-B01).
+-        await startCommandRegistration(readyClient).catch((error) =>
+-            logError("bot", "Failed to register guild commands", { error })
++client.once(Events.ClientReady, (readyClient) => {
++    if (shuttingDown) return
++    logInfo("bot", "Discord bot ready", {
++        user: readyClient.user.tag,
++        guildCount: readyClient.guilds.cache.size,
++    })
++    services.start(
++        "sync",
++        async () => {
++            await syncService.start()
++            return () => syncService.stop()
++        },
++        () => syncService.stop()
++    )
++    services.start(
++        "attendance",
++        async () => {
++            await meetingAttendanceRequestService.start()
++            return () => meetingAttendanceRequestService.stop()
++        },
++        () => meetingAttendanceRequestService.stop()
++    )
++    services.start(
++        "manual-reminders",
++        async () => {
++            await manualReminderRequestService.start()
++            return () => manualReminderRequestService.stop()
++        },
++        () => manualReminderRequestService.stop()
++    )
++    services.start(
++        "roster-changes",
++        async () => {
++            await rosterChangeRequestService.start()
++            return () => rosterChangeRequestService.stop()
++        },
++        () => rosterChangeRequestService.stop()
++    )
++    services.start("membership-epochs", async () => {
++        await mapConcurrent(
++            [...readyClient.guilds.cache.values()],
++            4,
++            (guild) => invalidateMembershipGuild(guild.id)
+         )
+-
+-        await meetingAttendanceRequestService.start()
+-        await syncService.start()
+-        // Redraws pre-redesign match announcements once, a few a minute.
++    })
++    services.start("commands", () => startCommandRegistration(readyClient))
++    services.start("event-deletion", () =>
++        startEventDeletionWorker(client, (guildId) => {
++            syncService.queueGuildSync(guildId)
++            syncService.triggerSoon(250)
++        })
++    )
++    services.start("reports", () => startReportRecovery(client))
++    services.start("web-applications", () =>
++        startApplicationWebSubmissionWorker(client)
++    )
++    services.start("application-cache", () => {
++        startApplicationStateCache()
++        return () => applicationStateCache.stop()
++    })
++    services.start("league", () => startLeagueWorker(client))
++    services.start("panels", () =>
++        startPublicPanelWorker(client, {
++            refreshCalendar: (guildId) => syncService.refreshCalendar(guildId),
++        })
++    )
++    services.start("roles", () => startManagedRoleWorker(client))
++    services.start("seed", () => startSeedWorker(client))
++    services.start("team-notifications", () => {
++        const worker = startTeamRequestNotificationWorker(client)
++        return () => worker.stop()
++    })
++    services.start("emoji", () => startApplicationEmojiProvisioning(client))
++    services.start("announcement-migration", () =>
+         startAnnouncementMigration({
+             queueEventSync: (eventId) => syncService.queueEventSync(eventId),
+             triggerSoon: () => syncService.triggerSoon(250),
+         })
+-        // A backend without the reminder queue must not stop the rest of the
+-        // bot from starting; reminders then simply wait for the deploy.
+-        await manualReminderRequestService.start().catch((error) =>
+-            logError("bot", "Manual reminder requests failed to start", {
+-                error,
+-            })
+-        )
+-        // The roster change digest and DMs the dashboard asks for (W6b).
+-        await rosterChangeRequestService.start().catch((error) =>
+-            logError("bot", "Roster change requests failed to start", {
+-                error,
+-            })
+-        )
+-        startPlatformStatusMonitor(client)
+-
+-        startFallbackWorker()
+-    } catch (error) {
+-        logError("bot", "Ready handler failed", { error })
+-    }
++    )
++    services.start("status", () => startPlatformStatusMonitor(client))
++    services.start("fallback", startFallbackWorker)
+ })
+ 
+-client.on(Events.InteractionCreate, (source) =>
+-    // Any failure ends in the private "Tohle se nepovedlo" card (M3-08).
+-    runInteraction(source, async (interaction) => {
+-        if (
+-            interaction.isButton() &&
+-            (await handlePreparedModalButton(interaction))
+-        )
+-            return
+-        if (interaction.isButton()) {
+-            // Panel buttons route through the registry (public-panels/interactions.ts).
+-            await interactionHandler.handleButtonInteraction(interaction)
+-            return
+-        }
+-
+-        if (interaction.isChannelSelectMenu()) {
+-            await interactionHandler.handleChannelSelectMenuInteraction(
+-                interaction
++let shutdown: Promise<void> | undefined
++function stopBot() {
++    if (shutdown) return shutdown
++    shuttingDown = true
++    shutdown = (async () => {
++        let deadline: ReturnType<typeof setTimeout> | undefined
++        const draining = services
++            .stop()
++            .then(() => Promise.allSettled([...activeEvents]))
++        try {
++            await Promise.race([
++                draining,
++                new Promise<never>((_, reject) => {
++                    deadline = setTimeout(
++                        () =>
++                            reject(
++                                Error("Bot shutdown drain deadline exceeded")
++                            ),
++                        30_000
++                    )
++                }),
++            ])
++        } catch (error) {
++            logWarn(
++                "bot",
++                "Shutdown left unfinished work for durable recovery",
++                { error, activeEvents: activeEvents.size }
+             )
+-            return
++        } finally {
++            clearTimeout(deadline)
++            await client.destroy()
++            await closeConvexClient()
+         }
++    })()
++    return shutdown
++}
++for (const signal of ["SIGINT", "SIGTERM"] as const)
++    process.once(signal, () => {
++        void stopBot().catch((error) => {
++            logError("bot", "Shutdown failed", { error })
++            process.exitCode = 1
++        })
++    })
+ 
+-        if (interaction.isStringSelectMenu()) {
+-            await interactionHandler.handleStringSelectMenuInteraction(
+-                interaction
++client.on(Events.InteractionCreate, (source) => {
++    if (shuttingDown) return
++    return track(
++        // Any failure ends in the private "Tohle se nepovedlo" card (M3-08).
++        runInteraction(source, async (interaction) => {
++            if (
++                interaction.isButton() &&
++                (await handlePreparedModalButton(interaction))
+             )
+-            return
+-        }
++                return
++            if (interaction.isButton()) {
++                // Panel buttons route through the registry (public-panels/interactions.ts).
++                await interactionHandler.handleButtonInteraction(interaction)
++                return
++            }
+ 
+-        if (interaction.isModalSubmit()) {
+-            await interactionHandler.handleModalSubmit(interaction)
+-            return
+-        }
++            if (interaction.isChannelSelectMenu()) {
++                await interactionHandler.handleChannelSelectMenuInteraction(
++                    interaction
++                )
++                return
++            }
+ 
+-        if (interaction.isAutocomplete()) {
+-            await interactionHandler.handleAutocompleteInteraction(interaction)
+-            return
+-        }
++            if (interaction.isStringSelectMenu()) {
++                await interactionHandler.handleStringSelectMenuInteraction(
++                    interaction
++                )
++                return
++            }
+ 
+-        if (interaction.isChatInputCommand())
+-            await interactionHandler.handleChatInputCommand(interaction)
+-    })
+-)
++            if (interaction.isModalSubmit()) {
++                await interactionHandler.handleModalSubmit(interaction)
++                return
++            }
++
++            if (interaction.isAutocomplete()) {
++                await interactionHandler.handleAutocompleteInteraction(
++                    interaction
++                )
++                return
++            }
++
++            if (interaction.isChatInputCommand())
++                await interactionHandler.handleChatInputCommand(interaction)
++        })
++    )
++})
+ 
+ // A server that adds the bot gets the commands at once (M1-18).
+ client.on(Events.GuildCreate, (guild) => {
++    if (shuttingDown) return
+     void registerJoinedGuild(client, guild).catch((error) =>
+         logError("bot", "Failed to register guild commands", {
+             guildId: guild.id,
+@@ -290,6 +394,7 @@ registerMembershipInvalidationEvents(client, {
+         }),
+ })
+ client.on(Events.GuildMemberAdd, (member) => {
++    if (shuttingDown) return
+     const config = syncService.getGuildConfig(member.guild.id)
+     void syncGuildMemberAccessMember(
+         member,
+@@ -303,6 +408,7 @@ client.on(Events.GuildMemberAdd, (member) => {
+     )
+ })
+ client.on(Events.GuildMemberUpdate, (_before, member) => {
++    if (shuttingDown) return
+     const config = syncService.getGuildConfig(member.guild.id)
+     void syncGuildMemberAccessMember(
+         member,
+@@ -316,6 +422,7 @@ client.on(Events.GuildMemberUpdate, (_before, member) => {
+     )
+ })
+ client.on(Events.GuildMemberRemove, (member) => {
++    if (shuttingDown) return
+     void removeGuildMemberAccess(member.guild.id, member.id).catch((error) =>
+         logError("member-access", "Failed to remove member access", {
+             guildId: member.guild.id,
+diff --git a/discord-bot/src/interactions/membership-web-submissions.ts b/discord-bot/src/interactions/membership-web-submissions.ts
+index 57f79e7a..587eeb21 100644
+--- a/discord-bot/src/interactions/membership-web-submissions.ts
++++ b/discord-bot/src/interactions/membership-web-submissions.ts
+@@ -13,6 +13,7 @@ import {
+     threadUrl,
+ } from "./membership-application-create"
+ import { applicationStateCache } from "./membership-application-cache"
++import { startDurableWork } from "../runtime/durable-work"
+ import { dmSettingsUrl } from "../events/match-context"
+ import { logError, logInfo, logWarn } from "../log"
+ import { messagePayload } from "../ui/message-kit"
+@@ -102,37 +103,33 @@ async function processSubmission(client: Client, item: Queued) {
+         .catch(() => null)
+ }
+ 
+-export function startApplicationWebSubmissionWorker(client: Client) {
+-    const processing = new Set<string>()
+-    const run = (items: readonly Queued[]) => {
+-        for (const item of items) {
+-            if (processing.has(item.draftId)) continue
+-            processing.add(item.draftId)
+-            void processSubmission(client, item)
+-                .catch((error) =>
+-                    logError("membership", "Web application failed", {
+-                        guildId: item.guildId,
++export async function startApplicationWebSubmissionWorker(client: Client) {
++    const worker = await startDurableWork<Queued>({
++        read: async () =>
++            (await convex.query(applicationRefs.queuedWeb, {
++                secret: env.internalSecret,
++            })) as Queued[],
++        watch: (update) => {
++            const watch = convex.watchQuery(applicationRefs.queuedWeb, {
++                secret: env.internalSecret,
++            })
++            return watch.onUpdate(() => {
++                try {
++                    update(
++                        (watch.localQueryResult() as Queued[] | undefined) ?? []
++                    )
++                } catch (error) {
++                    logWarn("membership", "Could not read web applications", {
+                         error,
+                     })
+-                )
+-                .finally(() => processing.delete(item.draftId))
+-        }
+-    }
+-    try {
+-        const watch = convex.watchQuery(applicationRefs.queuedWeb, {
+-            secret: env.internalSecret,
+-        })
+-        watch.onUpdate(() => {
+-            try {
+-                run((watch.localQueryResult() as Queued[] | undefined) ?? [])
+-            } catch (error) {
+-                // Before the backend deploy the query does not exist yet.
+-                logWarn("membership", "Could not read web applications", {
+-                    error,
+-                })
+-            }
+-        })
+-    } catch (error) {
+-        logWarn("membership", "Web applications are not watched", { error })
+-    }
++                }
++            })
++        },
++        key: (item) => item.draftId,
++        group: (item) => item.guildId,
++        process: (item) => processSubmission(client, item),
++        error: (error) =>
++            logError("membership", "Web application worker failed", { error }),
++    })
++    return () => worker.stop()
+ }
+diff --git a/discord-bot/src/manual-reminders.ts b/discord-bot/src/manual-reminders.ts
+index e1241b82..4807e64b 100644
+--- a/discord-bot/src/manual-reminders.ts
++++ b/discord-bot/src/manual-reminders.ts
+@@ -1,3 +1,5 @@
++import { requestDmSender } from "./runtime/request-delivery"
++import { startDurableWork } from "./runtime/durable-work"
+ import type { Client } from "discord.js"
+ 
+ import {
+@@ -20,8 +22,7 @@ type PendingReminder = { id: string; eventId: string; guildId: string }
+  * the watch fires repeatedly.
+  */
+ export class ManualReminderRequestService {
+-    private unsubscribe?: () => void
+-    private readonly processing = new Set<string>()
++    private worker?: Awaited<ReturnType<typeof startDurableWork>>
+ 
+     constructor(
+         private readonly client: Client,
+@@ -31,49 +32,45 @@ export class ManualReminderRequestService {
+     ) {}
+ 
+     async start() {
+-        const watch = convex.watchQuery(references.listPendingManualReminders, {
+-            secret: env.internalSecret,
+-        })
+-        this.unsubscribe = watch.onUpdate(() => {
+-            let pending: PendingReminder[] | undefined
+-            try {
+-                pending = watch.localQueryResult() as
+-                    PendingReminder[] | undefined
+-            } catch (error) {
+-                // The query failed, for example before the backend deploy.
+-                logWarn(
+-                    "manual-reminders",
+-                    "Could not read pending reminders",
+-                    {
+-                        error,
+-                    }
++        await this.stop()
++        this.worker = await startDurableWork<PendingReminder>({
++            read: async () =>
++                (await convex.query(references.listPendingManualReminders, {
++                    secret: env.internalSecret,
++                })) as PendingReminder[],
++            watch: (update) => {
++                const watch = convex.watchQuery(
++                    references.listPendingManualReminders,
++                    { secret: env.internalSecret }
+                 )
+-                return
+-            }
+-            if (pending) void this.processAll(pending)
++                return watch.onUpdate(() => {
++                    try {
++                        const rows = watch.localQueryResult() as
++                            PendingReminder[] | undefined
++                        if (rows) update(rows)
++                    } catch (error) {
++                        logWarn(
++                            "manual-reminders",
++                            "Could not read pending work",
++                            { error }
++                        )
++                    }
++                })
++            },
++            key: (item) => item.id,
++            group: (item) => item.guildId,
++            process: (item) => this.process(item),
++            error: (error) =>
++                logError("manual-reminders", "Request worker failed", {
++                    error,
++                }),
+         })
+-        const pending = (await convex.query(
+-            references.listPendingManualReminders,
+-            { secret: env.internalSecret }
+-        )) as PendingReminder[]
+-        await this.processAll(pending)
+-        logInfo("manual-reminders", "Started manual reminder requests")
+     }
+ 
+-    stop() {
+-        this.unsubscribe?.()
+-    }
+-
+-    private async processAll(pending: PendingReminder[]) {
+-        for (const reminder of pending) {
+-            if (this.processing.has(reminder.id)) continue
+-            this.processing.add(reminder.id)
+-            try {
+-                await this.process(reminder)
+-            } finally {
+-                this.processing.delete(reminder.id)
+-            }
+-        }
++    async stop() {
++        const worker = this.worker
++        this.worker = undefined
++        await worker?.stop()
+     }
+ 
+     private async process(reminder: PendingReminder) {
+@@ -98,7 +95,11 @@ export class ManualReminderRequestService {
+             const delivery = await deliverManualReminder({
+                 payload,
+                 request: claimed,
+-                send: discordDmSender(this.client, claimed.eventId),
++                send: requestDmSender(
++                    "reminder",
++                    claimed,
++                    discordDmSender(this.client, claimed.eventId)
++                ),
+                 names: await manualReminderNames(
+                     this.client,
+                     payload,
+@@ -110,6 +111,7 @@ export class ManualReminderRequestService {
+             await convex.mutation(references.completeManualReminder, {
+                 secret: env.internalSecret,
+                 requestId: claimed.id,
++                fence: claimed.fence,
+                 sentCount,
+                 failedUserIds: delivery.failedUserIds,
+             })
+@@ -123,6 +125,7 @@ export class ManualReminderRequestService {
+         } catch (error) {
+             logWarn("manual-reminders", "Manual reminder failed", {
+                 requestId: claimed.id,
++                fence: claimed.fence,
+                 eventId: claimed.eventId,
+                 error,
+             })
+@@ -130,6 +133,7 @@ export class ManualReminderRequestService {
+                 .mutation(references.failManualReminder, {
+                     secret: env.internalSecret,
+                     requestId: claimed.id,
++                    fence: claimed.fence,
+                     // A code the match page words in the dashboard language.
+                     error: "send_failed",
+                 })
+diff --git a/discord-bot/src/meeting-attendance.ts b/discord-bot/src/meeting-attendance.ts
+index 3377f9ce..f778dee6 100644
+--- a/discord-bot/src/meeting-attendance.ts
++++ b/discord-bot/src/meeting-attendance.ts
+@@ -1,3 +1,4 @@
++import { startDurableWork } from "./runtime/durable-work"
+ import type { Client } from "discord.js"
+ 
+ import { getMeetingChannelMemberIds } from "./meeting-attendance-members"
+@@ -23,42 +24,51 @@ type AttendanceResult = {
+ 
+ /** Handles dashboard-triggered requests using fresh REST reads of roster candidates only. */
+ export class MeetingAttendanceRequestService {
+-    private unsubscribe?: () => void
+-    private readonly processingRequestIds = new Set<string>()
++    private worker?: Awaited<ReturnType<typeof startDurableWork>>
+ 
+     constructor(private readonly client: Client) {}
+ 
+     async start() {
+-        const watch = convex.watchQuery(
+-            references.listPendingMeetingAttendanceRequests,
+-            { secret: env.internalSecret }
+-        )
+-        this.unsubscribe = watch.onUpdate(() => {
+-            const requests = watch.localQueryResult() as
+-                PendingRequest[] | undefined
+-            if (requests) void this.processRequests(requests)
++        await this.stop()
++        this.worker = await startDurableWork<PendingRequest>({
++            read: async () =>
++                (await convex.query(
++                    references.listPendingMeetingAttendanceRequests,
++                    { secret: env.internalSecret }
++                )) as PendingRequest[],
++            watch: (update) => {
++                const watch = convex.watchQuery(
++                    references.listPendingMeetingAttendanceRequests,
++                    { secret: env.internalSecret }
++                )
++                return watch.onUpdate(() => {
++                    try {
++                        const rows = watch.localQueryResult() as
++                            PendingRequest[] | undefined
++                        if (rows) update(rows)
++                    } catch (error) {
++                        logWarn(
++                            "meeting-attendance",
++                            "Could not read pending work",
++                            { error }
++                        )
++                    }
++                })
++            },
++            key: (item) => item._id,
++            group: (item) => item.guildId,
++            process: (item) => this.processRequest(item),
++            error: (error) =>
++                logError("meeting-attendance", "Request worker failed", {
++                    error,
++                }),
+         })
+-
+-        const requests = (await convex.query(
+-            references.listPendingMeetingAttendanceRequests,
+-            { secret: env.internalSecret }
+-        )) as PendingRequest[]
+-        await this.processRequests(requests)
+-        logInfo("meeting-attendance", "Started meeting attendance requests")
+     }
+ 
+-    stop() {
+-        this.unsubscribe?.()
+-    }
+-
+-    private async processRequests(requests: PendingRequest[]) {
+-        for (const request of requests) {
+-            if (this.processingRequestIds.has(request._id)) continue
+-            this.processingRequestIds.add(request._id)
+-            void this.processRequest(request).finally(() => {
+-                this.processingRequestIds.delete(request._id)
+-            })
+-        }
++    async stop() {
++        const worker = this.worker
++        this.worker = undefined
++        await worker?.stop()
+     }
+ 
+     private async processRequest(request: PendingRequest) {
+diff --git a/discord-bot/src/rosters/roster-change-service.ts b/discord-bot/src/rosters/roster-change-service.ts
+index 31afac55..2d0eb0e8 100644
+--- a/discord-bot/src/rosters/roster-change-service.ts
++++ b/discord-bot/src/rosters/roster-change-service.ts
+@@ -17,6 +17,8 @@ import {
+     type Client,
+     type Guild,
+ } from "discord.js"
++import { requestDmSender } from "../runtime/request-delivery"
++import { startDurableWork } from "../runtime/durable-work"
+ 
+ import {
+     changedRecipients,
+@@ -51,6 +53,7 @@ import { convex, references } from "../convex"
+ import { env } from "../environment"
+ 
+ export type ClaimedRosterChanges = {
++    fence?: number
+     id: string
+     eventId: string
+     guildId: string
+@@ -298,8 +301,7 @@ export function discordRosterChangePorts(
+  * A backend without the queue only logs; the rest of the bot keeps running.
+  */
+ export class RosterChangeRequestService {
+-    private unsubscribe?: () => void
+-    private readonly processing = new Set<string>()
++    private worker?: Awaited<ReturnType<typeof startDurableWork>>
+ 
+     constructor(
+         private readonly client: Client,
+@@ -309,44 +311,43 @@ export class RosterChangeRequestService {
+     ) {}
+ 
+     async start() {
+-        const watch = convex.watchQuery(references.listPendingRosterChanges, {
+-            secret: env.internalSecret,
+-        })
+-        this.unsubscribe = watch.onUpdate(() => {
+-            let pending: PendingRequest[] | undefined
+-            try {
+-                pending = watch.localQueryResult() as
+-                    PendingRequest[] | undefined
+-            } catch (error) {
+-                logWarn("roster-changes", "Could not read pending requests", {
+-                    error,
++        await this.stop()
++        this.worker = await startDurableWork<PendingRequest>({
++            read: async () =>
++                (await convex.query(references.listPendingRosterChanges, {
++                    secret: env.internalSecret,
++                })) as PendingRequest[],
++            watch: (update) => {
++                const watch = convex.watchQuery(
++                    references.listPendingRosterChanges,
++                    { secret: env.internalSecret }
++                )
++                return watch.onUpdate(() => {
++                    try {
++                        const rows = watch.localQueryResult() as
++                            PendingRequest[] | undefined
++                        if (rows) update(rows)
++                    } catch (error) {
++                        logWarn(
++                            "roster-changes",
++                            "Could not read pending work",
++                            { error }
++                        )
++                    }
+                 })
+-                return
+-            }
+-            if (pending) void this.processAll(pending)
++            },
++            key: (item) => item.id,
++            group: (item) => item.guildId,
++            process: (item) => this.process(item),
++            error: (error) =>
++                logError("roster-changes", "Request worker failed", { error }),
+         })
+-        const pending = (await convex.query(
+-            references.listPendingRosterChanges,
+-            { secret: env.internalSecret }
+-        )) as PendingRequest[]
+-        await this.processAll(pending)
+-        logInfo("roster-changes", "Started roster change requests")
+     }
+ 
+-    stop() {
+-        this.unsubscribe?.()
+-    }
+-
+-    private async processAll(pending: PendingRequest[]) {
+-        for (const request of pending) {
+-            if (this.processing.has(request.id)) continue
+-            this.processing.add(request.id)
+-            try {
+-                await this.process(request)
+-            } finally {
+-                this.processing.delete(request.id)
+-            }
+-        }
++    async stop() {
++        const worker = this.worker
++        this.worker = undefined
++        await worker?.stop()
+     }
+ 
+     private async process(request: PendingRequest) {
+@@ -370,17 +371,24 @@ export class RosterChangeRequestService {
+             const guild = await this.client.guilds
+                 .fetch(claimed.guildId)
+                 .catch(() => null)
++            const deliveryPorts = discordRosterChangePorts(this.client, guild, {
++                id: claimed.eventId,
++                guildId: claimed.guildId,
++            })
++            deliveryPorts.sendDm = requestDmSender(
++                "roster",
++                claimed,
++                deliveryPorts.sendDm
++            )
+             const outcome = await deliverRosterChanges({
+                 payload,
+                 request: claimed,
+-                ports: discordRosterChangePorts(this.client, guild, {
+-                    id: claimed.eventId,
+-                    guildId: claimed.guildId,
+-                }),
++                ports: deliveryPorts,
+             })
+             await convex.mutation(references.completeRosterChanges, {
+                 secret: env.internalSecret,
+                 requestId: claimed.id,
++                fence: claimed.fence,
+                 ...outcome,
+             })
+             logInfo("roster-changes", "Sent roster changes", {
+@@ -393,6 +401,7 @@ export class RosterChangeRequestService {
+         } catch (error) {
+             logWarn("roster-changes", "Roster changes failed", {
+                 requestId: claimed.id,
++                fence: claimed.fence,
+                 eventId: claimed.eventId,
+                 error,
+             })
+@@ -400,6 +409,7 @@ export class RosterChangeRequestService {
+                 .mutation(references.failRosterChanges, {
+                     secret: env.internalSecret,
+                     requestId: claimed.id,
++                    fence: claimed.fence,
+                     error: "send_failed",
+                 })
+                 .catch((failure) =>
+diff --git a/discord-bot/src/runtime/sync-service.ts b/discord-bot/src/runtime/sync-service.ts
+index 82967360..8e3902fd 100644
+--- a/discord-bot/src/runtime/sync-service.ts
++++ b/discord-bot/src/runtime/sync-service.ts
+@@ -1,3 +1,4 @@
++import { mapConcurrent } from "./work-queue"
+ import type { Client } from "discord.js"
+ 
+ import {
+@@ -51,10 +52,18 @@ export class DiscordSyncService {
+     private flushDueAt?: number
+     private isFlushing = false
+     private fullResyncRequested = false
++    private stopped = false
++    private flushPromise?: Promise<void>
++    private readonly cycleContexts = new Map<
++        string,
++        Promise<EventSyncContext | null>
++    >()
++    private readonly dirtyCalendars = new Set<string>()
+ 
+     constructor(private readonly client: Client) {}
+ 
+     async start() {
++        this.stopped = false
+         logInfo("sync-service", "Starting sync service")
+         await this.guildCache.start((guildIds) => {
+             for (const guildId of guildIds) {
+@@ -107,7 +116,8 @@ export class DiscordSyncService {
+         this.requestFullResync()
+     }
+ 
+-    stop() {
++    async stop() {
++        this.stopped = true
+         this.eventIndexUnsubscribe?.()
+         this.guildCache.stop()
+         if (this.flushTimer) {
+@@ -115,9 +125,17 @@ export class DiscordSyncService {
+             this.flushTimer = undefined
+             this.flushDueAt = undefined
+         }
++        this.queuedEventIds.clear()
++        this.queuedGuildIds.clear()
++        this.queuedAttendanceReminderEventIds.clear()
++        this.queuedSignupReminderEventIds.clear()
++        await this.flushPromise
++        this.cycleContexts.clear()
++        this.dirtyCalendars.clear()
+     }
+ 
+     queueEventSync(eventId: string) {
++        if (this.stopped) return
+         this.queuedEventIds.add(eventId)
+         logInfo("sync-service", "Queued event sync", {
+             eventId,
+@@ -126,6 +144,7 @@ export class DiscordSyncService {
+     }
+ 
+     queueGuildSync(guildId: string) {
++        if (this.stopped) return
+         this.queuedGuildIds.add(guildId)
+         logInfo("sync-service", "Queued guild sync", {
+             guildId,
+@@ -134,11 +153,13 @@ export class DiscordSyncService {
+     }
+ 
+     queueAttendanceReminder(eventId: string) {
++        if (this.stopped) return
+         this.queuedAttendanceReminderEventIds.add(eventId)
+         this.queueEventSync(eventId)
+     }
+ 
+     queueSignupReminder(eventId: string) {
++        if (this.stopped) return
+         this.queuedSignupReminderEventIds.add(eventId)
+         this.queueEventSync(eventId)
+     }
+@@ -190,12 +211,14 @@ export class DiscordSyncService {
+     }
+ 
+     requestFullResync() {
++        if (this.stopped) return
+         this.fullResyncRequested = true
+         logInfo("sync-service", "Full resync requested")
+         this.scheduleFlush(250)
+     }
+ 
+     private scheduleFlush(delayMs: number) {
++        if (this.stopped) return
+         if (this.flushTimer) {
+             const nextDueAt = Date.now() + delayMs
+             if (this.flushDueAt && this.flushDueAt <= nextDueAt) {
+@@ -219,7 +242,7 @@ export class DiscordSyncService {
+         this.flushTimer = setTimeout(() => {
+             this.flushTimer = undefined
+             this.flushDueAt = undefined
+-            void this.flush().catch((error) => {
++            this.flushPromise = this.flush().catch((error) => {
+                 logError("sync-service", "Flush crashed unexpectedly", {
+                     error,
+                 })
+@@ -245,9 +268,10 @@ export class DiscordSyncService {
+ 
+         try {
+             while (
+-                this.fullResyncRequested ||
+-                this.queuedGuildIds.size > 0 ||
+-                this.queuedEventIds.size > 0
++                !this.stopped &&
++                (this.fullResyncRequested ||
++                    this.queuedGuildIds.size > 0 ||
++                    this.queuedEventIds.size > 0)
+             ) {
+                 if (this.fullResyncRequested) {
+                     this.fullResyncRequested = false
+@@ -272,6 +296,9 @@ export class DiscordSyncService {
+                 // Take ownership of this cycle's work before awaiting any Discord calls.
+                 // Work enqueued while the cycle is running remains in the live set for the
+                 // next loop instead of being erased after the older snapshot completes.
++                this.cycleContexts.clear()
++                this.dirtyCalendars.clear()
++                let retryNeeded = false
+                 const queuedEventIdsForCycle = new Set(this.queuedEventIds)
+                 this.queuedEventIds.clear()
+                 const queuedAttendanceReminderEventIdsForCycle = new Set(
+@@ -290,10 +317,18 @@ export class DiscordSyncService {
+                         count: guildIds.length,
+                     })
+                 }
+-                for (const guildId of guildIds) {
++                await mapConcurrent(guildIds, 4, async (guildId) => {
++                    if (this.stopped) return
+                     try {
+-                        await this.syncGuild(guildId, queuedEventIdsForCycle)
++                        await this.syncGuild(
++                            guildId,
++                            queuedEventIdsForCycle,
++                            queuedAttendanceReminderEventIdsForCycle,
++                            queuedSignupReminderEventIdsForCycle
++                        )
+                     } catch (error) {
++                        this.queuedGuildIds.add(guildId)
++                        retryNeeded = true
+                         logError(
+                             "sync-service",
+                             "Discord bot guild sync failed",
+@@ -303,7 +338,7 @@ export class DiscordSyncService {
+                             }
+                         )
+                     }
+-                }
++                })
+ 
+                 const eventIds = [...queuedEventIdsForCycle]
+                 if (eventIds.length > 0) {
+@@ -312,31 +347,83 @@ export class DiscordSyncService {
+                         count: eventIds.length,
+                     })
+                 }
+-                for (const eventId of eventIds) {
+-                    try {
+-                        await this.syncEvent(
+-                            eventId,
+-                            queuedEventIdsForCycle,
+-                            queuedAttendanceReminderEventIdsForCycle.has(
+-                                eventId
+-                            ),
+-                            queuedSignupReminderEventIdsForCycle.has(eventId)
+-                        )
+-                    } catch (error) {
+-                        logError(
+-                            "sync-service",
+-                            "Discord bot queued event sync failed",
+-                            {
++                const byGuild = new Map<string, string[]>()
++                for (const id of eventIds) {
++                    const group = this.eventIndexById.get(id)?.guildId ?? id
++                    const ids = byGuild.get(group) ?? []
++                    ids.push(id)
++                    byGuild.set(group, ids)
++                }
++                await mapConcurrent([...byGuild.values()], 4, async (ids) => {
++                    for (const eventId of ids) {
++                        if (this.stopped) return
++                        try {
++                            await this.syncEvent(
+                                 eventId,
+-                                error,
+-                            }
+-                        )
++                                queuedEventIdsForCycle,
++                                queuedAttendanceReminderEventIdsForCycle.has(
++                                    eventId
++                                ),
++                                queuedSignupReminderEventIdsForCycle.has(
++                                    eventId
++                                )
++                            )
++                        } catch (error) {
++                            this.queuedEventIds.add(eventId)
++                            if (
++                                queuedAttendanceReminderEventIdsForCycle.has(
++                                    eventId
++                                )
++                            )
++                                this.queuedAttendanceReminderEventIds.add(
++                                    eventId
++                                )
++                            if (
++                                queuedSignupReminderEventIdsForCycle.has(
++                                    eventId
++                                )
++                            )
++                                this.queuedSignupReminderEventIds.add(eventId)
++                            retryNeeded = true
++                            logError(
++                                "sync-service",
++                                "Discord bot queued event sync failed",
++                                {
++                                    eventId,
++                                    error,
++                                }
++                            )
++                        }
++                    }
++                })
++                await mapConcurrent(
++                    [...this.dirtyCalendars],
++                    4,
++                    async (guildId) => {
++                        if (this.stopped) return
++                        try {
++                            await this.syncGuildCalendar(guildId)
++                        } catch (error) {
++                            this.queuedGuildIds.add(guildId)
++                            retryNeeded = true
++                            logWarn(
++                                "sync-service",
++                                "Calendar refresh will retry",
++                                { guildId, error }
++                            )
++                        }
+                     }
++                )
++                if (retryNeeded) {
++                    this.scheduleFlush(5000)
++                    return
+                 }
+             }
+             logInfo("sync-service", "Flush finished with no remaining work")
+         } finally {
+             this.isFlushing = false
++            this.cycleContexts.clear()
++            this.dirtyCalendars.clear()
+         }
+     }
+ 
+@@ -388,7 +475,12 @@ export class DiscordSyncService {
+         }
+     }
+ 
+-    private async syncGuild(guildId: string, queuedEventIds: Set<string>) {
++    private async syncGuild(
++        guildId: string,
++        queuedEventIds: Set<string>,
++        attendance = new Set<string>(),
++        signup = new Set<string>()
++    ) {
+         const runtime = this.guildCache.get(guildId)
+         if (!runtime?.config) {
+             logWarn(
+@@ -414,8 +506,8 @@ export class DiscordSyncService {
+                     !isHistoricalConcludedEvent(event)
+             )
+             .map((event) => event.id)
+-        const contexts = await Promise.all(
+-            eventIds.map((eventId) => this.loadEventSyncContext(eventId))
++        const contexts = await mapConcurrent(eventIds, 4, (eventId) =>
++            this.loadCycleContext(eventId)
+         )
+         const payload = buildGuildPayload(runtime, contexts)
+         logInfo("sync-service", "Syncing guild payload", {
+@@ -424,7 +516,28 @@ export class DiscordSyncService {
+             rosterCount: payload.rosters.length,
+             syncStateCount: payload.syncStates.length,
+         })
+-        await syncGuildPayload(this.client, queuedEventIds, payload, "full")
++        await syncGuildPayload(
++            this.client,
++            queuedEventIds,
++            payload,
++            "full",
++            attendance
++        )
++        const signupDue = new Set(eventIds.filter((id) => signup.has(id)))
++        if (signupDue.size)
++            await processSignupReminders(
++                this.client,
++                {
++                    ...payload,
++                    assignments: await this.loadGuildAssignments(guildId),
++                },
++                signupDue
++            )
++        for (const eventId of eventIds) {
++            if (queuedEventIds.has(eventId))
++                await processMatchRecaps(this.client, eventId)
++            queuedEventIds.delete(eventId)
++        }
+     }
+ 
+     private async syncEvent(
+@@ -433,7 +546,7 @@ export class DiscordSyncService {
+         attendanceReminderDue: boolean,
+         signupReminderDue: boolean
+     ) {
+-        const context = await this.loadEventSyncContext(eventId)
++        const context = await this.loadCycleContext(eventId)
+         if (!context) {
+             logWarn(
+                 "sync-service",
+@@ -498,8 +611,17 @@ export class DiscordSyncService {
+             context.syncState?.lastCalendarSyncVersion !==
+             getCalendarSyncVersion(context.event)
+         ) {
+-            await this.syncGuildCalendar(context.event.guildId)
++            this.dirtyCalendars.add(context.event.guildId)
++        }
++    }
++
++    private loadCycleContext(eventId: string) {
++        let pending = this.cycleContexts.get(eventId)
++        if (!pending) {
++            pending = this.loadEventSyncContext(eventId)
++            this.cycleContexts.set(eventId, pending)
+         }
++        return pending
+     }
+ 
+     private async loadEventSyncContext(eventId: string) {
+@@ -532,8 +654,8 @@ export class DiscordSyncService {
+                     !isHistoricalConcludedEvent(event)
+             )
+             .map((event) => event.id)
+-        const contexts = await Promise.all(
+-            eventIds.map((eventId) => this.loadEventSyncContext(eventId))
++        const contexts = await mapConcurrent(eventIds, 4, (eventId) =>
++            this.loadCycleContext(eventId)
+         )
+         const payload = buildGuildPayload(runtime, contexts)
+         await syncCalendarPanel(this.client, payload)
+diff --git a/discord-bot/src/seed/worker.ts b/discord-bot/src/seed/worker.ts
+index 0a7ec27e..fe4b175b 100644
+--- a/discord-bot/src/seed/worker.ts
++++ b/discord-bot/src/seed/worker.ts
+@@ -1,5 +1,6 @@
+ import type { Client, MessageCreateOptions } from "discord.js"
+ import { makeFunctionReference } from "convex/server"
++import { WorkQueue } from "../runtime/work-queue"
+ 
+ import {
+     seedCallMessage,
+@@ -406,52 +407,91 @@ export function seedWorkerPorts(client: Client): SeedWorkerPorts {
+     }
+ }
+ 
+-let shared: { ports: SeedWorkerPorts; memory: SeedWorkerMemory } | null = null
+-const running = new Set<string>()
++type SharedSeedWorker = {
++    ports: SeedWorkerPorts
++    memory: Map<string, SeedWorkerMemory>
++}
++let shared: SharedSeedWorker | null = null
++const running = new Map<
++    string,
++    {
++        promise: Promise<Awaited<ReturnType<typeof runSeedGuild>>>
++        force: boolean
++    }
++>()
++
++function runOwnedSeedGuild(
++    guildId: string,
++    state: SharedSeedWorker,
++    force = false
++) {
++    const active = running.get(guildId)
++    if (active) {
++        if (force) active.force = true
++        return active.promise
++    }
++    const entry = {
++        force: false,
++        promise: Promise.resolve({ calls: new Map<string, string | null>() }),
++    }
++    entry.promise = (async () => {
++        let forced = force
++        let result: Awaited<ReturnType<typeof runSeedGuild>>
++        do {
++            entry.force = false
++            let memory = state.memory.get(guildId)
++            if (!memory) {
++                memory = new Map()
++                state.memory.set(guildId, memory)
++            }
++            result = await runSeedGuild(guildId, state.ports, memory, {
++                force: forced,
++            })
++            forced = true
++        } while (entry.force && shared === state)
++        return result
++    })().finally(() => {
++        if (running.get(guildId) === entry) running.delete(guildId)
++    })
++    running.set(guildId, entry)
++    return entry.promise
++}
+ 
+-/** One pass over one clan now (after a button); waits for a pass in progress. */
++/** A button waits for the owned pass and one coalesced forced refresh. */
+ export async function refreshSeedGuild(guildId: string) {
+     if (!shared) return { calls: new Map<string, string | null>() }
+-    for (let i = 0; running.has(guildId) && i < 40; i++)
+-        await new Promise((resolve) => setTimeout(resolve, 250))
+-    running.add(guildId)
+-    try {
+-        return await runSeedGuild(guildId, shared.ports, shared.memory, {
+-            force: true,
+-        })
+-    } finally {
+-        running.delete(guildId)
+-    }
++    return runOwnedSeedGuild(guildId, shared, true)
+ }
+ 
+ export function startSeedWorker(client: Client) {
+-    shared = { ports: seedWorkerPorts(client), memory: new Map() }
+-    let ticking = false
+-    const tick = async () => {
+-        if (ticking || !shared) return
+-        ticking = true
+-        try {
+-            for (const guild of client.guilds.cache.values()) {
+-                if (running.has(guild.id)) continue
+-                running.add(guild.id)
+-                try {
+-                    await runSeedGuild(guild.id, shared.ports, shared.memory)
+-                } catch (error) {
+-                    // One clan's failure never blocks the others.
+-                    logWarn("seed", "Seed pass failed", {
+-                        guildId: guild.id,
+-                        error,
+-                    })
+-                } finally {
+-                    running.delete(guild.id)
+-                }
+-            }
+-        } finally {
+-            ticking = false
+-        }
++    const state: SharedSeedWorker = {
++        ports: seedWorkerPorts(client),
++        memory: new Map(),
+     }
+-    const timer = setInterval(() => void tick(), TICK_MS)
++    shared = state
++    const queue = new WorkQueue({
++        concurrency: 4,
++        onError: (error) => logWarn("seed", "Seed pass failed", { error }),
++    })
++    const tick = () => {
++        for (const guildId of state.memory.keys())
++            if (!client.guilds.cache.has(guildId) && !running.has(guildId))
++                state.memory.delete(guildId)
++        for (const guild of client.guilds.cache.values())
++            queue.enqueue(guild.id, async () => {
++                await runOwnedSeedGuild(guild.id, state)
++            })
++    }
++    const timer = setInterval(tick, TICK_MS)
+     timer.unref()
+-    void tick()
+-    return () => clearInterval(timer)
++    tick()
++    return async () => {
++        clearInterval(timer)
++        if (shared === state) shared = null
++        await queue.stop()
++        await Promise.allSettled(
++            [...running.values()].map((entry) => entry.promise)
++        )
++        state.memory.clear()
++    }
+ }
+diff --git a/discord-bot/src/sync/manual-reminders.ts b/discord-bot/src/sync/manual-reminders.ts
+index fb05cd52..07665ffd 100644
+--- a/discord-bot/src/sync/manual-reminders.ts
++++ b/discord-bot/src/sync/manual-reminders.ts
+@@ -10,6 +10,7 @@ import type { SyncPayload } from "../types"
+ import { logInfo } from "../log"
+ 
+ export type ClaimedManualReminder = {
++    fence?: number
+     id: string
+     eventId: string
+     guildId: string
+diff --git a/convex/discordRequestDelivery.ts b/convex/discordRequestDelivery.ts
+new file mode 100644
+--- /dev/null
++++ b/convex/discordRequestDelivery.ts
+@@ -0,0 +1,72 @@
++import { assertInternalSecret } from "./discord_shared"
++import { mutation } from "./_generated/server"
++import { v } from "convex/values"
++
++const args = {
++    secret: v.string(),
++    kind: v.union(v.literal("reminder"), v.literal("roster")),
++    requestId: v.string(),
++    fence: v.number(),
++    userId: v.string(),
++}
++
++/** Reserve before the external POST. An interrupted/ambiguous recipient is not blindly replayed. */
++export const begin = mutation({
++    args,
++    handler: async (ctx, input) => {
++        assertInternalSecret(input.secret)
++        const id =
++            input.kind === "reminder"
++                ? ctx.db.normalizeId("eventReminderRequests", input.requestId)
++                : ctx.db.normalizeId("rosterChangeRequests", input.requestId)
++        const row = id ? await ctx.db.get(id) : null
++        if (
++            !row ||
++            row.status !== "processing" ||
++            row.fence !== input.fence ||
++            Date.parse(row.claimedAt ?? "") + 300_000 <= Date.now()
++        )
++            throw new Error("Delivery claim expired or superseded.")
++        if (!row.deliveryRecipientIds?.includes(input.userId))
++            throw new Error("Recipient outside claimed audience.")
++        if (row.deliveryAttemptedIds?.includes(input.userId))
++            return {
++                send: false,
++                sent: row.deliverySentIds?.includes(input.userId) === true,
++            }
++        await ctx.db.patch(row._id, {
++            deliveryAttemptedIds: [
++                ...(row.deliveryAttemptedIds ?? []),
++                input.userId,
++            ],
++            // Admitted work renews its own lease; queued work never owns one.
++            claimedAt: new Date().toISOString(),
++        })
++        return { send: true, sent: false }
++    },
++})
++
++export const record = mutation({
++    args: { ...args, sent: v.boolean() },
++    handler: async (ctx, input) => {
++        assertInternalSecret(input.secret)
++        const id =
++            input.kind === "reminder"
++                ? ctx.db.normalizeId("eventReminderRequests", input.requestId)
++                : ctx.db.normalizeId("rosterChangeRequests", input.requestId)
++        const row = id ? await ctx.db.get(id) : null
++        if (
++            !row ||
++            row.status !== "processing" ||
++            row.fence !== input.fence ||
++            !row.deliveryAttemptedIds?.includes(input.userId)
++        )
++            return false
++        const field = input.sent ? "deliverySentIds" : "deliveryFailedIds"
++        await ctx.db.patch(row._id, {
++            [field]: [...new Set([...(row[field] ?? []), input.userId])],
++            claimedAt: new Date().toISOString(),
++        })
++        return true
++    },
++})
+diff --git a/discord-bot/src/runtime/admission.ts b/discord-bot/src/runtime/admission.ts
+new file mode 100644
+--- /dev/null
++++ b/discord-bot/src/runtime/admission.ts
+@@ -0,0 +1,115 @@
++type Pending = {
++    group: string
++    bytes: number
++    run(): void
++    reject(error: Error): void
++    queuedAt: number
++}
++
++/** Actual I/O capacity, retained until settlement even if its caller races a timeout. */
++export class Admission {
++    private active = 0
++    private bytes = 0
++    private readonly pending: Pending[] = []
++    private readonly idle = new Set<() => void>()
++    private stopped = false
++    private lastGroup?: string
++    private readonly totals = {
++        started: 0,
++        finished: 0,
++        rejected: 0,
++        maxActive: 0,
++        waitMs: 0,
++    }
++    constructor(
++        private readonly concurrency: number,
++        private readonly capacity = 1024,
++        private readonly maxBytes = 64 * 1024 * 1024
++    ) {
++        if (!Number.isSafeInteger(concurrency) || concurrency < 1)
++            throw Error("Invalid I/O concurrency")
++    }
++    run<T>(
++        operation: () => Promise<T>,
++        group = "default",
++        bytes = 0
++    ): Promise<T> {
++        if (
++            this.stopped ||
++            this.pending.length >= this.capacity ||
++            bytes > this.maxBytes ||
++            this.bytes + bytes > this.maxBytes
++        ) {
++            this.totals.rejected++
++            return Promise.reject(
++                Error(
++                    "I/O admission unavailable; retry through the owning workflow."
++                )
++            )
++        }
++        return new Promise<T>((resolve, reject) => {
++            this.bytes += bytes
++            this.pending.push({
++                group,
++                bytes,
++                reject,
++                queuedAt: Date.now(),
++                run: () => {
++                    this.active++
++                    this.totals.started++
++                    this.totals.maxActive = Math.max(
++                        this.totals.maxActive,
++                        this.active
++                    )
++                    void Promise.resolve()
++                        .then(operation)
++                        .then(resolve, reject)
++                        .finally(() => {
++                            this.active--
++                            this.bytes -= bytes
++                            this.totals.finished++
++                            this.pump()
++                            if (!this.active && !this.pending.length) {
++                                for (const done of this.idle) done()
++                                this.idle.clear()
++                            }
++                        })
++                },
++            })
++            this.pump()
++        })
++    }
++    private pump() {
++        while (
++            !this.stopped &&
++            this.active < this.concurrency &&
++            this.pending.length
++        ) {
++            const different = this.pending.findIndex(
++                (entry) => entry.group !== this.lastGroup
++            )
++            const [next] = this.pending.splice(different < 0 ? 0 : different, 1)
++            this.lastGroup = next.group
++            this.totals.waitMs += Date.now() - next.queuedAt
++            next.run()
++        }
++    }
++    snapshot() {
++        return {
++            ...this.totals,
++            active: this.active,
++            queued: this.pending.length,
++            bytes: this.bytes,
++        }
++    }
++    stop(): Promise<void> {
++        this.stopped = true
++        for (const entry of this.pending.splice(0)) {
++            this.bytes -= entry.bytes
++            entry.reject(Error("I/O admission stopped."))
++        }
++        return this.active
++            ? new Promise((resolve) => this.idle.add(resolve))
++            : Promise.resolve()
++    }
++}
+diff --git a/discord-bot/src/runtime/admission.test.ts b/discord-bot/src/runtime/admission.test.ts
+new file mode 100644
+--- /dev/null
++++ b/discord-bot/src/runtime/admission.test.ts
+@@ -0,0 +1,55 @@
++import assert from "node:assert/strict"
++import { Admission } from "./admission"
++import test from "node:test"
++
++test("actual I/O slots survive response timeouts and rotate across groups", async () => {
++    const gate = new Admission(1, 10)
++    let release!: () => void
++    const calls: string[] = []
++    const first = gate.run(async () => {
++        await new Promise<void>((resolve) => {
++            release = resolve
++        })
++    }, "hot")
++    await Promise.resolve()
++    const rest = [
++        gate.run(async () => {
++            calls.push("hot")
++        }, "hot"),
++        gate.run(async () => {
++            calls.push("cold")
++        }, "cold"),
++    ]
++    assert.equal(gate.snapshot().active, 1)
++    release()
++    await first
++    await Promise.all(rest)
++    assert.deepEqual(calls, ["cold", "hot"])
++    assert.equal(gate.snapshot().maxActive, 1)
++})
++test("admission bounds retained bytes and shutdown rejects queued work before draining", async () => {
++    const gate = new Admission(1, 2, 10)
++    let release!: () => void
++    const first = gate.run(
++        () =>
++            new Promise<void>((resolve) => {
++                release = resolve
++            }),
++        "a",
++        6
++    )
++    await Promise.resolve()
++    await assert.rejects(
++        gate.run(async () => {}, "b", 5),
++        /admission/
++    )
++    const next = gate.run(async () => {}, "b", 4)
++    const rejected = assert.rejects(next, /stopped/)
++    const stopping = gate.stop()
++    await rejected
++    assert.equal(gate.snapshot().bytes, 6)
++    release()
++    await first
++    await stopping
++    assert.equal(gate.snapshot().bytes, 0)
++})
+diff --git a/discord-bot/src/runtime/discord-admission.ts b/discord-bot/src/runtime/discord-admission.ts
+new file mode 100644
+--- /dev/null
++++ b/discord-bot/src/runtime/discord-admission.ts
+@@ -0,0 +1,38 @@
++import type { REST, InternalRequest } from "@discordjs/rest"
++import { Admission } from "./admission"
++
++/** Separate reserved capacity keeps ACKs/private replies ahead of background reconciliation. */
++export function installDiscordAdmission(rest: Pick<REST, "queueRequest">) {
++    const background = new Admission(12, 512)
++    const interactive = new Admission(4, 128)
++    const original = rest.queueRequest.bind(rest)
++    rest.queueRequest = (request: InternalRequest) => {
++        const route = String(request.fullRoute)
++        const fast =
++            route.startsWith("/interactions/") || route.startsWith("/webhooks/")
++        const group = route.split("/").slice(0, 3).join("/")
++        const bytes = (request.files ?? []).reduce(
++            (size, file) =>
++                size +
++                (typeof file.data === "string"
++                    ? Buffer.byteLength(file.data)
++                    : typeof file.data === "object"
++                      ? file.data.byteLength
++                      : 0),
++            0
++        )
++        return (fast ? interactive : background).run(
++            () => original(request),
++            group,
++            bytes
++        )
++    }
++    return {
++        snapshot: () => ({
++            background: background.snapshot(),
++            interactive: interactive.snapshot(),
++        }),
++        stop: () =>
++            Promise.all([background.stop(), interactive.stop()]).then(() => {}),
++    }
++}
+diff --git a/discord-bot/src/runtime/durable-work.ts b/discord-bot/src/runtime/durable-work.ts
+new file mode 100644
+--- /dev/null
++++ b/discord-bot/src/runtime/durable-work.ts
+@@ -0,0 +1,65 @@
++import { WorkQueue } from "./work-queue"
++
++/** Watches plus periodically discovers due work; wall-clock lease expiry is not a subscription event. */
++export async function startDurableWork<T>(ports: {
++    read(): Promise<readonly T[]>
++    watch(update: (rows: readonly T[]) => void): () => void
++    key(item: T): string
++    group(item: T): string
++    process(item: T): Promise<void>
++    error(error: unknown): void
++    concurrency?: number
++    pollMs?: number
++}) {
++    const queue = new WorkQueue({
++        concurrency: ports.concurrency ?? 4,
++        capacity: 256,
++        onError: ports.error,
++    })
++    let stopped = false
++    let reading: Promise<void> | undefined
++    const admit = (rows: readonly T[]) => {
++        if (stopped) return
++        for (const item of rows)
++            queue.enqueue(
++                ports.key(item),
++                () => ports.process(item),
++                ports.group(item)
++            )
++    }
++    const report = (error: unknown) => {
++        try {
++            ports.error(error)
++        } catch {
++            /* Reporting never breaks lifecycle. */
++        }
++    }
++    const poll = () => {
++        reading ??= Promise.resolve()
++            .then(ports.read)
++            .then(admit)
++            .catch(report)
++            .finally(() => {
++                reading = undefined
++            })
++        return reading
++    }
++    const unsubscribe = ports.watch(admit)
++    const timer = setInterval(() => {
++        void poll()
++    }, ports.pollMs ?? 5000)
++    timer.unref()
++    await poll()
++    return {
++        snapshot: () => queue.snapshot(),
++        async stop() {
++            stopped = true
++            clearInterval(timer)
++            try {
++                unsubscribe()
++            } finally {
++                await Promise.all([queue.stop(), reading])
++            }
++        },
++    }
++}
+diff --git a/discord-bot/src/runtime/durable-work.test.ts b/discord-bot/src/runtime/durable-work.test.ts
+new file mode 100644
+--- /dev/null
++++ b/discord-bot/src/runtime/durable-work.test.ts
+@@ -0,0 +1,52 @@
++import { startDurableWork } from "./durable-work"
++import assert from "node:assert/strict"
++import test from "node:test"
++
++test("overlapping watches share admission and polling discovers due claims without an update", async (t) => {
++    t.mock.timers.enable({ apis: ["setInterval"] })
++    let update!: (rows: readonly { id: string; guild: string }[]) => void
++    let reads = 0,
++        active = 0,
++        maximum = 0,
++        stopped = false
++    const releases: (() => void)[] = []
++    const rows = Array.from({ length: 20 }, (_, i) => ({
++        id: String(i),
++        guild: String(i % 5),
++    }))
++    const service = await startDurableWork({
++        read: async () => {
++            reads++
++            return reads === 1 ? [] : rows
++        },
++        watch: (callback) => {
++            update = callback
++            return () => {
++                stopped = true
++            }
++        },
++        key: (item) => item.id,
++        group: (item) => item.guild,
++        concurrency: 2,
++        process: async () => {
++            active++
++            maximum = Math.max(maximum, active)
++            await new Promise<void>((resolve) => releases.push(resolve))
++            active--
++        },
++        error: () => {},
++    })
++    t.mock.timers.tick(5000)
++    await new Promise((resolve) => setImmediate(resolve))
++    update(rows)
++    update(rows)
++    assert.equal(maximum, 2)
++    const stop = service.stop()
++    for (const release of releases) release()
++    await stop
++    assert.equal(stopped, true)
++    assert.equal(service.snapshot().active, 0)
++    assert.equal(service.snapshot().pending, 0)
++    t.mock.timers.tick(5000)
++    assert.equal(reads, 2)
++})
+diff --git a/discord-bot/src/runtime/request-delivery.ts b/discord-bot/src/runtime/request-delivery.ts
+new file mode 100644
+--- /dev/null
++++ b/discord-bot/src/runtime/request-delivery.ts
+@@ -0,0 +1,37 @@
++import { makeFunctionReference } from "convex/server"
++import { env } from "../environment"
++import { convex } from "../convex"
++
++/** One owned recipient POST. Never turn a failed receipt into permission to send again. */
++export function requestDmSender(
++    kind: "reminder" | "roster",
++    request: { id: string; fence?: number },
++    send: (userId: string, message: unknown) => Promise<boolean>
++) {
++    return async (userId: string, message: unknown) => {
++        if (request.fence === undefined)
++            throw new Error("Backend delivery protocol unavailable.")
++        const scope = {
++            secret: env.internalSecret,
++            kind,
++            requestId: request.id,
++            fence: request.fence,
++            userId,
++        }
++        const permission = (await convex.mutation(
++            makeFunctionReference<"mutation">("discordRequestDelivery:begin"),
++            scope
++        )) as { send: boolean; sent: boolean }
++        if (!permission.send) return permission.sent
++        const sent = await send(userId, message)
++        const stored = await convex.mutation(
++            makeFunctionReference<"mutation">("discordRequestDelivery:record"),
++            { ...scope, sent }
++        )
++        if (!stored)
++            throw new Error(
++                "Delivery receipt superseded; reconciliation required."
++            )
++        return sent
++    }
++}
+diff --git a/discord-bot/src/runtime/services.ts b/discord-bot/src/runtime/services.ts
+new file mode 100644
+--- /dev/null
++++ b/discord-bot/src/runtime/services.ts
+@@ -0,0 +1,73 @@
++export type StopService = () => void | Promise<void>
++
++/** Owns independent service starts, retry timers, and stops, including stop during startup. */
++export class Services {
++    private stopped = false
++    private readonly starting = new Set<Promise<void>>()
++    private readonly stops = new Map<string, StopService>()
++    private readonly timers = new Set<ReturnType<typeof setTimeout>>()
++    constructor(
++        private readonly report: (name: string, error: unknown) => void
++    ) {}
++
++    start(
++        name: string,
++        start: () => StopService | void | Promise<StopService | void>,
++        cleanup?: StopService
++    ) {
++        let failures = 0
++        const run = () => {
++            if (this.stopped) return
++            const pending = Promise.resolve()
++                .then(start)
++                .then(async (stop) => {
++                    if (stop) {
++                        if (this.stopped) await stop()
++                        else this.stops.set(name, stop)
++                    }
++                })
++                .catch(async (error) => {
++                    try {
++                        this.report(name, error)
++                    } catch {
++                        /* Logging is not service ownership. */
++                    }
++                    try {
++                        await cleanup?.()
++                    } catch {
++                        /* Retry can reestablish the service. */
++                    }
++                    if (!this.stopped) {
++                        const timer = setTimeout(
++                            () => {
++                                this.timers.delete(timer)
++                                run()
++                            },
++                            Math.min(
++                                60_000,
++                                1000 * 2 ** Math.min(failures++, 6)
++                            )
++                        )
++                        timer.unref()
++                        this.timers.add(timer)
++                    }
++                })
++                .finally(() => {
++                    this.starting.delete(pending)
++                })
++            this.starting.add(pending)
++        }
++        run()
++    }
++
++    async stop() {
++        this.stopped = true
++        for (const timer of this.timers) clearTimeout(timer)
++        this.timers.clear()
++        await Promise.allSettled([...this.starting])
++        await Promise.allSettled(
++            [...this.stops.values()].map((stop) => Promise.resolve().then(stop))
++        )
++        this.stops.clear()
++    }
++}
+diff --git a/discord-bot/src/runtime/services.test.ts b/discord-bot/src/runtime/services.test.ts
+new file mode 100644
+--- /dev/null
++++ b/discord-bot/src/runtime/services.test.ts
+@@ -0,0 +1,61 @@
++import assert from "node:assert/strict"
++import { Services } from "./services"
++import test from "node:test"
++
++test("failed service start does not block independent starts, retries and stops cleanly", async (t) => {
++    t.mock.timers.enable({ apis: ["setTimeout"] })
++    let attempts = 0,
++        healthy = 0,
++        cleanups = 0,
++        stopped = 0
++    const services = new Services(() => {
++        throw Error("reporter")
++    })
++    services.start(
++        "failure",
++        async () => {
++            if (++attempts === 1) throw Error("offline")
++            return () => {
++                stopped++
++            }
++        },
++        () => {
++            cleanups++
++        }
++    )
++    services.start("healthy", () => {
++        healthy++
++        return () => {
++            stopped++
++        }
++    })
++    await new Promise((resolve) => setImmediate(resolve))
++    assert.equal(healthy, 1)
++    assert.equal(cleanups, 1)
++    t.mock.timers.tick(1000)
++    await new Promise((resolve) => setImmediate(resolve))
++    assert.equal(attempts, 2)
++    await services.stop()
++    assert.equal(stopped, 2)
++    t.mock.timers.tick(60_000)
++    assert.equal(attempts, 2)
++})
++
++test("shutdown owns a service whose asynchronous startup has not returned", async () => {
++    let release!: () => void,
++        stopped = 0
++    const services = new Services(() => {})
++    services.start("late", async () => {
++        await new Promise<void>((resolve) => {
++            release = resolve
++        })
++        return () => {
++            stopped++
++        }
++    })
++    await Promise.resolve()
++    const stop = services.stop()
++    release()
++    await stop
++    assert.equal(stopped, 1)
++})
+diff --git a/src/infrastructure/convex/discord-request-delivery.test.ts b/src/infrastructure/convex/discord-request-delivery.test.ts
+new file mode 100644
+--- /dev/null
++++ b/src/infrastructure/convex/discord-request-delivery.test.ts
+@@ -0,0 +1,94 @@
++import * as delivery from "../../../convex/discordRequestDelivery"
++import * as reminders from "../../../convex/eventReminders"
++import * as changes from "../../../convex/rosterChanges"
++import { invoke, testContext } from "./testing/database"
++import assert from "node:assert/strict"
++import test from "node:test"
++
++const secret = "dev-internal-auth-secret"
++
++for (const kind of ["reminder", "roster"] as const) {
++    test(`${kind}: expired claims are discovered, receipts survive retries, stale workers cannot finish`, async (t) => {
++        const previous = process.env.INTERNAL_AUTH_SECRET
++        process.env.INTERNAL_AUTH_SECRET = secret
++        t.after(() => {
++            if (previous === undefined) delete process.env.INTERNAL_AUTH_SECRET
++            else process.env.INTERNAL_AUTH_SECRET = previous
++        })
++        const ctx = testContext()
++        const table =
++            kind === "reminder"
++                ? "eventReminderRequests"
++                : "rosterChangeRequests"
++        const module = kind === "reminder" ? reminders : changes
++        const id = `${table}:request`
++        ctx.db.seed(table, {
++            _id: id,
++            eventId: "events:e",
++            guildId: "guild",
++            status: "processing",
++            fence: 1,
++            claimedAt: "2020-01-01T00:00:00Z",
++            deliveryRecipientIds: ["player"],
++            deliveryAttemptedIds: [],
++        })
++        assert.equal(
++            (await invoke(module.listPending, ctx, { secret })).length,
++            1
++        )
++        await ctx.db.patch(id, { claimedAt: new Date().toISOString() })
++        const scope = {
++            secret,
++            kind,
++            requestId: id,
++            fence: 1,
++            userId: "player",
++        }
++        assert.equal((await invoke(delivery.begin, ctx, scope)).send, true)
++        assert.deepEqual(
++            await invoke(delivery.begin, ctx, scope),
++            { send: false, sent: false },
++            "uncertain POST is not permission to resend"
++        )
++        await assert.rejects(
++            invoke(delivery.begin, ctx, { ...scope, userId: "foreign" }),
++            /audience/
++        )
++        await ctx.db.patch(id, { fence: 2 })
++        assert.equal(
++            await invoke(delivery.record, ctx, { ...scope, sent: true }),
++            false
++        )
++        const complete =
++            kind === "reminder"
++                ? { sentCount: 1 }
++                : {
++                      dmSentUserIds: ["player"],
++                      dmFailedUserIds: [],
++                      digestPosted: true,
++                  }
++        await invoke(module.complete, ctx, {
++            secret,
++            requestId: id,
++            fence: 1,
++            ...complete,
++        })
++        const stillProcessing = await ctx.db.get(id)
++        assert.ok(stillProcessing)
++        assert.equal(stillProcessing.status, "processing")
++        await invoke(module.complete, ctx, {
++            secret,
++            requestId: id,
++            fence: 2,
++            ...complete,
++        })
++        const row = await ctx.db.get(id)
++        assert.ok(row)
++        assert.equal(row.status, "sent")
++        assert.deepEqual(row.uncertainUserIds, ["player"])
++        assert.equal(
++            kind === "reminder" ? row.sentCount : row.dmSentUserIds.length,
++            0
++        )
++    })
++}

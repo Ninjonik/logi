@@ -11,8 +11,10 @@ if (typeof globalThis.WebSocket === "undefined") {
 }
 
 let convexClient: ConvexReactClient | null = null
+let closed = false
 
 function getConvexClient() {
+    if (closed) throw new Error("Bot Convex client is closed")
     if (!convexClient) {
         convexClient = new ConvexReactClient(env.convexUrl)
     }
@@ -43,7 +45,16 @@ export async function closeConvexClient() {
     await client.close()
 }
 
+/** Final process shutdown: unlike a reusable disconnect, no late caller may reopen. */
+export async function shutdownConvexClient() {
+    closed = true
+    await closeConvexClient()
+}
+
 export const references = {
+    renewScheduledJobClaims: makeFunctionReference<"mutation">(
+        "scheduledJobs:renew"
+    ),
     pendingEventDeletions: makeFunctionReference<"query">(
         "eventDeletion:pending"
     ),

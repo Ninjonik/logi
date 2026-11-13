@@ -1073,3 +1073,36 @@ test("self application and leave/rejoin checks resolve a stable player to the li
         "denied"
     )
 })
+
+test("dashboard recruits resolve an unambiguous category and preserve roles when ambiguous", async () => {
+    const ctx = fixture()
+    await invoke(assignments.upsertByServerDiscordId, ctx, {
+        ...save,
+        membershipCategoryId: undefined,
+        roleActor: actor,
+    })
+    assert.deepEqual(ctx.db.tables.memberRoleOperations[0].desiredRoleIds, [
+        "clan",
+        "recruit",
+    ])
+    const ambiguous = fixture()
+    ambiguous.db.tables.discordConfigs[0].membershipSettings.categories.push({
+        id: "other",
+        supportRoleIds: [],
+        recruitRoleIds: ["other-recruit"],
+        finalRoleIds: [],
+    })
+    await invoke(assignments.upsertByServerDiscordId, ambiguous, {
+        ...save,
+        membershipCategoryId: undefined,
+        roleActor: actor,
+    })
+    assert.deepEqual(
+        ambiguous.db.tables.memberRoleOperations[0].desiredRoleIds,
+        []
+    )
+    assert.deepEqual(
+        ambiguous.db.tables.memberRoleOperations[0].allowedRoleIds,
+        []
+    )
+})

@@ -1,3 +1,6 @@
+import { processAttendanceReminders } from "../sync/attendance-reminders"
+import type { DurableDelivery } from "./durable-delivery"
+import { TaskOwner } from "./task-owner"
 import type { Client } from "discord.js"
 
 import {
@@ -9,10 +12,13 @@ import type { EventSyncContext, EventSyncIndex, SyncPayload } from "../types"
 import { processSignupReminders } from "../sync/signup-reminders"
 import { isHistoricalConcludedEvent } from "../sync/relevance"
 import { processMatchRecaps } from "../sync/match-recaps"
+import { makeFunctionReference } from "convex/server"
 import { getCalendarSyncVersion } from "../sync/work"
+import type { CalendarSyncPayload } from "../types"
 import { logError, logInfo, logWarn } from "../log"
 import { syncCalendarPanel } from "../sync/panels"
 import { convex, references } from "../convex"
+import { mapConcurrent } from "./work-queue"
 import { syncGuildPayload } from "../sync"
 import { env } from "../environment"
 
@@ -36,13 +42,23 @@ export function interactiveFlushDelay(input: {
     return input.isFlushing || input.hasScheduledFlush ? 250 : 0
 }
 
+type ScheduledWork = {
+    kind: string
+    dueAt: string
+    delivery: DurableDelivery
+    resolve(): void
+    reject(error: unknown): void
+}
 export class DiscordSyncService {
+    private readonly scheduledWork = new Map<string, ScheduledWork[]>()
+    private readonly tasks = new TaskOwner()
     private readonly queuedEventIds = new Set<string>()
     private readonly queuedAttendanceReminderEventIds = new Set<string>()
     private readonly queuedSignupReminderEventIds = new Set<string>()
     private readonly queuedGuildIds = new Set<string>()
     private readonly guildCache = new GuildCache()
     private readonly eventIndexById = new Map<string, EventIndexRecord>()
+    private readonly eventIdsByGuild = new Map<string, string[]>()
     private readonly rosterIndexByEventId = new Map<string, RosterIndexRecord>()
     private readonly eventSignatureById = new Map<string, string>()
 
@@ -54,7 +70,12 @@ export class DiscordSyncService {
 
     constructor(private readonly client: Client) {}
 
-    async start() {
+    start() {
+        return this.tasks.run(() => this.initialize())
+    }
+
+    private async initialize() {
+        if (this.tasks.stopped) return
         logInfo("sync-service", "Starting sync service")
         await this.guildCache.start((guildIds) => {
             for (const guildId of guildIds) {
@@ -66,12 +87,15 @@ export class DiscordSyncService {
             this.scheduleFlush(250)
         })
 
+        if (this.tasks.stopped) return
         const initialIndex = (await convex.query(
             references.listEventSyncIndex,
             {
                 secret: env.internalSecret,
+                compact: true,
             }
         )) as EventSyncIndex
+        if (this.tasks.stopped) return
         this.applyEventIndex(initialIndex, true)
         logInfo("sync-service", "Loaded initial event index", {
             eventCount: initialIndex.events.length,
@@ -80,6 +104,7 @@ export class DiscordSyncService {
 
         const watch = convex.watchQuery(references.listEventSyncIndex, {
             secret: env.internalSecret,
+            compact: true,
         })
         this.eventIndexUnsubscribe = watch.onUpdate(() => {
             try {
@@ -107,7 +132,28 @@ export class DiscordSyncService {
         this.requestFullResync()
     }
 
+    enqueueScheduled(
+        eventId: string,
+        kind: string,
+        delivery: DurableDelivery,
+        dueAt: string
+    ): Promise<void> {
+        if (this.tasks.stopped)
+            return Promise.reject(new Error("Sync is stopping"))
+        return new Promise((resolve, reject) => {
+            const work = this.scheduledWork.get(eventId) ?? []
+            work.push({ kind, delivery, dueAt, resolve, reject })
+            this.scheduledWork.set(eventId, work)
+            this.queueEventSync(eventId)
+            this.triggerInteractiveFlush()
+        })
+    }
+
     stop() {
+        for (const work of this.scheduledWork.values())
+            for (const item of work)
+                item.reject(new Error("Sync stopped before dispatch started"))
+        this.scheduledWork.clear()
         this.eventIndexUnsubscribe?.()
         this.guildCache.stop()
         if (this.flushTimer) {
@@ -115,9 +161,11 @@ export class DiscordSyncService {
             this.flushTimer = undefined
             this.flushDueAt = undefined
         }
+        return this.tasks.stop()
     }
 
     queueEventSync(eventId: string) {
+        if (this.tasks.stopped) return
         this.queuedEventIds.add(eventId)
         logInfo("sync-service", "Queued event sync", {
             eventId,
@@ -126,6 +174,7 @@ export class DiscordSyncService {
     }
 
     queueGuildSync(guildId: string) {
+        if (this.tasks.stopped) return
         this.queuedGuildIds.add(guildId)
         logInfo("sync-service", "Queued guild sync", {
             guildId,
@@ -196,6 +245,7 @@ export class DiscordSyncService {
     }
 
     private scheduleFlush(delayMs: number) {
+        if (this.tasks.stopped) return
         if (this.flushTimer) {
             const nextDueAt = Date.now() + delayMs
             if (this.flushDueAt && this.flushDueAt <= nextDueAt) {
@@ -219,11 +269,13 @@ export class DiscordSyncService {
         this.flushTimer = setTimeout(() => {
             this.flushTimer = undefined
             this.flushDueAt = undefined
-            void this.flush().catch((error) => {
-                logError("sync-service", "Flush crashed unexpectedly", {
-                    error,
+            void this.tasks
+                .run(() => this.flush())
+                .catch((error) => {
+                    logError("sync-service", "Flush crashed unexpectedly", {
+                        error,
+                    })
                 })
-            })
         }, delayMs)
     }
 
@@ -245,9 +297,10 @@ export class DiscordSyncService {
 
         try {
             while (
-                this.fullResyncRequested ||
-                this.queuedGuildIds.size > 0 ||
-                this.queuedEventIds.size > 0
+                !this.tasks.stopped &&
+                (this.fullResyncRequested ||
+                    this.queuedGuildIds.size > 0 ||
+                    this.queuedEventIds.size > 0)
             ) {
                 if (this.fullResyncRequested) {
                     this.fullResyncRequested = false
@@ -272,6 +325,8 @@ export class DiscordSyncService {
                 // Take ownership of this cycle's work before awaiting any Discord calls.
                 // Work enqueued while the cycle is running remains in the live set for the
                 // next loop instead of being erased after the older snapshot completes.
+                const scheduledForCycle = new Map(this.scheduledWork)
+                this.scheduledWork.clear()
                 const queuedEventIdsForCycle = new Set(this.queuedEventIds)
                 this.queuedEventIds.clear()
                 const queuedAttendanceReminderEventIdsForCycle = new Set(
@@ -312,17 +367,28 @@ export class DiscordSyncService {
                         count: eventIds.length,
                     })
                 }
+                const calendarGuildIds = new Set<string>()
                 for (const eventId of eventIds) {
                     try {
-                        await this.syncEvent(
+                        const calendarGuildId = await this.syncEvent(
                             eventId,
                             queuedEventIdsForCycle,
                             queuedAttendanceReminderEventIdsForCycle.has(
                                 eventId
                             ),
-                            queuedSignupReminderEventIdsForCycle.has(eventId)
+                            queuedSignupReminderEventIdsForCycle.has(eventId),
+                            scheduledForCycle.has(eventId)
                         )
+                        for (const work of scheduledForCycle.get(eventId) ??
+                            []) {
+                            await this.runScheduledReminders(eventId, work)
+                            work.resolve()
+                        }
+                        if (calendarGuildId)
+                            calendarGuildIds.add(calendarGuildId)
                     } catch (error) {
+                        for (const work of scheduledForCycle.get(eventId) ?? [])
+                            work.reject(error)
                         logError(
                             "sync-service",
                             "Discord bot queued event sync failed",
@@ -331,6 +397,18 @@ export class DiscordSyncService {
                                 error,
                             }
                         )
+                    }
+                }
+                // One changed event used to reload the entire guild calendar. Batch
+                // the request after event effects so its sync states remain fresh.
+                for (const guildId of calendarGuildIds) {
+                    try {
+                        await this.syncGuildCalendar(guildId)
+                    } catch (error) {
+                        logError("sync-service", "Calendar sync failed", {
+                            guildId,
+                            error,
+                        })
                     }
                 }
             }
@@ -360,12 +438,18 @@ export class DiscordSyncService {
             this.queuedEventIds.add(eventId)
         }
 
+        this.eventIdsByGuild.clear()
         this.eventIndexById.clear()
         this.rosterIndexByEventId.clear()
         this.eventSignatureById.clear()
 
         for (const [eventId, event] of nextEventIndexById) {
             this.eventIndexById.set(eventId, event)
+            if (!isHistoricalConcludedEvent(event)) {
+                const ids = this.eventIdsByGuild.get(event.guildId) ?? []
+                ids.push(eventId)
+                this.eventIdsByGuild.set(event.guildId, ids)
+            }
         }
         for (const [eventId, roster] of nextRosterIndexByEventId) {
             this.rosterIndexByEventId.set(eventId, roster)
@@ -407,15 +491,9 @@ export class DiscordSyncService {
             return
         }
 
-        const eventIds = [...this.eventIndexById.values()]
-            .filter(
-                (event) =>
-                    event.guildId === guildId &&
-                    !isHistoricalConcludedEvent(event)
-            )
-            .map((event) => event.id)
-        const contexts = await Promise.all(
-            eventIds.map((eventId) => this.loadEventSyncContext(eventId))
+        const eventIds = this.eventIdsByGuild.get(guildId) ?? []
+        const contexts = await mapConcurrent(eventIds, 4, (eventId) =>
+            this.loadEventSyncContext(eventId)
         )
         const payload = buildGuildPayload(runtime, contexts)
         logInfo("sync-service", "Syncing guild payload", {
@@ -431,7 +509,8 @@ export class DiscordSyncService {
         eventId: string,
         queuedEventIds: Set<string>,
         attendanceReminderDue: boolean,
-        signupReminderDue: boolean
+        signupReminderDue: boolean,
+        strict = false
     ) {
         const context = await this.loadEventSyncContext(eventId)
         if (!context) {
@@ -445,6 +524,7 @@ export class DiscordSyncService {
 
         const runtime = this.guildCache.get(context.event.guildId)
         if (!runtime?.config) {
+            if (strict) throw new Error("Guild configuration is not loaded")
             logWarn(
                 "sync-service",
                 "Skipping event sync because guild config is missing",
@@ -479,7 +559,8 @@ export class DiscordSyncService {
             queuedEventIds,
             payload,
             "events_only",
-            attendanceReminderDue ? new Set([eventId]) : new Set()
+            attendanceReminderDue ? new Set([eventId]) : new Set(),
+            strict
         )
         if (signupReminderDue) {
             // The recipients come from the clan's assignments, read once per
@@ -498,7 +579,38 @@ export class DiscordSyncService {
             context.syncState?.lastCalendarSyncVersion !==
             getCalendarSyncVersion(context.event)
         ) {
-            await this.syncGuildCalendar(context.event.guildId)
+            return context.event.guildId
+        }
+    }
+
+    private async runScheduledReminders(eventId: string, work: ScheduledWork) {
+        const context = await this.loadEventSyncContext(eventId)
+        if (!context) return
+        const runtime = this.guildCache.get(context.event.guildId)
+        if (!runtime?.config)
+            throw new Error("Guild configuration is not loaded")
+        if (!hasConfiguredClanDiscordTarget(runtime)) return
+        const payload = buildGuildPayload(runtime, [context])
+        if (work.kind === "signup-reminder") {
+            const assignments = await this.loadGuildAssignments(
+                context.event.guildId
+            )
+            await processSignupReminders(
+                this.client,
+                { ...payload, assignments },
+                new Set([eventId]),
+                { delivery: work.delivery, dueAt: work.dueAt }
+            )
+        }
+        if (work.kind === "attendance-reminder") {
+            await processAttendanceReminders(
+                this.client,
+                this.queuedEventIds,
+                payload,
+                new Set([eventId]),
+                undefined,
+                work.delivery
+            )
         }
     }
 
@@ -525,18 +637,41 @@ export class DiscordSyncService {
             return
         }
 
-        const eventIds = [...this.eventIndexById.values()]
-            .filter(
-                (event) =>
-                    event.guildId === guildId &&
-                    !isHistoricalConcludedEvent(event)
-            )
-            .map((event) => event.id)
-        const contexts = await Promise.all(
-            eventIds.map((eventId) => this.loadEventSyncContext(eventId))
+        const eventIds = this.eventIdsByGuild.get(guildId) ?? []
+        const contexts = await mapConcurrent(eventIds, 4, (eventId) =>
+            this.loadCalendarEventContext(guildId, eventId)
         )
-        const payload = buildGuildPayload(runtime, contexts)
+        const payload: CalendarSyncPayload = {
+            guild: runtime.guild,
+            config: runtime.config,
+            calendarItems: runtime.calendarItems,
+            events: contexts.flatMap((context) =>
+                context ? [context.event] : []
+            ),
+            syncStates: contexts.flatMap((context) =>
+                context?.syncState ? [context.syncState] : []
+            ),
+        }
         await syncCalendarPanel(this.client, payload)
+    }
+
+    private async loadCalendarEventContext(
+        guildId: string,
+        eventId: string
+    ): Promise<{
+        event: CalendarSyncPayload["events"][number]
+        syncState: CalendarSyncPayload["syncStates"][number] | null
+    } | null> {
+        return convex.query(
+            makeFunctionReference<"query">(
+                "discordSync:getCalendarEventContext"
+            ),
+            {
+                secret: env.internalSecret,
+                guildId,
+                eventId,
+            }
+        )
     }
 }
 

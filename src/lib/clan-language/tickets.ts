@@ -24,7 +24,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "Ticket se nepodařilo otevřít",
-            body: "Nic se neuložilo. Správci dostali upozornění; zkus to prosím za chvíli znovu.",
+            body: "Část kroků už může být uložená. Před dalším pokusem zkontroluj Discord se správcem.",
         },
         disabled: {
             title: "Tickety jsou teď vypnuté",
@@ -62,6 +62,8 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
             successBody:
                 "Shrnutí je ve vlákně a autor ho dostal do DM. Vlákno je zamčené a archivované.",
             dmFailedBody: "Autorovi nejde poslat DM, shrnutí najde ve vlákně.",
+            dmUncertainBody:
+                "Doručení DM se nepodařilo potvrdit. Před dalším odesláním zkontroluj vlákno a DM.",
             dmOffBody:
                 "Shrnutí je ve vlákně. DM o uzavření ticketu má klan vypnutou. Vlákno je zamčené a archivované.",
             summary: {
@@ -114,7 +116,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "Nie można otworzyć zgłoszenia",
-            body: "Nic nie zostało zapisane. Administratorzy zostali powiadomieni; spróbuj ponownie za chwilę.",
+            body: "Część kroków mogła już zostać zapisana. Przed ponowną próbą sprawdź Discord z administratorem.",
         },
         disabled: {
             title: "Zgłoszenia pomocy są teraz wyłączone",
@@ -153,6 +155,8 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
                 "Podsumowanie znajduje się w wątku i autor otrzymał je przez DM. Wątek jest zamknięty i zarchiwizowany.",
             dmFailedBody:
                 "Nie udało się dostarczyć wiadomości prywatnej. Podsumowanie jest dostępne w wątku.",
+            dmUncertainBody:
+                "Nie można potwierdzić doręczenia DM. Sprawdź wątek i wiadomości prywatne przed ponowną wysyłką.",
             dmOffBody:
                 "Podsumowanie jest w wątku. Klan wyłączył prywatne powiadomienia o zamykaniu zgłoszeń. Wątek został zablokowany i zarchiwizowany.",
             summary: {
@@ -209,7 +213,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "Impossible d’ouvrir le ticket",
-            body: "Rien n’a été enregistré. Les administrateurs ont été informés ; réessaie dans un instant.",
+            body: "Certaines étapes peuvent déjà être enregistrées. Vérifie Discord avec un administrateur avant de réessayer.",
         },
         disabled: {
             title: "Les tickets sont actuellement désactivés",
@@ -248,6 +252,8 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
                 "Le résumé a été publié dans le fil et envoyé à l’auteur en message privé. Le fil est verrouillé et archivé.",
             dmFailedBody:
                 "L’auteur ne peut pas recevoir de messages privés ; il trouvera le résumé dans le fil.",
+            dmUncertainBody:
+                "La réception du message privé n’a pas pu être confirmée. Vérifie le fil et les messages privés avant de réessayer.",
             dmOffBody:
                 "Le résumé a été publié dans le fil. Le clan a désactivé les messages privés de fermeture de ticket. Le fil est verrouillé et archivé.",
             summary: {
@@ -271,15 +277,19 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
             },
             threadStepsOr: " ou ",
             adminNotified: "Les administrateurs ont été informés.",
-            notAllowedTitle: "Seuls le support et les administrateurs peuvent fermer ce ticket",
+            notAllowedTitle:
+                "Seuls le support et les administrateurs peuvent fermer ce ticket",
             notAllowedBody:
                 "Les tickets de la catégorie {category} sont fermés par {roles} ou les administrateurs Logi. Si ton problème est résolu, indique-le ici dans le fil.",
             notAllowedAdminsBody:
                 "Les tickets de la catégorie {category} sont fermés par les administrateurs Logi. Si ton problème est résolu, indique-le ici dans le fil.",
             or: " ou ",
-            unverifiableTitle: "Impossible de vérifier tes rôles pour le moment",
-            unverifiableBody: "Discord n’a pas répondu. Réessaie dans un instant.",
-            outsideTitle: "/close_ticket fonctionne uniquement dans un fil de ticket",
+            unverifiableTitle:
+                "Impossible de vérifier tes rôles pour le moment",
+            unverifiableBody:
+                "Discord n’a pas répondu. Réessaie dans un instant.",
+            outsideTitle:
+                "/close_ticket fonctionne uniquement dans un fil de ticket",
             outsideBody: "Ouvre le fil du ticket et lance la commande dedans.",
             notTicketTitle: "Ce fil ne correspond pas à un ticket",
             notTicketBody:
@@ -300,7 +310,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "The ticket couldn't be opened",
-            body: "Nothing was saved. The admins have been notified; please try again in a moment.",
+            body: "Some steps may already be saved. Check Discord with an admin before trying again.",
         },
         disabled: {
             title: "Tickets are switched off right now",
@@ -339,6 +349,8 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
                 "The summary is in the thread and the author got it by DM. The thread is locked and archived.",
             dmFailedBody:
                 "The author can't receive DMs; they'll find the summary in the thread.",
+            dmUncertainBody:
+                "DM delivery could not be confirmed. Check the thread and DMs before sending again.",
             dmOffBody:
                 "The summary is in the thread. The clan has switched off the ticket-closed DM. The thread is locked and archived.",
             summary: {
@@ -391,7 +403,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "Das Ticket konnte nicht geöffnet werden",
-            body: "Es wurde nichts gespeichert. Die Admins wurden benachrichtigt; versuch es bitte gleich noch einmal.",
+            body: "Einige Schritte können bereits gespeichert sein. Prüfe Discord mit einem Admin, bevor du es erneut versuchst.",
         },
         disabled: {
             title: "Tickets sind gerade ausgeschaltet",
@@ -430,6 +442,8 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
                 "Die Zusammenfassung steht im Thread und der Autor hat sie per DM bekommen. Der Thread ist gesperrt und archiviert.",
             dmFailedBody:
                 "Dem Autor kann keine DM geschickt werden; die Zusammenfassung findet er im Thread.",
+            dmUncertainBody:
+                "Die DM-Zustellung konnte nicht bestätigt werden. Prüfe den Thread und die DMs vor einem erneuten Versand.",
             dmOffBody:
                 "Die Zusammenfassung steht im Thread. Der Clan hat die DM zum geschlossenen Ticket ausgeschaltet. Der Thread ist gesperrt und archiviert.",
             summary: {

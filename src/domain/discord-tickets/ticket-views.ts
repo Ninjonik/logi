@@ -457,7 +457,7 @@ export function ticketClosedReplyView(input: {
     copy: TicketCopy
     ticketNumber: number
     /** `"off"`: the clan switched the ticket-closed DM off (N1-42). */
-    dmDelivered: boolean | "off"
+    dmDelivered: boolean | "off" | "uncertain"
     /** False when the close card did not reach the thread. */
     cardPosted?: boolean
     /** The thread steps that failed, in order. */
@@ -473,15 +473,9 @@ export function ticketClosedReplyView(input: {
               ? "sent"
               : "failed"
     const body =
-        cardPosted && !threadFailed.length
-            ? // Everything happened: the board's sentences (M3-30, M3-31).
-              dm === "off"
-                ? copy.close.dmOffBody
-                : dm === "sent"
-                  ? copy.close.successBody
-                  : copy.close.dmFailedBody
-            : [
-                  copy.close.summary[cardPosted ? "posted" : "notPosted"][dm],
+        input.dmDelivered === "uncertain"
+            ? [
+                  copy.close.dmUncertainBody,
                   threadFailed.length
                       ? fillTemplate(copy.close.threadFailed, {
                             steps: joinNatural(
@@ -492,8 +486,31 @@ export function ticketClosedReplyView(input: {
                             ),
                         })
                       : copy.close.threadDone,
-                  copy.close.adminNotified,
+                  ...(threadFailed.length || !cardPosted
+                      ? [copy.close.adminNotified]
+                      : []),
               ].join(" ")
+            : cardPosted && !threadFailed.length
+              ? // Everything happened: the board's sentences (M3-30, M3-31).
+                dm === "off"
+                  ? copy.close.dmOffBody
+                  : dm === "sent"
+                    ? copy.close.successBody
+                    : copy.close.dmFailedBody
+              : [
+                    copy.close.summary[cardPosted ? "posted" : "notPosted"][dm],
+                    threadFailed.length
+                        ? fillTemplate(copy.close.threadFailed, {
+                              steps: joinNatural(
+                                  threadFailed.map(
+                                      (step) => copy.close.threadSteps[step]
+                                  ),
+                                  copy.close.threadStepsOr
+                              ),
+                          })
+                        : copy.close.threadDone,
+                    copy.close.adminNotified,
+                ].join(" ")
     return {
         accent: "clan",
         ephemeral: true,

@@ -1,3 +1,7 @@
+import {
+    confirmedDmRefusal,
+    UnattemptedDelivery,
+} from "../runtime/durable-delivery"
 import type { Client } from "discord.js"
 
 import {
@@ -10,6 +14,7 @@ import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
 
 export type ClaimedManualReminder = {
+    claimToken?: string
     id: string
     eventId: string
     guildId: string
@@ -92,7 +97,10 @@ export async function manualReminderNames(
 /** Sends one DM through Discord; a closed DM or unknown user counts as not sent. */
 export function discordDmSender(client: Client, eventId: string): Send {
     return async (userId, message) => {
-        const user = await client.users.fetch(userId).catch(() => null)
+        const user = await client.users.fetch(userId).catch((error) => {
+            if (confirmedDmRefusal(error)) return null
+            throw new UnattemptedDelivery("Recipient lookup failed")
+        })
         if (!user) return false
         return await user
             .send(message as Parameters<typeof user.send>[0])
@@ -103,6 +111,9 @@ export function discordDmSender(client: Client, eventId: string): Send {
                 })
                 return true
             })
-            .catch(() => false)
+            .catch((error) => {
+                if (confirmedDmRefusal(error)) return false
+                throw error
+            })
     }
 }

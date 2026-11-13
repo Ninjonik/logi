@@ -6,11 +6,11 @@ import { isPanelPaused } from "../../../src/domain/discord-publications/settings
 import { buildTicketPanelMessage } from "../interactions/tickets-panel"
 import { classifyPanelError } from "../public-panels/panel-errors"
 import { buildCalendarPanelView } from "../public-panels/calendar"
+import type { SyncPayload, CalendarSyncPayload } from "../types"
 import { makeFunctionReference } from "convex/server"
 import { publishManagedMessage } from "./publication"
 import { messagePayload } from "../ui/message-kit"
 import { convex, references } from "../convex"
-import type { SyncPayload } from "../types"
 import type { Client } from "discord.js"
 import { env } from "../environment"
 
@@ -69,7 +69,10 @@ type CalendarPanelRow = {
  * "Kalendář" panel in "Panely v Discordu" its channel, categories, pause and
  * requests apply; without one the channel from "Kanály a jazyk" does.
  */
-export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
+export async function syncCalendarPanel(
+    client: Client,
+    payload: CalendarSyncPayload
+) {
     const config = payload.config
     const panel = await convex
         .query(
@@ -80,7 +83,6 @@ export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
             }
         )
         .then((row) => row as CalendarPanelRow | null)
-        .catch(() => undefined)
     const requested = panel
         ? isRequestPending(panel.requestedAt, panel.handledRequestAt)
         : false

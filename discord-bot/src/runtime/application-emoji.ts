@@ -1,4 +1,5 @@
 import { makeFunctionReference } from "convex/server"
+import { startOwnedInterval } from "./task-owner"
 import type { Client } from "discord.js"
 
 import {
@@ -136,7 +137,10 @@ export function applicationEmoji(client: Client) {
 /** Provisions on start and re-checks hourly; never blocks or fails the bot. */
 export function startApplicationEmojiProvisioning(client: Client) {
     // Cheap while fresh: the service itself decides when an hour has passed.
-    const tick = () => void applicationEmoji(client).emoji()
-    tick()
-    setInterval(tick, RETRY_MS).unref?.()
+    return startOwnedInterval(
+        () => applicationEmoji(client).emoji(),
+        RETRY_MS,
+        (error) =>
+            console.warn("[application-emoji] Provisioning failed", error)
+    )
 }

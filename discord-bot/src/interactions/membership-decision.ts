@@ -10,6 +10,7 @@ import {
     type Guild,
     type ModalSubmitInteraction,
     type ThreadChannel,
+    type Client,
 } from "discord.js"
 
 import {
@@ -58,6 +59,8 @@ import {
 import { checkCloseAuthority, type CloseAuthority } from "./close-authority"
 import { applicationStateCache } from "./membership-application-cache"
 import { replyPrivately, reportToErrorsChannel } from "../ui/replies"
+import { missingDiscordResource } from "../runtime/discord-resource"
+import { MembershipEffects } from "../runtime/membership-effects"
 import { threadUrl } from "./membership-application-create"
 import { dmSettingsUrl } from "../events/match-context"
 import type { InteractionFeature } from "./registry"
@@ -65,6 +68,7 @@ import { clanReplyKit } from "../runtime/clan-kit"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
 import { convex } from "../convex"
+import { logWarn } from "../log"
 
 /**
  * Decisions on an application (L6-45..L6-51, L4-30..L4-34, M3-37..M3-43):
@@ -165,7 +169,9 @@ async function runDecision(
     context: ApplicationThreadContext,
     target: DecisionTarget,
     outcome: ApplicationOutcome,
-    reason: string | undefined
+    reason: string | undefined,
+    committed = false,
+    assertRecovery?: () => Promise<void>
 ): Promise<DecideApplicationResult> {
     const { guild, thread, decider } = target
     const application = context.application
@@ -178,83 +184,79 @@ async function runDecision(
         context.assignment?.type ??
         category?.assignmentType ??
         application.assignmentType
-    const decidedAt = new Date().toISOString()
-    const actor = { userId: decider.id, kind: "recruitment" as const }
+    const decidedAt = application.closedAt ?? new Date().toISOString()
     const mercenary = mercenaryCategoryOf(context)
     const applicationGame = application.gameId ?? "hell_let_loose"
     let assignmentId = application.assignmentId
-    let decidedGame: string = applicationGame
+    let decidedGame: string = application.decisionGameId ?? applicationGame
+    let decisionClaimToken: string | undefined
+    const effects = new MembershipEffects(
+        {
+            expectedKeys: [
+                "decision-card",
+                "rename",
+                "lock",
+                "archive",
+                ...(isMessageEnabled(context.config, "applicationCloseDm")
+                    ? [`dm:${application.creatorId}`]
+                    : []),
+            ],
+            key: `application-close:${application.threadId}`,
+            kind: "application-close",
+            guildId: guild.id,
+            subjectId: application.threadId,
+            actorId: decider.id,
+        },
+        undefined,
+        assertRecovery
+    )
 
     const result = await decideApplication(
         {
             claim: async () => {
+                if (committed) return "ok"
                 const claim = await claimApplicationDecision(
                     application.threadId
                 )
+                if (claim.ok) {
+                    if (!claim.claimToken)
+                        throw new Error(
+                            "Decision claim requires the updated backend"
+                        )
+                    decisionClaimToken = claim.claimToken
+                }
                 return claim.ok ? "ok" : claim.reason
             },
-            release: () => releaseApplicationDecision(application.threadId),
-            writeAssignment: async (change) => {
-                const remove = async (id: string) => {
-                    await convex.mutation(applicationRefs.removeAssignment, {
+            release: () => {
+                if (!decisionClaimToken)
+                    throw new Error("Decision claim token missing")
+                return releaseApplicationDecision(
+                    application.threadId,
+                    decisionClaimToken
+                )
+            },
+            commit: async () => {
+                if (committed) return
+                if (!decisionClaimToken)
+                    throw new Error("Decision claim token missing")
+                const committedResponse = (await convex.mutation(
+                    applicationRefs.commitDecision,
+                    {
                         secret,
-                        assignmentId: id,
-                        roleActor: actor,
-                        roleGuildId: guild.id,
-                    })
-                }
-                if (change.kind === "remove") {
-                    if (assignmentId) await remove(assignmentId)
-                } else {
-                    // "Přijmout jako žoldáka" may move the membership to the
-                    // mercenary category of another game: the new game's
-                    // membership first, so the clan role is never dropped,
-                    // then the application's one goes.
-                    const game = change.category?.gameId ?? applicationGame
-                    const moved = game !== applicationGame
-                    const previousId = assignmentId
-                    decidedGame = game
-                    assignmentId = (await convex.mutation(
-                        applicationRefs.upsertAssignment,
-                        {
-                            secret,
-                            serverDiscordId: guild.id,
-                            assignmentId: moved
-                                ? context.assignments?.find(
-                                      (row) => row.gameId === game
-                                  )?.id
-                                : assignmentId,
-                            roleActor: actor,
-                            gameId: game,
-                            userId: application.creatorId,
-                            type: change.type,
-                            status: change.status,
-                            membershipCategoryId:
-                                change.category?.id ??
-                                context.assignment?.membershipCategoryId ??
-                                application.categoryId,
-                            primaryGroupId: undefined,
-                            secondaryGroupIds: [],
-                            paused: false,
-                            pausedNote: undefined,
-                        }
-                    )) as string
-                    if (moved && previousId) await remove(previousId)
-                }
+                        threadId: application.threadId,
+                        claimToken: decisionClaimToken,
+                        actorId: decider.id,
+                        outcome,
+                        reason,
+                    }
+                )) as { assignmentId: string | null; gameId: string }
+                assignmentId = committedResponse.assignmentId ?? undefined
+                decidedGame = committedResponse.gameId
                 await revalidateAppData({
                     type: "assignment-changed",
                     serverId: guild.id,
                     userId: application.creatorId,
                     assignmentId: assignmentId ?? "",
-                })
-            },
-            close: async () => {
-                await convex.mutation(applicationRefs.close, {
-                    secret,
-                    threadId: application.threadId,
-                    closedByUserId: decider.id,
-                    closeReason: reason,
-                    closeOutcome: outcome,
                 })
             },
             showDecision: async (roles) => {
@@ -270,62 +272,130 @@ async function runDecision(
                     rolesAdded: roles.added,
                     rolesRemoved: roles.removed,
                 })
-                if (!(await target.editCard(view)))
-                    await thread.send(messagePayload(view, options))
+                await effects.effect("decision-card", "send", async () => {
+                    if (await target.editCard(view)) return
+                    return thread.send(messagePayload(view, options))
+                })
             },
             sendDm: async (roles) => {
                 // "DM po rozhodnutí o přihlášce" in Zprávy a panely (N1-39).
-                if (!isMessageEnabled(context.config, "applicationCloseDm"))
-                    return "off"
-                const creator = await guild.client.users
-                    .fetch(application.creatorId)
-                    .catch(() => null)
+                if (!isMessageEnabled(context.config, "applicationCloseDm")) {
+                    const receipt = await effects.skip(
+                        `dm:${application.creatorId}`
+                    )
+                    return receipt.state === "uncertain"
+                        ? "uncertain"
+                        : receipt.state === "confirmed"
+                          ? "sent"
+                          : receipt.state === "refused"
+                            ? "failed"
+                            : "off"
+                }
+                const creator = await guild.client.users.fetch(
+                    application.creatorId
+                )
                 if (!creator) return "failed"
                 const ticketChannel = context.ticketChannelId
                     ? guild.channels.cache.get(context.ticketChannelId)
                     : undefined
-                await creator.send(
-                    messagePayload(
-                        applicationDecisionDmView(copy, {
-                            clanName: context.clanName || guild.name,
-                            number: application.applicationNumber,
-                            outcome,
-                            gameId: decidedGame,
-                            reason,
-                            // Mentions do not render outside the server (L2-B13).
-                            roleNames: roleNames(guild, roles.after),
-                            threadUrl: threadUrl(guild.id, thread.id),
-                            ticketChannelName: ticketChannel?.name ?? null,
-                            settingsUrl: dmSettingsUrl(
-                                context.config.defaultLanguage
-                            ),
-                        }),
-                        options
-                    )
+                const receipt = await effects.effect(
+                    `dm:${application.creatorId}`,
+                    "send",
+                    () =>
+                        creator.send(
+                            messagePayload(
+                                applicationDecisionDmView(copy, {
+                                    clanName: context.clanName || guild.name,
+                                    number: application.applicationNumber,
+                                    outcome,
+                                    gameId: decidedGame,
+                                    reason,
+                                    // Mentions do not render outside the server (L2-B13).
+                                    roleNames: roleNames(guild, roles.after),
+                                    threadUrl: threadUrl(guild.id, thread.id),
+                                    ticketChannelName:
+                                        ticketChannel?.name ?? null,
+                                    settingsUrl: dmSettingsUrl(
+                                        context.config.defaultLanguage
+                                    ),
+                                }),
+                                options
+                            )
+                        ),
+                    true
                 )
-                return "sent"
+                return receipt.state === "confirmed"
+                    ? "sent"
+                    : receipt.state === "skipped"
+                      ? "off"
+                      : "failed"
             },
             finishThread: async () => {
                 const auditReason = reason ?? copy.card.closedFooter
-                if (
-                    !thread.name.startsWith(
+                const failures: unknown[] = []
+                {
+                    const name = thread.name.startsWith(
                         fillTemplate(copy.closedThreadName, { name: "" })
                     )
-                )
-                    await thread
-                        .setName(
-                            fillTemplate(copy.closedThreadName, {
-                                name: thread.name,
-                            }).slice(0, 100)
+                        ? thread.name
+                        : fillTemplate(copy.closedThreadName, {
+                              name: thread.name,
+                          }).slice(0, 100)
+                    await effects
+                        .effect(
+                            "rename",
+                            "reconcile",
+                            async () => {
+                                if (thread.name !== name)
+                                    await thread.setName(name)
+                            },
+                            false,
+                            {
+                                threadId: thread.id,
+                                action: "rename",
+                                value: name,
+                            }
                         )
-                        .catch(() => null)
-                await thread.setLocked(true, auditReason)
-                await thread.setArchived(true, auditReason)
+                        .catch((error) => failures.push(error))
+                }
+                await effects
+                    .effect(
+                        "lock",
+                        "reconcile",
+                        async () => {
+                            await thread.setLocked(true, auditReason)
+                        },
+                        false,
+                        { threadId: thread.id, action: "lock" }
+                    )
+                    .catch((error) => failures.push(error))
+                await effects
+                    .effect(
+                        "archive",
+                        "reconcile",
+                        async () => {
+                            await thread.setArchived(true, auditReason)
+                        },
+                        false,
+                        { threadId: thread.id, action: "archive" }
+                    )
+                    .catch((error) => failures.push(error))
+                if (failures.length)
+                    throw new Error(
+                        "Application thread reconciliation incomplete"
+                    )
             },
             report: (step, error) => {
                 // A closed DM is the applicant's choice, not an admin's to fix;
                 // the decider's reply says so (L4-34).
-                if (step === "dm") return
+                if (step === "dm") {
+                    logWarn(
+                        "membership-recovery",
+                        "Decision DM remains unconfirmed",
+                        { guildId: guild.id, threadId: thread.id, error }
+                    )
+                    return
+                }
                 void reportToErrorsChannel({
                     client: guild.client,
                     guildId: guild.id,
@@ -363,9 +433,59 @@ async function runDecision(
     // The panel opens from a short-lived applicant cache to meet Discord's
     // interaction deadline. A decision changes both its open-application and
     // membership facts, so never let that stale snapshot block a reapplication.
-    if (result.status === "decided")
+    if (result.status === "decided") {
         applicationStateCache.forget(guild.id, application.creatorId)
+        await effects.complete()
+    }
     return result
+}
+
+/** Replays only effects of a committed decision; it never changes membership. */
+export async function resumeApplicationDecision(
+    client: Client,
+    threadId: string,
+    actorId: string,
+    assertRecovery?: () => Promise<void>
+) {
+    const context = await loadApplicationThreadContext(threadId)
+    if (
+        !context ||
+        context.application.status !== "closed" ||
+        context.application.closedByUserId !== actorId ||
+        !isApplicationOutcome(context.application.closeOutcome)
+    )
+        throw new Error("Committed application decision not found")
+    const guild = await client.guilds.fetch(context.application.guildId)
+    const thread = await guild.channels.fetch(threadId)
+    if (!thread?.isThread() || thread.ownerId !== client.user?.id)
+        throw new Error("Application thread ownership could not be verified")
+    const actor = await client.users.fetch(actorId)
+    const options = kitOf(context)
+    return runDecision(
+        context,
+        {
+            guild,
+            thread,
+            decider: { id: actorId, name: actor.globalName ?? actor.username },
+            editCard: async (view) => {
+                const id = context.application.transcriptMessageId
+                const card = id
+                    ? await thread.messages
+                          .fetch(id)
+                          .catch(missingDiscordResource(10008))
+                    : null
+                if (!card) return false
+                if (card.author.id !== client.user?.id)
+                    throw new Error("Application card ownership mismatch")
+                await card.edit(editPayload(view, options))
+                return true
+            },
+        },
+        context.application.closeOutcome,
+        context.application.closeReason,
+        true,
+        assertRecovery
+    )
 }
 
 type Gate =
@@ -673,14 +793,20 @@ async function reportDecisionResult(
     const copy = getApplicationMessages(context.config.defaultLanguage)
     const options = kitOf(context)
     if (result.status === "decided") {
-        if (result.dm === "failed")
+        if (result.dm === "failed" || result.dm === "uncertain")
             await interaction.followUp(
                 interactionReplyPayload(
                     {
                         accent: "clan",
                         ephemeral: true,
                         blocks: [
-                            { kind: "text", markdown: copy.decision.dmFailed },
+                            {
+                                kind: "text",
+                                markdown:
+                                    result.dm === "uncertain"
+                                        ? copy.command.dmUncertain
+                                        : copy.decision.dmFailed,
+                            },
                         ],
                     },
                     options
@@ -751,7 +877,9 @@ export async function handleCloseApplicationCommand(
             editCard: async (view) => {
                 const cardId = context.application.transcriptMessageId
                 const card = cardId
-                    ? await thread.messages.fetch(cardId).catch(() => null)
+                    ? await thread.messages
+                          .fetch(cardId)
+                          .catch(missingDiscordResource(10008))
                     : null
                 if (
                     !card ||

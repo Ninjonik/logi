@@ -1,4 +1,5 @@
 import { matchAttendanceMemberIds } from "@/domain/rosters/match-attendance"
+import { matchesGameScope, resolveGameScope } from "@/domain/games/game"
 import { SharedMatchPanel } from "@/components/app/shared-match-panel"
 import { sharedInvitations } from "@/lib/gateways/shared-matches"
 import { SearchX } from "lucide-react"
@@ -379,7 +380,18 @@ export async function MatchDetailPage({
             discordHref={discordHref}
             roster={roster}
             users={users}
-            memberIds={matchAttendanceMemberIds(allAssignments, event.gameId)}
+            memberIds={matchAttendanceMemberIds(
+                allAssignments,
+                event.gameId,
+                event.allowedSignupStatuses,
+                event.sharedLocalPlayerIds ?? roster?.localPlayerIds
+            )}
+            attendanceAssignments={allAssignments.filter((assignment) =>
+                matchesGameScope(
+                    assignment.gameId,
+                    resolveGameScope(event.gameId)
+                )
+            )}
             scoreSettings={scoreSettings}
             closeSummary={closeSummary}
             messages={messages}

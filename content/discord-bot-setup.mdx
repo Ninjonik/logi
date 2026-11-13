@@ -9,6 +9,12 @@ import { Callout, Steps, Tabs } from "nextra/components"
 
 This guide is for the person hosting Logi and the Discord server manager who configures a workspace. The bot is optional for browsing the public site, but it is required for Discord announcements, interactive sign-ups, event forum posts, scheduled events, panels, role automation, and Discord-based attendance features.
 
+Durable notifications and recovery work wake from saved changes and scheduled
+retry deadlines. A small safety check remains for interrupted connections; the
+bot does not need to repeatedly scan empty queues. Live server panels still use
+timed refreshes where the external provider cannot push updates. These scheduling
+changes preserve permissions, recipient preferences and uncertain-send safeguards.
+
 <Callout type="warning">
     Never put real tokens, secrets, or API keys in a wiki page, screenshot,
     ticket, Discord message, or Git commit. Use placeholders such as
@@ -352,3 +358,34 @@ once, only for you, and expires after five minutes; start the action again if it
 expires. Slow autocomplete searches may show no suggestions; type again to retry.
 
 Discord or network outages can still interrupt a response.
+
+## Temporary Discord failures
+
+A temporary lookup failure does not mean that an event role, scheduled event,
+squad voice channel or primary event forum was deleted. The bot preserves those
+references rather than creating replacements based on an unreadable response.
+Failed role and squad voice cleanup remains available for a later sync to retry.
+If Discord refuses a scheduled-event status change, Logi retains the observed
+Discord status instead of treating the requested change as confirmed.
+
+Check the bot error channel and logs when synchronization cannot finish. Fix
+missing permissions or role hierarchy problems before retrying; cleanup can
+remain incomplete while Discord is unavailable.
+
+## Interrupted reminders and roster notifications
+
+The updated bot stores scheduled work before handing it to the main process, so
+losing a worker message does not lose the queued work. It also remembers delivery
+progress for manual reminders, roster notifications, signup reminders and attendance
+reminders. A restart skips confirmed sends and continues untouched recipients,
+subject to fresh eligibility checks.
+
+A message that Discord may have accepted without returning confirmation stays
+uncertain. The bot does not blindly repeat that send or label it a confirmed closed
+DM. Check Discord before explicitly requesting another reminder or republishing a
+roster. Old interrupted requests without receipts cannot be safely resumed this way.
+
+During a normal bot update, allow shutdown to finish before starting its replacement.
+Self-hosted operators should allow at least 130 seconds for graceful termination.
+A forced stop can still leave uncertain outcomes. Scheduled claims whose lease
+expires are recovered periodically; a full bot restart is not required.

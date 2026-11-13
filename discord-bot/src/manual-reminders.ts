@@ -1,3 +1,6 @@
+import { TaskOwner, startOwnedInterval } from "./runtime/task-owner"
+import { DurableDelivery } from "./runtime/durable-delivery"
+import { withRequestLease } from "./runtime/request-lease"
 import type { Client } from "discord.js"
 
 import {
@@ -20,6 +23,8 @@ type PendingReminder = { id: string; eventId: string; guildId: string }
  * the watch fires repeatedly.
  */
 export class ManualReminderRequestService {
+    private readonly tasks = new TaskOwner()
+    private stopPoll?: () => Promise<void>
     private unsubscribe?: () => void
     private readonly processing = new Set<string>()
 
@@ -30,7 +35,12 @@ export class ManualReminderRequestService {
         ) => Promise<SyncPayload | null>
     ) {}
 
-    async start() {
+    start() {
+        return this.tasks.run(() => this.initialize())
+    }
+
+    private async initialize() {
+        if (this.tasks.stopped) return
         const watch = convex.watchQuery(references.listPendingManualReminders, {
             secret: env.internalSecret,
         })
@@ -50,8 +60,28 @@ export class ManualReminderRequestService {
                 )
                 return
             }
-            if (pending) void this.processAll(pending)
+            if (pending)
+                void this.tasks
+                    .run(() => this.processAll(pending))
+                    .catch((error) =>
+                        logError("request-worker", "Request batch failed", {
+                            error,
+                        })
+                    )
         })
+        this.stopPoll = startOwnedInterval(
+            async () => {
+                const pending = (await convex.query(
+                    references.listPendingManualReminders,
+                    { secret: env.internalSecret }
+                )) as PendingReminder[]
+                await this.tasks.run(() => this.processAll(pending))
+            },
+            30_000,
+            (error) =>
+                logWarn("request-worker", "Retry poll failed", { error }),
+            false
+        )
         const pending = (await convex.query(
             references.listPendingManualReminders,
             { secret: env.internalSecret }
@@ -62,10 +92,13 @@ export class ManualReminderRequestService {
 
     stop() {
         this.unsubscribe?.()
+        this.unsubscribe = undefined
+        return Promise.all([this.stopPoll?.(), this.tasks.stop()])
     }
 
     private async processAll(pending: PendingReminder[]) {
         for (const reminder of pending) {
+            if (this.tasks.stopped) break
             if (this.processing.has(reminder.id)) continue
             this.processing.add(reminder.id)
             try {
@@ -82,6 +115,8 @@ export class ManualReminderRequestService {
             claimed = (await convex.mutation(references.claimManualReminder, {
                 secret: env.internalSecret,
                 requestId: reminder.id,
+                fenced: true,
+                resumable: true,
             })) as ClaimedManualReminder | null
         } catch (error) {
             logError("manual-reminders", "Failed to claim a reminder", {
@@ -95,21 +130,54 @@ export class ManualReminderRequestService {
         try {
             const payload = await this.loadEventPayload(claimed.eventId)
             if (!payload) throw new Error("Match context is not available.")
-            const delivery = await deliverManualReminder({
-                payload,
-                request: claimed,
-                send: discordDmSender(this.client, claimed.eventId),
-                names: await manualReminderNames(
-                    this.client,
-                    payload,
-                    claimed.eventId
-                ),
-            })
+            const delivery = await withRequestLease(
+                "reminder",
+                claimed,
+                async () => {
+                    const delivery = new DurableDelivery({
+                        kind: "reminder",
+                        id: claimed.id,
+                        token: claimed.claimToken!,
+                    })
+                    const recipients = await delivery.prepare(
+                        "request",
+                        claimed.recipientIds
+                    )
+                    return deliverManualReminder({
+                        payload,
+                        request: {
+                            ...claimed,
+                            recipientIds: claimed.recipientIds.filter((id) =>
+                                recipients.has(id)
+                            ),
+                        },
+                        send: async (userId, message) => {
+                            return (
+                                (await delivery.effect(
+                                    "request",
+                                    `dm:${userId}`,
+                                    () =>
+                                        discordDmSender(
+                                            this.client,
+                                            claimed.eventId
+                                        )(userId, message)
+                                )) === "sent"
+                            )
+                        },
+                        names: await manualReminderNames(
+                            this.client,
+                            payload,
+                            claimed.eventId
+                        ),
+                    })
+                }
+            )
             const sentCount = delivery.sent
             // Closed DMs are shown on the match page, never as a bot error.
             await convex.mutation(references.completeManualReminder, {
                 secret: env.internalSecret,
                 requestId: claimed.id,
+                claimToken: claimed.claimToken,
                 sentCount,
                 failedUserIds: delivery.failedUserIds,
             })
@@ -130,6 +198,7 @@ export class ManualReminderRequestService {
                 .mutation(references.failManualReminder, {
                     secret: env.internalSecret,
                     requestId: claimed.id,
+                    claimToken: claimed.claimToken,
                     // A code the match page words in the dashboard language.
                     error: "send_failed",
                 })

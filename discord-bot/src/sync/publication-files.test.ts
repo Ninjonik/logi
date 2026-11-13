@@ -91,3 +91,19 @@ test("arbitrary mutable filenames are never assumed identical", () => {
         { files: [asset], attachments: [] }
     )
 })
+
+test("unchanged generated match images retain the exact existing attachment", () => {
+    const name = `logi-match-${"a".repeat(64)}.png`
+    const file = { attachment: Buffer.from("png"), name }
+    assert.deepEqual(publicationFiles([file], [{ id: "existing", name }]), {
+        files: [],
+        attachments: [{ id: "existing", filename: name }],
+    })
+    assert.deepEqual(
+        publicationFiles(
+            [file],
+            [{ id: "old", name: `logi-match-${"b".repeat(64)}.png` }]
+        ),
+        { files: [file], attachments: [] }
+    )
+})

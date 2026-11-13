@@ -4,6 +4,7 @@ import {
     type Guild,
     type MessageCreateOptions,
 } from "discord.js"
+import { startOwnedInterval } from "../runtime/task-owner"
 import { processMatchRecaps } from "../sync/match-recaps"
 import { makeFunctionReference } from "convex/server"
 
@@ -513,8 +514,7 @@ export function startPublicPanelWorker(
             running = false
         }
     }
-    const timer = setInterval(() => void tick(), 15_000)
-    timer.unref()
-    void tick()
-    return () => clearInterval(timer)
+    return startOwnedInterval(tick, 15_000, (error) =>
+        console.warn("[public-panels/worker.ts] Worker pass failed", error)
+    )
 }

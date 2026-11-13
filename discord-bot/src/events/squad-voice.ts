@@ -15,6 +15,12 @@ import {
     type OverwriteResolvable,
 } from "discord.js"
 
+import { ResourceCreateRejected } from "../../../src/application/discord-publications/create-event-resource"
+import {
+    provisionEventResource,
+    boundEventResources,
+} from "../runtime/event-resource"
+import { missingDiscordResource } from "../runtime/discord-resource"
 import type { EventRecord, Roster } from "../types"
 import { logWarn } from "../log"
 
@@ -31,7 +37,7 @@ async function fetchChannels(guild: Guild, ids: readonly string[]) {
             guild.channels
                 .fetch(id)
                 .then((channel) => channel ?? null)
-                .catch(() => null)
+                .catch(missingDiscordResource(10003))
         )
     )
     return channels.filter((channel): channel is GuildBasedChannel =>
@@ -69,20 +75,34 @@ export async function syncSquadVoiceChannels(input: {
 }): Promise<string[]> {
     const { guild, event, roster, existingIds, names } = input
     if (event.status === "concluded") {
-        const channels = await fetchChannels(guild, existingIds)
+        const receipts = await boundEventResources(guild.id, event.id)
+        const knownIds = [
+            ...new Set([
+                ...existingIds,
+                ...receipts
+                    .filter(
+                        (row) =>
+                            row.key.startsWith("voice-") &&
+                            row.state === "bound" &&
+                            row.resourceId
+                    )
+                    .map((row) => row.resourceId!),
+            ]),
+        ]
+        const channels = await fetchChannels(guild, knownIds)
         const remove = (channel: GuildBasedChannel) =>
-            channel.delete(`Event concluded: ${event.name}`).catch(() => null)
+            channel
+                .delete(`Event concluded: ${event.name}`)
+                .catch(missingDiscordResource(10003))
         // The voice channels first, so none is left loose without its category.
-        await Promise.all(
-            channels
-                .filter((channel) => channel.type !== ChannelType.GuildCategory)
-                .map(remove)
-        )
-        await Promise.all(
-            channels
-                .filter((channel) => channel.type === ChannelType.GuildCategory)
-                .map(remove)
-        )
+        for (const channel of channels.filter(
+            (channel) => channel.type !== ChannelType.GuildCategory
+        ))
+            await remove(channel)
+        for (const channel of channels.filter(
+            (channel) => channel.type === ChannelType.GuildCategory
+        ))
+            await remove(channel)
         return []
     }
 
@@ -118,42 +138,73 @@ export async function syncSquadVoiceChannels(input: {
         (channel) => channel.type === ChannelType.GuildCategory
     )?.id
     if (!parentId) {
-        const fetched = await guild.channels.fetch(anchorId).catch(() => null)
+        const fetched = await guild.channels
+            .fetch(anchorId)
+            .catch(missingDiscordResource(10003))
         const anchor =
             fetched?.type === ChannelType.GuildCategory ? fetched : null
-        const category = await guild.channels
-            .create({
-                name: names.category,
-                type: ChannelType.GuildCategory,
-                permissionOverwrites: overwritesOf(anchor),
-                ...(anchor ? { position: anchor.rawPosition + 1 } : {}),
-                reason: `Squad voice channels for ${event.name}`,
-            })
-            .catch((error: unknown) => {
-                logWarn(
-                    "event-sync",
-                    "Match squad category could not be created; using the configured category",
-                    {
-                        eventId: event.id,
-                        guildId: guild.id,
-                        error:
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                    }
-                )
-                return null
-            })
+        const category = await provisionEventResource({
+            guildId: guild.id,
+            eventId: event.id,
+            key: "voice-category",
+            find: async (id) => {
+                const found = await guild.channels
+                    .fetch(id, { force: true })
+                    .catch(missingDiscordResource(10003))
+                if (found && found.type !== ChannelType.GuildCategory)
+                    throw new Error("Invalid recovered squad category")
+                return found
+            },
+            create: () =>
+                guild.channels.create({
+                    name: names.category,
+                    type: ChannelType.GuildCategory,
+                    permissionOverwrites: overwritesOf(anchor),
+                    ...(anchor ? { position: anchor.rawPosition + 1 } : {}),
+                    reason: `Squad voice channels for ${event.name}`,
+                }),
+        }).catch((error: unknown) => {
+            if (!(error instanceof ResourceCreateRejected)) throw error
+            logWarn(
+                "event-sync",
+                "Match squad category could not be created; using the configured category",
+                {
+                    eventId: event.id,
+                    guildId: guild.id,
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                }
+            )
+            return null
+        })
         if (category) ids.push(category.id)
         parentId = category?.id ?? anchorId
     }
 
     for (const squad of missing) {
-        const channel = await guild.channels.create({
-            name: names.squad(squad),
-            type: ChannelType.GuildVoice,
-            parent: parentId,
-            reason: `Squad voice channel for ${event.name}`,
+        const channel = await provisionEventResource({
+            guildId: guild.id,
+            eventId: event.id,
+            key: `voice-squad:${squad.name}`,
+            find: async (id) => {
+                const found = await guild.channels
+                    .fetch(id, { force: true })
+                    .catch(missingDiscordResource(10003))
+                if (
+                    found &&
+                    (found.type !== ChannelType.GuildVoice ||
+                        found.parentId !== parentId)
+                )
+                    throw new Error("Invalid recovered squad channel")
+                return found
+            },
+            create: () =>
+                guild.channels.create({
+                    name: names.squad(squad),
+                    type: ChannelType.GuildVoice,
+                    parent: parentId,
+                    reason: `Squad voice channel for ${event.name}`,
+                }),
         })
         ids.push(channel.id)
     }

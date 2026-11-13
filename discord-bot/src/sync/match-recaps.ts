@@ -21,12 +21,20 @@ import { matchTitle } from "../../../src/domain/discord-messages/match-text"
 import { sideKind } from "../../../src/domain/discord-messages/match-text"
 import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
 import { resolveClanLanguage } from "../../../src/lib/clan-language/core"
+import { startConvexWorkSignal } from "../runtime/convex-work-signal"
 import { loadForumContext, type MatchForumContext } from "../forum"
 import type { EventInteractionContext } from "../types"
+import { makeFunctionReference } from "convex/server"
 import { messagePayload } from "../ui/message-kit"
 import { convex, references } from "../convex"
 import { env } from "../environment"
 import { logWarn } from "../log"
+
+const deliveryCall = (name: string, args: Record<string, unknown>) =>
+    convex.mutation(
+        makeFunctionReference<"mutation">(`matchRecapDelivery:${name}`),
+        { secret: env.internalSecret, ...args }
+    )
 
 export type MatchRecapData = {
     userId: string
@@ -59,12 +67,10 @@ export async function loadRecapInputs(
     eventId: string
 ): Promise<RecapInputs | null> {
     const [context, forum] = await Promise.all([
-        convex
-            .query(references.getEventInteractionContext, {
-                secret: env.internalSecret,
-                eventId: eventId as never,
-            })
-            .catch(() => null) as Promise<EventInteractionContext | null>,
+        convex.query(references.getEventInteractionContext, {
+            secret: env.internalSecret,
+            eventId: eventId as never,
+        }) as Promise<EventInteractionContext | null>,
         loadForumContext(eventId),
     ])
     return context ? { context, forum } : null
@@ -168,7 +174,7 @@ export async function processMatchRecaps(client: Client, eventId: string) {
     const recaps = (await convex.query(references.getPendingMatchRecaps, {
         secret: env.internalSecret,
         eventId: eventId as never,
-        deliveryVersion: 2,
+        deliveryVersion: 3,
     })) as PendingMatchRecap[]
     if (!recaps.length) return
     const inputs = await loadRecapInputs(eventId)
@@ -186,20 +192,11 @@ export async function processMatchRecaps(client: Client, eventId: string) {
     for (const candidate of recaps) {
         if (!candidate.recapId || !/^\d{17,20}$/.test(candidate.discordUserId))
             continue
-        const user = await client.users
-            .fetch(candidate.discordUserId)
-            .catch(() => null)
-        if (!user) continue
-        // Fetching Discord can take time. Re-read the binding and opt-out immediately before sending.
-        const recap = (await convex.query(
-            references.prepareMatchRecapDelivery,
-            {
-                secret: env.internalSecret,
-                recapId: candidate.recapId,
-                eventId,
-                discordUserId: candidate.discordUserId,
-            }
-        )) as PendingMatchRecap | null
+        const recap = (await deliveryCall("claim", {
+            recapId: candidate.recapId,
+            eventId,
+            discordUserId: candidate.discordUserId,
+        })) as (PendingMatchRecap & { token: string }) | null
         if (
             !recap ||
             recap.recapId !== candidate.recapId ||
@@ -207,25 +204,106 @@ export async function processMatchRecaps(client: Client, eventId: string) {
             recap.userId !== candidate.userId
         )
             continue
-        const sent = await user
-            .send(
-                messagePayload(
-                    buildMatchRecapView({
-                        inputs,
-                        recap,
-                        discordUserId: recap.discordUserId,
-                        enabled: true,
-                    }),
-                    options
-                )
+        let started = false
+        try {
+            const user = await client.users.fetch(recap.discordUserId)
+            const payload = messagePayload(
+                buildMatchRecapView({
+                    inputs,
+                    recap,
+                    discordUserId: recap.discordUserId,
+                    enabled: true,
+                }),
+                options
             )
-            .then(() => true)
-            .catch(() => false)
-        if (sent)
-            await convex.mutation(references.markMatchRecapSent, {
-                secret: env.internalSecret,
+            // Recheck the binding, opt-out, result version and clan switch after Discord lookup.
+            if (
+                !(
+                    await deliveryCall("begin", {
+                        recapId: recap.recapId,
+                        token: recap.token,
+                    })
+                ).ok
+            )
+                continue
+            started = true
+            const sent = await user.send(payload)
+            const result = await convex.mutation(
+                references.markMatchRecapSent,
+                {
+                    secret: env.internalSecret,
+                    recapId: recap.recapId,
+                    discordUserId: recap.discordUserId,
+                    deliveryToken: recap.token,
+                    ...(sent?.id ? { messageId: sent.id } : {}),
+                }
+            )
+            if (!result?.ok)
+                throw new Error("Match recap receipt ownership lost")
+        } catch (error) {
+            logWarn("match-recaps", "Recap delivery interrupted", {
                 recapId: recap.recapId,
-                discordUserId: recap.discordUserId,
+                eventId,
+                error,
             })
+            const code =
+                error && typeof error === "object" && "code" in error
+                    ? error.code
+                    : undefined
+            try {
+                const receipt = await deliveryCall("fail", {
+                    recapId: recap.recapId,
+                    token: recap.token,
+                    outcome: started
+                        ? code === 50007 || code === "50007"
+                            ? "refused"
+                            : "uncertain"
+                        : "pre_send",
+                })
+                if (!receipt.ok)
+                    logWarn(
+                        "match-recaps",
+                        "Recap failure receipt ownership lost",
+                        { recapId: recap.recapId }
+                    )
+            } catch (receiptError) {
+                logWarn(
+                    "match-recaps",
+                    "Recap failure receipt could not be recorded",
+                    { recapId: recap.recapId, error: receiptError }
+                )
+            }
+        }
+    }
+}
+
+export function startMatchRecapRecovery(client: Client) {
+    let stopped = false
+    const stop = startConvexWorkSignal(
+        "recap",
+        async () => {
+            if (!client.isReady()) return
+            const eventIds = (await deliveryCall("due", {})) as string[]
+            for (const eventId of eventIds) {
+                if (stopped) break
+                try {
+                    await processMatchRecaps(client, eventId)
+                } catch (error) {
+                    logWarn("match-recaps", "Recap recovery failed", {
+                        eventId,
+                        error,
+                    })
+                } finally {
+                    await deliveryCall("deferEvent", { eventId })
+                }
+            }
+        },
+        (error) =>
+            logWarn("match-recaps", "Recap recovery pass failed", { error }),
+        client
+    )
+    return () => {
+        stopped = true
+        return stop()
     }
 }

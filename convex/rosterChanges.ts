@@ -1,3 +1,4 @@
+import { requestDeliverySummary } from "./discordDelivery"
 import { v } from "convex/values"
 
 import {
@@ -8,9 +9,6 @@ import {
 import { mutation, query, type MutationCtx } from "./_generated/server"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
-
-/** A claim the bot never finished may be taken again after this time. */
-const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 
 const slot = v.object({
     userId: v.string(),
@@ -147,7 +145,9 @@ export const listPending = query({
         assertInternalSecret(args.secret)
         const pending = await ctx.db
             .query("rosterChangeRequests")
-            .withIndex("status", (q) => q.eq("status", "pending"))
+            .withIndex("status_retryAt", (q) =>
+                q.eq("status", "pending").lte("retryAt", Date.now())
+            )
             .take(50)
         return pending.map((row) => ({
             id: String(row._id),
@@ -164,21 +164,20 @@ export const listPending = query({
  * the only people a change DM may go to.
  */
 export const claim = mutation({
-    args: { secret: v.string(), requestId: v.string() },
+    args: {
+        secret: v.string(),
+        requestId: v.string(),
+        fenced: v.optional(v.boolean()),
+        resumable: v.optional(v.boolean()),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const id = ctx.db.normalizeId("rosterChangeRequests", args.requestId)
         const row = id ? await ctx.db.get(id) : null
         const now = new Date()
-        if (
-            !row ||
-            (row.status !== "pending" &&
-                !(
-                    row.status === "processing" &&
-                    now.getTime() - new Date(row.claimedAt ?? 0).getTime() >
-                        CLAIM_TIMEOUT_MS
-                ))
-        )
+        if (row?.resumable && !args.resumable) return null
+        if (args.resumable && !args.fenced) return null
+        if (!row || row.status !== "pending" || (row.retryAt ?? 0) > Date.now())
             return null
         const [event, roster] = await Promise.all([
             ctx.db.get(row.eventId),
@@ -212,9 +211,18 @@ export const claim = mutation({
             .collect()
         await ctx.db.patch(row._id, {
             status: "processing",
+            resumable: args.resumable,
+            deliveryAttempts: (row.deliveryAttempts ?? 0) + 1,
             claimedAt: now.toISOString(),
+            claimToken: args.fenced
+                ? `${row._id}:${now.toISOString()}`
+                : undefined,
+            leaseUntil: args.fenced ? now.getTime() + 5 * 60_000 : undefined,
         })
         return {
+            claimToken: args.fenced
+                ? `${row._id}:${now.toISOString()}`
+                : undefined,
             id: String(row._id),
             eventId: String(row.eventId),
             guildId: row.guildId,
@@ -243,11 +251,46 @@ export const claim = mutation({
 async function finish(
     ctx: MutationCtx,
     requestId: string,
-    patch: Partial<Doc<"rosterChangeRequests">>
+    patch: Partial<Doc<"rosterChangeRequests">>,
+    claimToken?: string
 ) {
     const id = ctx.db.normalizeId("rosterChangeRequests", requestId)
     const row = id ? await ctx.db.get(id) : null
-    if (!row || row.status !== "processing") return
+    if (
+        !row ||
+        row.status !== "processing" ||
+        (row.claimToken !== undefined && row.claimToken !== claimToken)
+    )
+        return
+    if (
+        row.resumable &&
+        patch.status === "failed" &&
+        (row.deliveryAttempts ?? 0) < 5
+    ) {
+        patch = {
+            ...patch,
+            status: "pending",
+            retryAt: Date.now() + 60_000,
+            leaseUntil: undefined,
+            claimToken: undefined,
+        }
+    } else if (
+        row.resumable &&
+        (patch.status === "sent" || patch.status === "failed")
+    ) {
+        const summary = await requestDeliverySummary(ctx, "roster", requestId)
+        patch = {
+            ...patch,
+            status:
+                patch.status === "failed" || summary.uncertain
+                    ? "failed"
+                    : "sent",
+            error: summary.uncertain ? "delivery_uncertain" : patch.error,
+            dmSentUserIds: summary.sent,
+            dmFailedUserIds: summary.refused,
+            digestPosted: summary.digest,
+        }
+    }
     await ctx.db.patch(row._id as Id<"rosterChangeRequests">, {
         ...patch,
         completedAt: new Date().toISOString(),
@@ -258,28 +301,44 @@ export const complete = mutation({
     args: {
         secret: v.string(),
         requestId: v.string(),
+        claimToken: v.optional(v.string()),
         dmSentUserIds: v.array(v.string()),
         dmFailedUserIds: v.array(v.string()),
         digestPosted: v.boolean(),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        await finish(ctx, args.requestId, {
-            status: "sent",
-            dmSentUserIds: args.dmSentUserIds.slice(0, 500),
-            dmFailedUserIds: args.dmFailedUserIds.slice(0, 500),
-            digestPosted: args.digestPosted,
-        })
+        await finish(
+            ctx,
+            args.requestId,
+            {
+                status: "sent",
+                dmSentUserIds: args.dmSentUserIds.slice(0, 500),
+                dmFailedUserIds: args.dmFailedUserIds.slice(0, 500),
+                digestPosted: args.digestPosted,
+            },
+            args.claimToken
+        )
     },
 })
 
 export const fail = mutation({
-    args: { secret: v.string(), requestId: v.string(), error: v.string() },
+    args: {
+        secret: v.string(),
+        requestId: v.string(),
+        error: v.string(),
+        claimToken: v.optional(v.string()),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        await finish(ctx, args.requestId, {
-            status: "failed",
-            error: args.error.slice(0, 100),
-        })
+        await finish(
+            ctx,
+            args.requestId,
+            {
+                status: "failed",
+                error: args.error.slice(0, 100),
+            },
+            args.claimToken
+        )
     },
 })

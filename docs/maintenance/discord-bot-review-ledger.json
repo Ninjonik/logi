@@ -1,0 +1,2085 @@
+{
+    "status":  "bot-static-review-complete; remediation-and-runtime-acceptance-not-performed",
+    "scope":  "All 135 discord-bot source/support-code files and 98 test files fully read; README and tsconfig reviewed separately. Selected performance-relevant dependencies traced; not an exhaustive audit of the whole app or all transitive dependencies.",
+    "sourceTotal":  135,
+    "testTotal":  98,
+    "sourceFullReads":  135,
+    "sourceRemainingFullReads":  0,
+    "files":  [
+                  {
+                      "path":  "discord-bot/src/cache-delivery.test.ts",
+                      "kind":  "test",
+                      "sha256":  "38c61128fa5359c9b8b56ba68a763ee34d0d41acee9f1013dc7151ffc6e0f56a",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "website invalidation delivery",
+                      "implementationPackages":  "D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/cache-delivery.ts",
+                      "kind":  "source",
+                      "sha256":  "fd455363ae5f09b28f813273963e0295c166295fe32374657ab985ec51b124e4",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "website invalidation delivery",
+                      "implementationPackages":  "D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/cache.ts",
+                      "kind":  "source",
+                      "sha256":  "ef41209a4519669b3b9dd96c653813eacba20d89a809e193a2473eeb89010d1f",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "website invalidation delivery",
+                      "implementationPackages":  "D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/access.test.ts",
+                      "kind":  "test",
+                      "sha256":  "79c5df86fb586c366b4697b0656e08039abed931bcf8d812dc79a4e07f93e4bb",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/access.ts",
+                      "kind":  "source",
+                      "sha256":  "98d06b3b4bd38783cb46bfe6b9a9355f55c262e831caf59512e447f948cfaedd",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/definitions.test.ts",
+                      "kind":  "test",
+                      "sha256":  "be36ec424c28211293471e4d5aaea74a65b55d88cd623bc5e5427ebdcc3a70a1",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/definitions.ts",
+                      "kind":  "source",
+                      "sha256":  "4d7f65b2fc522143e7f414c4bb975e7538532e762a93fd03db8d448388d0296f",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/fake-interaction.ts",
+                      "kind":  "source",
+                      "sha256":  "0df71f147a3e49974220e6cb0d82871c88981152a327b76e3c1186bb0b1e86a8",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/features.ts",
+                      "kind":  "source",
+                      "sha256":  "67a8a7fdba14fd073008e6612cb96c084edf4ec63e9d6a017a465bda41af43c1",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/guild-configs.ts",
+                      "kind":  "source",
+                      "sha256":  "08965443c05438e0a9395410e584ebe499fedef0105a8f73e3e947fc83f38880",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/help.test.ts",
+                      "kind":  "test",
+                      "sha256":  "98a0bbd67fc4a364d4ea2a7880b49ce3b5b50229f291889fbbe0709dec9cb742",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/help.ts",
+                      "kind":  "source",
+                      "sha256":  "3b4431e9cd3389428b18063d7b64a52de88f5ad46f6b2bcbae598238b851be98",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/notice.test.ts",
+                      "kind":  "test",
+                      "sha256":  "256b80324dd9552a17f0d46dc0da7c70c0b9015589aee426ea7c1781773c2f22",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/notice.ts",
+                      "kind":  "source",
+                      "sha256":  "828a143e7aa6c149d40741995dff597a74671a37f985bfb22dfa0114d923a500",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/player.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4021cada52b9863580f207fadd9e885078c5951380e48a83e82c74c921a39120",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/player.ts",
+                      "kind":  "source",
+                      "sha256":  "42d67ff492c9e98ebf98d97c3bbd3bd1ce4832678b786a7931e938d1b35d749c",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/registration.test.ts",
+                      "kind":  "test",
+                      "sha256":  "beae6a3e8f4d03d111a4eaf578a4e992ba5b61ca7c08810c87f0ff313f5fb172",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/registration.ts",
+                      "kind":  "source",
+                      "sha256":  "9f416136920907eb5f23e0efe4809d9d27105ae2b0021b5bcb0f8d163c359450",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/runtime.ts",
+                      "kind":  "source",
+                      "sha256":  "f8ba5ad30efc2311d992b09f8085cff37d2f1fd2508b44fbc8c4daf50b03cb76",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/commands/share.ts",
+                      "kind":  "source",
+                      "sha256":  "61d12623ad3e0212d5ea01454525470b050d411ee638e4562ef6e5d0448ce805",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "commands, configuration and authorization",
+                      "implementationPackages":  "D09"
+                  },
+                  {
+                      "path":  "discord-bot/src/constants.ts",
+                      "kind":  "source",
+                      "sha256":  "ed9ded58824d0afb1c4744c0780295b100910cb52bf08873008da0743108a4a3",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/convex.ts",
+                      "kind":  "source",
+                      "sha256":  "9acbaa5bb8162d621582472eba68f6e0a4c468dedb1709068c00f9d39e847dda",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/discord-client.ts",
+                      "kind":  "source",
+                      "sha256":  "9c5cf47373231f3a9a31c86bee8f8e2fa29da9028694c769447ac4b3460c2296",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/environment.ts",
+                      "kind":  "source",
+                      "sha256":  "f980a3e983ce65a2ed5eb06109df856518b8790c37c594908235dd0cf8bf708a",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/error-reporting.test.ts",
+                      "kind":  "test",
+                      "sha256":  "b1f12e028d14bcb7f4d63fa6059fe640a16066b8db791a0e5ef9206f790afb9e",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/error-reporting.ts",
+                      "kind":  "source",
+                      "sha256":  "80d17d9654029668465698858b4a540ec42faee1c8d3716b8e7925cf35bd1887",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/event-roles.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4dd8040e9bfb87aa338e39a67ede4c6d8fb9c54c08d40db8a7bad50b81161377",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/event-roles.ts",
+                      "kind":  "source",
+                      "sha256":  "78f213e9589867df4b97f73511fb3cca638067dd56b2fb2e215f3cad86ff73c2",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/announcement-migration.test.ts",
+                      "kind":  "test",
+                      "sha256":  "74e73bc6726f70d1b4daeeed583dede3632b5e3f01456bdf774384d057ca878d",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/announcement-migration.ts",
+                      "kind":  "source",
+                      "sha256":  "a6b7f36f8c907487b7bd6ef6e211d1cad8a1cd29c7db5a16e1292bae4b5ba12b",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/announcement-sync.ts",
+                      "kind":  "source",
+                      "sha256":  "929e220e8d7a7c59b5c5e8aa12cedebda7dce1a2146a469d2a5b845d3539261a",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/announcement.test.ts",
+                      "kind":  "test",
+                      "sha256":  "d2f1b5183f38eb3e6c98e72630c8b8a426d68d518de14bc9d0c5b8aaa6f4d7f1",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/announcement.ts",
+                      "kind":  "source",
+                      "sha256":  "0360477df2e7d64fd4fd798b09366b86f4f548040b30fa0f695051cb9ae43ad1",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/attendees.test.ts",
+                      "kind":  "test",
+                      "sha256":  "6412fec4e99f0d21cba775880473f86e0ed5acdff37b3eb73b67ff6706c028e3",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/attendees.ts",
+                      "kind":  "source",
+                      "sha256":  "a4c5235eee03f51ca38ae4ccbc4c21a7cf528570a66a635ed4ff107f637f3b1b",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/board-example.fixture.ts",
+                      "kind":  "source",
+                      "sha256":  "feda703951d9339c7a7e9e9741fd7d6baded5fc3eea82d13d0c4816826e3fd06",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/dump-board.ts",
+                      "kind":  "source",
+                      "sha256":  "4e56a51fbd7efe171eab70ffaa47cafd7f2484f66599b07dec4cc523e6e111ea",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/interactions.test.ts",
+                      "kind":  "test",
+                      "sha256":  "ebdedb51383c4a9840c73569ce35260c5b3946d6e6bb4bb9f576cf3e573154d2",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/interactions.ts",
+                      "kind":  "source",
+                      "sha256":  "8662ff06ff79cc780f29a403340d2fcd43f7b9fb28b6e0463e60bcad4ae9ad99",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/match-context.test.ts",
+                      "kind":  "test",
+                      "sha256":  "fef05543ac2612f698e5a8188cf1a250a69bc03970b01fc1be7e285dbef74188",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/match-context.ts",
+                      "kind":  "source",
+                      "sha256":  "0b68a3f69e9579acb6415f6a627dd0005579eb040e9b416339be5d5a04971bb5",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/match-discord.ts",
+                      "kind":  "source",
+                      "sha256":  "7dfd4004de00d52a3ff00971b83a486e656abed2f2c8ea67cc68cc98fae23af4",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/match-image.ts",
+                      "kind":  "source",
+                      "sha256":  "5dd533fb31c4ad2d70ea7d261e84ffeafb3e007d5691bdd3492948a1f9b222dc",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/match-result.test.ts",
+                      "kind":  "test",
+                      "sha256":  "1d250752c1d66ccd30c7b9ea45a3ce1eab70a2582aaf6f18ac1f1e2dd7ef1834",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/match-result.ts",
+                      "kind":  "source",
+                      "sha256":  "e1de43d9e68758e99d5a2dc14c3f3cf89a24ffa51d379865fa225afc6b0078b2",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/replies.test.ts",
+                      "kind":  "test",
+                      "sha256":  "aa1ef289e511a72a092ec32f0d04921d7743baed0a6f757416a6e88d38b1af21",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/replies.ts",
+                      "kind":  "source",
+                      "sha256":  "7cf3e426693baa3ea4ab6b037c29d1503110710db0a46c6a88c93244e46cf2d5",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/roster-message.test.ts",
+                      "kind":  "test",
+                      "sha256":  "af152207ddecb7d8d46a8158736bd074b9599f4f2179f721a45a113856754b22",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/roster-message.ts",
+                      "kind":  "source",
+                      "sha256":  "a5e7734ead83092cedb33ea72bf119275ef1ea4201d34f00e878db0e70a1e076",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/signup-thread.test.ts",
+                      "kind":  "test",
+                      "sha256":  "afa48be8f4fb98cc653f0233c2067e1e34ba36ebd8165b8293838fc914c74e4d",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/signup-thread.ts",
+                      "kind":  "source",
+                      "sha256":  "217aae58cdacd9a251eeccd6f92efe7792aba1b32fb111286091f7411f95a370",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/squad-voice.test.ts",
+                      "kind":  "test",
+                      "sha256":  "b693c3c742888dfbbb59510366dddea995114b2994ae6d6f174d7b5bd981a4e3",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/events/squad-voice.ts",
+                      "kind":  "source",
+                      "sha256":  "bcfbdf3f5b6f2d9a119aff2019a0d663ae70a67c9c201540efb9f01eea3fef88",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/forum.test.ts",
+                      "kind":  "test",
+                      "sha256":  "d2d0070087496ce0a0e84085f777259b3f3b0e18412cbf7574bd8ca356f2ec65",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/forum.ts",
+                      "kind":  "source",
+                      "sha256":  "54bc27912f9297c2a51fdc779687840ddf4e9f9f96d42487326d98e9ac01abb5",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/gateway-lifecycle.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4d268da45fd97e2045808579b5d58b387fbc1247624cd154c88d239d54ffde97",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/index.ts",
+                      "kind":  "source",
+                      "sha256":  "ba6de101e5dd1cf71b1c3aedbc4950e3bc078bbbd813615078ceab125605e166",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/acknowledgement.test.ts",
+                      "kind":  "test",
+                      "sha256":  "3e2d8d90d32b6278bd8a8a5974adfbce0b1a763ca7a95c69bae78ac945dfdb74",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/acknowledgement.ts",
+                      "kind":  "source",
+                      "sha256":  "fcf38c782be585ee1eb45b059274399fb41e3d81e696ab803140c5894e9d0671",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/attendance-decline.test.ts",
+                      "kind":  "test",
+                      "sha256":  "e901cfd6320c3498540a4f4548b537ad02fce68491c3b9e3a26ca3f1ed4dc7af",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/attendance-decline.ts",
+                      "kind":  "source",
+                      "sha256":  "22a8e5a662176e088276696e984b8ae3c391fe1a81895e0785f5f79020ce094e",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/attendance-replies.test.ts",
+                      "kind":  "test",
+                      "sha256":  "c8e66951855fd56c0e6760af9af068c8d2a734ea4bdc8a899707f2d48c086c39",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/attendance-replies.ts",
+                      "kind":  "source",
+                      "sha256":  "7f5caa54b814fa9cda95c2dab1789b917da9cf0876cad847a0587dc58a2d83d9",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/close-authority.test.ts",
+                      "kind":  "test",
+                      "sha256":  "87b8ecba67cb92f2497a63cd32a7a69666fa5f85479929e060270df51bbb8a20",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/close-authority.ts",
+                      "kind":  "source",
+                      "sha256":  "9d2f0d83879f22bf6b13a420c0110c8899404db9a9522a7ff4ebbf431efd9193",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/close-ticket.test.ts",
+                      "kind":  "test",
+                      "sha256":  "8b5d9ed96f8a14f46675f0480a159aa7c058485147a767eced6b85dc626228d4",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/close-ticket.ts",
+                      "kind":  "source",
+                      "sha256":  "95781fcc8925ffe5588a3b11a680129cc63e649d7fd5fcb1274c5b4d5e4267fe",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/event-buttons.test.ts",
+                      "kind":  "test",
+                      "sha256":  "37f772466156cf0443f47e8b62dd10fae31f052bf493c1ae0670cc3329a7ca4c",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/event-buttons.ts",
+                      "kind":  "source",
+                      "sha256":  "323ded5271a3f0cf2e864503c7557cf43af83e94a6bc35541c1e61940bee574d",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/features.ts",
+                      "kind":  "source",
+                      "sha256":  "5b48b948306bc729f09ff708baa230d6a7ecc8f8c7da33861c988e0bbf63f365",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/link.test.ts",
+                      "kind":  "test",
+                      "sha256":  "b90c8888038998d33f40fbeab43a918a3690829ab4c1a755dba780ba87599de0",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/link.ts",
+                      "kind":  "source",
+                      "sha256":  "35951e5a09e665dc67d7ecfc02219c8fa2bcfb00c5e8d8bc84bcfbd539e6fb10",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/match-gone-replies.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4ede3f293b6caeade8cd4ba5c2a7be9f72c5db077dbca0a3cddb2624e34a9d63",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/match-recap-preference.test.ts",
+                      "kind":  "test",
+                      "sha256":  "5a763ea7f4e21ea66d31c43c5ab6d14574a88a0dd0f9ed9d3b2e894860bf0d7d",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/match-recap-preference.ts",
+                      "kind":  "source",
+                      "sha256":  "d13d904a0441a13bd70c6d65b230dd0a57e72aafa47b680aeec8025b2a088889",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-application-cache.test.ts",
+                      "kind":  "test",
+                      "sha256":  "00461d26ba8fa79d112e0dc4748d9317eb8ac36477219211d6911deccef6fd87",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-application-cache.ts",
+                      "kind":  "source",
+                      "sha256":  "3745f4a1a5a155031b74a2eae1c8e70601bc31eb89fc079f1bda82845833f656",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-application-create.ts",
+                      "kind":  "source",
+                      "sha256":  "04a682d21dce6652b49c12f990d9024f4e69a00163bb3cd1a945964fa358f56f",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-application-modals.test.ts",
+                      "kind":  "test",
+                      "sha256":  "f3f87d77320e37bf786f37d0c43edb029f6bdcf48ab8c971f3d895855775933a",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-application-modals.ts",
+                      "kind":  "source",
+                      "sha256":  "f50756fc10d78a0ea2cc2b890154c90d4341356bf68a3952ecb2d3ebd074195c",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-application-store.ts",
+                      "kind":  "source",
+                      "sha256":  "7160012dc252f750aa1b727760f9b1c1873e9d6dfa95ed1e7d8603843d6656f9",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-application.test.ts",
+                      "kind":  "test",
+                      "sha256":  "7891d28cfd93d72ac050f12de73d0cc73d6e3b12a25eeda0a38e83f2ec6de4ca",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-application.ts",
+                      "kind":  "source",
+                      "sha256":  "ee8d6e5c18ff34766bf9b50317c77748bb0a74e3f7795e33f894bb9b34884626",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-decision.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4209539b62c86b68978c8c8c5aab566af194c8b485f5e7602822cf1c2657fe01",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-decision.ts",
+                      "kind":  "source",
+                      "sha256":  "ce8f63fdd6d1325a597b0318c12c332f9180fefa395db047ea845b4851c05afa",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-panel.test.ts",
+                      "kind":  "test",
+                      "sha256":  "9ffd814d482462ea10a51e931764a962f883928baf57bbac4721293c0b6d7c18",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-panel.ts",
+                      "kind":  "source",
+                      "sha256":  "fa83a44fcfe395a39f2189c5006df7ecc711b6c452ca9113ec19ac9c85c893f5",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-steam-watch.ts",
+                      "kind":  "source",
+                      "sha256":  "a9281adf57e80c35de7fd489d7e1030a9424d99f41c3aa4987882eb428462b07",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-web-submissions.ts",
+                      "kind":  "source",
+                      "sha256":  "fb176fb299a1e160f32f6bcbbc8fe077fa300e9f1047bb354729d2365dc76947",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-welcome.test.ts",
+                      "kind":  "test",
+                      "sha256":  "2b894dc666ab98c438939e1f5ab5e70949f598f6f964773d8d258ce84bcc81c3",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/membership-welcome.ts",
+                      "kind":  "source",
+                      "sha256":  "d994df633bde77d6fcd44e35ed059bb599bb7194a13e08856f23e4532c38709d",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/player-search.test.ts",
+                      "kind":  "test",
+                      "sha256":  "64940d0451f66a66439f1c9c20ea6f3633f7fcec41384be90eb97746344ffb9c",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/player-search.ts",
+                      "kind":  "source",
+                      "sha256":  "dcd7f9d585261c972a59b2e87fad0c20cd05bebeb97523350bfd359a1ad0238e",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/registry.test.ts",
+                      "kind":  "test",
+                      "sha256":  "f00eb6389ce109d59d42c21f98f339b051c11c638150cc2afdd4e32373fe5b58",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/registry.ts",
+                      "kind":  "source",
+                      "sha256":  "5a6e2d5b2ad4bfd40162301df220b135c546d39bd6509c60fbcd53a8f7bca4a4",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/report-picker.test.ts",
+                      "kind":  "test",
+                      "sha256":  "a0da645b75d25154a5f6d7bd38a3dc1f916b7e43c0fe77e6b2e2916fa331cbaa",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/roster-assignment.test.ts",
+                      "kind":  "test",
+                      "sha256":  "a912ca07fbe4c7e201fe4db5dd125185c5d016d08ca52c441ec58e249a841827",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/roster-assignment.ts",
+                      "kind":  "source",
+                      "sha256":  "85b2f828bd10370a38897425d69a87e154b796cf8a4fdbbe242c1ec4491b51a6",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/rules.test.ts",
+                      "kind":  "test",
+                      "sha256":  "f8d7edb76229f6c0b400a4370d03972578f9bc592e1d972524997c20cfe9aaba",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/rules.ts",
+                      "kind":  "source",
+                      "sha256":  "eeaf475c967d37751bbe97c9ad1a0c608f49eb91a000d8fc00dee315c594de63",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/self-groups.test.ts",
+                      "kind":  "test",
+                      "sha256":  "99eb07dffa3f5411acffe7922ff203f1acd5e2370c8a0f6dcd4b339425724e86",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/self-groups.ts",
+                      "kind":  "source",
+                      "sha256":  "02d9b641da45e79c04e71bd4048c745381f16c9887ca6094bd29f66045427ed7",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/server-status.test.ts",
+                      "kind":  "test",
+                      "sha256":  "3af4a17647329cb40445222a66cf69ee22b688b75e404fd432ab3efca4779d63",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/server-status.ts",
+                      "kind":  "source",
+                      "sha256":  "9757016be277b0334a0a821ff5c8f205bd4512c08f069151a1583698acdd485e",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/shared.test.ts",
+                      "kind":  "test",
+                      "sha256":  "b95b546d8aa60584f83d7457c4823bc45b89ff9bd05e0946cc3f6a230e84781a",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/shared.ts",
+                      "kind":  "source",
+                      "sha256":  "b24ad42171bcf2349e1c0ffec0623b013ccc7c458a6ef781833d8e2335ecc368",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/stats-live.ts",
+                      "kind":  "source",
+                      "sha256":  "253768da59441e7ef64143678416af2c4377b8448b6379011cfafa37a9b4cb44",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/stats-publish.test.ts",
+                      "kind":  "test",
+                      "sha256":  "c6f65f03dd5f2f5cc9955308fabfbd2949d90c8270190235485145ba62ac9fa9",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/stats-publish.ts",
+                      "kind":  "source",
+                      "sha256":  "698dc6c2eaed2ac759eecc93a753da0ad7971b18cacaf0ed7db406e1689f3891",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/stats-runtime.test.ts",
+                      "kind":  "test",
+                      "sha256":  "9416ccbe37d21a8a53a2a8d1adc1a71a80d72f1646de17f57581004164cf305e",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/stats-runtime.ts",
+                      "kind":  "source",
+                      "sha256":  "06b3b7199bcb20e901ff35e0f78bed99f4cdb466d8a37079149edd039c60b865",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/stats.test.ts",
+                      "kind":  "test",
+                      "sha256":  "0ef0ee734f9103081b2fdc5afb940a9928bfbb6278b869bd811c26cb411c57e3",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/stats.ts",
+                      "kind":  "source",
+                      "sha256":  "1dea1c828bef7c3f2dbb51f92f587a589bcca4e064895251e27b1c0510f9947a",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/tickets-panel.ts",
+                      "kind":  "source",
+                      "sha256":  "bc92e7e0a45b052e731386b742b5bc91fe2698bbb72c24dddc90d9568dc2e5e9",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/tickets-report-members.test.ts",
+                      "kind":  "test",
+                      "sha256":  "7166ec4218f39e77a2655e3be8dd36535e5b13fecb9ef4328357818e801c7d81",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/tickets-report-members.ts",
+                      "kind":  "source",
+                      "sha256":  "2767f23f26dd523af78859cf1baa5ab972ebde601690c5bdd0ca270a6ae6d186",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/tickets.test.ts",
+                      "kind":  "test",
+                      "sha256":  "5b4cd700bc08490a31aafbbf0e92756ca6a9152f649fbc4cfab7e29dd7543302",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/tickets.ts",
+                      "kind":  "source",
+                      "sha256":  "b1c4c43885462149a9e6366f128bb0b11128bf241204b6c88cce594caee613d0",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions/workflow-commands.test.ts",
+                      "kind":  "test",
+                      "sha256":  "1acf9258253829d35b0d7e2bf081424975eef2bdeda30217ba968ebc28e60864",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "interaction workflows, privacy and bounded state",
+                      "implementationPackages":  "D01,D03,D04,D09,D10"
+                  },
+                  {
+                      "path":  "discord-bot/src/interactions.ts",
+                      "kind":  "source",
+                      "sha256":  "2aa8cadc17e89891c467a7110bfe3dca7de410abac0b6ec792be74d37351854a",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/league/panels.test.ts",
+                      "kind":  "test",
+                      "sha256":  "51710af034212b4e8cd4c2b5a6553099aaada108967b26308b6a1b3097fb1809",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "League intake, publication and rendering",
+                      "implementationPackages":  "D03,D06,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/league/panels.ts",
+                      "kind":  "source",
+                      "sha256":  "32827c5dacb574c38b1d62b4cc704bf5402128c38f6f23f856ac279115ac0ce6",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "League intake, publication and rendering",
+                      "implementationPackages":  "D03,D06,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/league/render.test.ts",
+                      "kind":  "test",
+                      "sha256":  "2e0173d7e7a3e7db2f19956ef1c521962ae76a4e3f913656fa0cdca06af864e6",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "League intake, publication and rendering",
+                      "implementationPackages":  "D03,D06,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/league/render.ts",
+                      "kind":  "source",
+                      "sha256":  "360ebde5f55f0258de844b924d1540b05bd105cc2e3e5b6a73f78c37fb7d445b",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "League intake, publication and rendering",
+                      "implementationPackages":  "D03,D06,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/league/worker.ts",
+                      "kind":  "source",
+                      "sha256":  "6d4deb06bebbc97c80c511b1bcd5ceb7630b98d805bbebc8f9fc8eabd6469748",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "League intake, publication and rendering",
+                      "implementationPackages":  "D03,D06,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/log.ts",
+                      "kind":  "source",
+                      "sha256":  "9f6a426e4b8a6779b9956aad220d57f7d576fa1c141018d4e73fe8d8b13d39e0",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/manual-reminders.ts",
+                      "kind":  "source",
+                      "sha256":  "d4564ac9fd62f7b1c837f14b151e0ff8db0a630320d09531edc24ab69026bede",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "request discovery, authority and delivery",
+                      "implementationPackages":  "D03,D04"
+                  },
+                  {
+                      "path":  "discord-bot/src/map-label.ts",
+                      "kind":  "source",
+                      "sha256":  "48cefbaa5f3b69f4f83e5f5c381f25542fadc407dc684ba1494f05d8ee55d8ce",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/meeting-attendance-members.test.ts",
+                      "kind":  "test",
+                      "sha256":  "bdf7af4af57ac19c00025c6d0cc64900b1618b7a853f1193363bb8d56e8f5350",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "request discovery, authority and delivery",
+                      "implementationPackages":  "D03,D04"
+                  },
+                  {
+                      "path":  "discord-bot/src/meeting-attendance-members.ts",
+                      "kind":  "source",
+                      "sha256":  "7aecc891a4697603e1a07620f3295c057ba15a7d99a174280444c15a558e3830",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "request discovery, authority and delivery",
+                      "implementationPackages":  "D03,D04"
+                  },
+                  {
+                      "path":  "discord-bot/src/meeting-attendance.ts",
+                      "kind":  "source",
+                      "sha256":  "7aa393338b913060ae618b469a649dd61c27280a92548eefb9c2b820b7f3c9dc",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "request discovery, authority and delivery",
+                      "implementationPackages":  "D03,D04"
+                  },
+                  {
+                      "path":  "discord-bot/src/platform-status.test.ts",
+                      "kind":  "test",
+                      "sha256":  "01aa97e9b4411cce56763d9959ae5ee6da3d5cd848c3b48934e9dfb3b0227bee",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/platform-status.ts",
+                      "kind":  "source",
+                      "sha256":  "ea9820af39fb8d0838daf35f8be33fecdd65434186bfec7e3c5fd57d36ba1ce6",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/player-reports.ts",
+                      "kind":  "source",
+                      "sha256":  "95c5d7e0b4cac69c0cbe839e3ae6ff30632057a8831f5f84f40f316d0a62e1d4",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/assets.test.ts",
+                      "kind":  "test",
+                      "sha256":  "0046cc22dcce903edd7815566e6ca05d6fdbe6d2ff6ccee9ad2490f7ebabfa55",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/assets.ts",
+                      "kind":  "source",
+                      "sha256":  "bd8b909487499ba0e977e16a4cf6b867432c25ff6ebd5b1648ab07ca27814d77",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/calendar.test.ts",
+                      "kind":  "test",
+                      "sha256":  "c3c6ee02f32d5dafe8bebab1365f0f5721a58bfe954cc6383b3c202b9f7db845",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/calendar.ts",
+                      "kind":  "source",
+                      "sha256":  "e0a3219c92a0d100ef5a0e9f73e117f540b0b4de13caad990836951eb3432dad",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/interactions.test.ts",
+                      "kind":  "test",
+                      "sha256":  "c78579290563c62c177433f01a1ca4cea0f8d2a59531859aac1568a82edd5289",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/interactions.ts",
+                      "kind":  "source",
+                      "sha256":  "a3d2b5de0711496749ba49950aba462b547b1238d22b8f9fd08282acfbd36bc7",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/panel-errors.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4b89270e52c50fb2adfd394dca061ef58aeb4180a05be073ad97301ffddfd711",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/panel-errors.ts",
+                      "kind":  "source",
+                      "sha256":  "86ce5ccf2860a7838887186a6015105a141923a869d65cf4abf3d0c72fc82c99",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/panel-runner.test.ts",
+                      "kind":  "test",
+                      "sha256":  "56f544792168f37f14470575a7b3145e00bae5940a92a84b5a28bde4f862a683",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/panel-runner.ts",
+                      "kind":  "source",
+                      "sha256":  "c882234cf4cdeb2d17619501e1f5c65160c25eb0d273a96def8b8b498d433d7f",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/player-details.test.ts",
+                      "kind":  "test",
+                      "sha256":  "a4883495d7eddd4dc7730e7996f519f982b0069b655c884fba5073a3320ffaca",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/player-details.ts",
+                      "kind":  "source",
+                      "sha256":  "f29c16aafd4c1a7b8ab8b31deb8199eebbfd7db2fe1fa27ef527217aa6efc8c6",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/private-reply.test.ts",
+                      "kind":  "test",
+                      "sha256":  "8affbbfd56a64cffd6ff317e5dbbf62471e7fd36fdbc45d4a6a12ea0963a45c9",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/private-reply.ts",
+                      "kind":  "source",
+                      "sha256":  "4735dfb6ac13f7e0a279318ae22cfcde65bc1658b163eb829a38a144f75fa150",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/render.test.ts",
+                      "kind":  "test",
+                      "sha256":  "42815545912f1fd38be44babd2155e295a4cbaa4282bb9f72c42c7b0a78bfa07",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/render.ts",
+                      "kind":  "source",
+                      "sha256":  "59fb7c92da5a15277a10b2bab3ef89d0b3c22261939821903d7bcc241b15ede4",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/score-image.test.ts",
+                      "kind":  "test",
+                      "sha256":  "3ced1935d343a610b91478e93ad1ab31c00bfa89766d9d2497c6b951228842a0",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/score-image.ts",
+                      "kind":  "source",
+                      "sha256":  "1da64df529f3a350aeecf0da454114f80652cc02bac6d3c041d3dfa8ddfd15d4",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/public-panels/worker.ts",
+                      "kind":  "source",
+                      "sha256":  "7f5092c01462ae6e92c08f4df813f5e7354c6fe3d18b3d6694756cc44b60362f",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "panels, rendering, privacy and media",
+                      "implementationPackages":  "D03,D05,D06,D07,D08,D09,D11"
+                  },
+                  {
+                      "path":  "discord-bot/src/rosters/roster-change-service.test.ts",
+                      "kind":  "test",
+                      "sha256":  "60cbd29ea2f7258cae7d25a46a0f3f22a11160cc073c568bb4fd31ded007f5a6",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "request discovery, authority and delivery",
+                      "implementationPackages":  "D03,D04"
+                  },
+                  {
+                      "path":  "discord-bot/src/rosters/roster-change-service.ts",
+                      "kind":  "source",
+                      "sha256":  "094af648f584d4b32b1774a3981855593771515d3e737cb1770bf2c44f06702a",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "request discovery, authority and delivery",
+                      "implementationPackages":  "D03,D04"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/application-emoji.test.ts",
+                      "kind":  "test",
+                      "sha256":  "c18050ea7cf51861184c0ef7b5c05160485747af2f8473817a3234aef27b49e1",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/application-emoji.ts",
+                      "kind":  "source",
+                      "sha256":  "3347b5c4c7c920dd2239bc4183b0be3bafc49b77a9ffd14a19713692172cd51e",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/bot-version.test.ts",
+                      "kind":  "test",
+                      "sha256":  "f7da5dc3d71d3157ccf822ab9f20977b8fb916cfe908580924a0bc56b2c0e66c",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/bot-version.ts",
+                      "kind":  "source",
+                      "sha256":  "18c375645953804127b4fef1602c98f3618fc1200501c6a99ab118956c117019",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/clan-kit.test.ts",
+                      "kind":  "test",
+                      "sha256":  "cac5e451aba60cb8790eaf453eda068c0930294539dd816dc5826dcd67065df2",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/clan-kit.ts",
+                      "kind":  "source",
+                      "sha256":  "5aa509e9a4196e19c6be3ac7ad54e2857297b79a96cd448d0cb9dece4269b696",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/clan-language.ts",
+                      "kind":  "source",
+                      "sha256":  "3948236ddefb9a62506bb2cac1a028a407def5275471c244ad169cf1343c5398",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/faction-emoji.ts",
+                      "kind":  "source",
+                      "sha256":  "f038379b30ca852afd520948d58bb0f59a66e6883a1e51a755f9546e3e1df288",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/fallback-worker.ts",
+                      "kind":  "source",
+                      "sha256":  "29758d20f60392c6197017ce8c09655fd27e9b0cc660eae76108b47f1c02e9d8",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/guild-cache.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4204b41acc575792f877ddedbdf8e04276f886c441d633aa4eb66b179499e8ae",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "global configuration snapshot",
+                      "implementationPackages":  "D02"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/guild-cache.ts",
+                      "kind":  "source",
+                      "sha256":  "6ee21db0fd01995320a074fa8a91ebd042745dcb7d5b14e91428c74154cee12f",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "global configuration snapshot",
+                      "implementationPackages":  "D02"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/recurrence-cadence.test.ts",
+                      "kind":  "test",
+                      "sha256":  "aebc301e1d89c1ef182669965cf7c5b0dbe9fdd9037590a679176399defdbb38",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/recurrence-cadence.ts",
+                      "kind":  "source",
+                      "sha256":  "7e6cae6ed5b51a94d2549a2b7e24144517631e7b149c6b79ad4220aabc4ff7de",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/sync-service.test.ts",
+                      "kind":  "test",
+                      "sha256":  "c872a06fbdc5e8faf2c3c92784f15c7b7bf86698a13242240d8d478e14bc6c9f",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/runtime/sync-service.ts",
+                      "kind":  "source",
+                      "sha256":  "4658b862a35f14a872813139e6501e4bf5e66c7cccdfa7527397b9b5b553e323",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/scheduled-events.test.ts",
+                      "kind":  "test",
+                      "sha256":  "c3816a13806e6154877c2235a9b1d8eacbadc4a9cac605c9d5b0c88903d6d743",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/scheduled-events.ts",
+                      "kind":  "source",
+                      "sha256":  "3af3a23ad12100d7c26db998b24d1c8b2475451bce549159cd99a243e2c0b1b5",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "event rendering and Discord effects",
+                      "implementationPackages":  "D03,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/seed/interactions.test.ts",
+                      "kind":  "test",
+                      "sha256":  "81476d70e3a6bea65c6a579fa55578d810fe8a05683a2784f8eaff489130ef56",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "seed delivery and rendering",
+                      "implementationPackages":  "D03,D06,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/seed/interactions.ts",
+                      "kind":  "source",
+                      "sha256":  "dacc16b3de7bf447d427dab3983bc8614e36c7aa75e6141f3cca2c5018ea9944",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "seed delivery and rendering",
+                      "implementationPackages":  "D03,D06,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/seed/payload.test.ts",
+                      "kind":  "test",
+                      "sha256":  "31c549fabdac61ff89361f3e640fd04094e681283d1e38e0994aa4095c1d6c60",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "seed delivery and rendering",
+                      "implementationPackages":  "D03,D06,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/seed/payload.ts",
+                      "kind":  "source",
+                      "sha256":  "a7fb80a872dd75a745dc7e796854de8d0a4e4e43cb49d630bc6ab39ef4e8d9a7",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "seed delivery and rendering",
+                      "implementationPackages":  "D03,D06,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/seed/render.test.ts",
+                      "kind":  "test",
+                      "sha256":  "b477cb920315cfa14e749a8c311ce013777f4e7d3bf68f6dfaad7306466c61c7",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "seed delivery and rendering",
+                      "implementationPackages":  "D03,D06,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/seed/render.ts",
+                      "kind":  "source",
+                      "sha256":  "2180df256f242a1d2d8ba329e6a6410ad872a5387710e4b8d69b97e5965ba63c",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "seed delivery and rendering",
+                      "implementationPackages":  "D03,D06,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/seed/worker.test.ts",
+                      "kind":  "test",
+                      "sha256":  "a016a96c214d370354de47f6b9d05328ac3cce68c43225ef77e8f444828c83ed",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "seed delivery and rendering",
+                      "implementationPackages":  "D03,D06,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/seed/worker.ts",
+                      "kind":  "source",
+                      "sha256":  "e9c1a09cdb39ed19056212869bca638089248c31c61fbdd8db0b51e720a51688",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "seed delivery and rendering",
+                      "implementationPackages":  "D03,D06,D07,D08"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/attendance-reminders.test.ts",
+                      "kind":  "test",
+                      "sha256":  "725d06c90d916d93be4557a159a561bbf54e7463d982ff0f4c7240bae43b84fe",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/attendance-reminders.ts",
+                      "kind":  "source",
+                      "sha256":  "8d74ec6aaf589440adf93c01d29c2e6c027b646691187679eff9990abb21be8e",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/event-deletion.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4c4ab2d197ffbb85525a0463dd3b30cd0763d15b571195c499f700246603c1cf",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/event-deletion.ts",
+                      "kind":  "source",
+                      "sha256":  "914ea04c117d13ebfad9c47418bedcf42042061647dc378b94e3bce79802882d",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/events.test.ts",
+                      "kind":  "test",
+                      "sha256":  "a3cfbf1ac33ba232b61bce100402e4c304ff64e4c27f8ebdcf7d9b3f538fd898",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/events.ts",
+                      "kind":  "source",
+                      "sha256":  "4cf3eb22618a0cde66c405a3c192d10b3069046dc67e449a28fac168dd532947",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/managed-member-roles.test.ts",
+                      "kind":  "test",
+                      "sha256":  "e68a94bef72b9efc249e25d26a6f7b533c4f10dcb9222886607becf54e6f5891",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/managed-member-roles.ts",
+                      "kind":  "source",
+                      "sha256":  "e7951c6ed0e7b6e3f68b2b310bd963945ec3b36b1780ab492930f07ec6ec1769",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/manual-reminders.test.ts",
+                      "kind":  "test",
+                      "sha256":  "eccfee0da98477a98bb37ff201411625049399ef86e7256e4d410202a0f49b49",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "request discovery, authority and delivery",
+                      "implementationPackages":  "D03,D04"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/manual-reminders.ts",
+                      "kind":  "source",
+                      "sha256":  "e9f3081cec5b722ac49a67ce2ee3e527b8c6db9ad0a6c9a0a80cae80992edf9e",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "request discovery, authority and delivery",
+                      "implementationPackages":  "D03,D04"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/match-recaps.test.ts",
+                      "kind":  "test",
+                      "sha256":  "ff50e8fe0350a70bf4b222054ac9d75cfc29276cbc0401b6f93c2b340d2fb588",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/match-recaps.ts",
+                      "kind":  "source",
+                      "sha256":  "11263fc7cda411876a8ddfc3fcb93bbd4daa925e5b7d53017f9d4f890106f1ba",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/member-access.ts",
+                      "kind":  "source",
+                      "sha256":  "aab7c7d924fece61bcbfc8444bbe41cb92f79629da1216aac0bceeb99a42da5c",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/membership-events.test.ts",
+                      "kind":  "test",
+                      "sha256":  "0b0049541c172544166a887ff9997a92341ce49c35a7e45dcffd63105ee47e97",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/membership-events.ts",
+                      "kind":  "source",
+                      "sha256":  "82bb2bb71a7a623409526e22108a6571b70bd4f55a743486dcb3cce24fd3c5e5",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/membership-ingress.test.ts",
+                      "kind":  "test",
+                      "sha256":  "233b14a577903d388c54e3bf389fc66d067caee8d5b072914788a165cff50787",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/membership-ingress.ts",
+                      "kind":  "source",
+                      "sha256":  "6f4841ef3476fceaff95fb3d59b7b7dd59b950446c39f1169606d04086f5c010",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/owned-message.test.ts",
+                      "kind":  "test",
+                      "sha256":  "78603e47b600549a5650c4f35e631c2d7a3e23ec1b834bf0cbc8171737edcfc3",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/owned-message.ts",
+                      "kind":  "source",
+                      "sha256":  "a8dc8b2357e42ad7e125e95bb23dc5ff9882898b65dc93aba9057a5400df9511",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/panels.ts",
+                      "kind":  "source",
+                      "sha256":  "8fed34384d77ba5c5abcf5d72ba71bf7ae096008be376b0340f589a8a2574e50",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/publication-errors.ts",
+                      "kind":  "source",
+                      "sha256":  "cae651c65395c28d7381c749f0ecace9300e838c7902f1193e849864fa1cb4b7",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/publication-files.test.ts",
+                      "kind":  "test",
+                      "sha256":  "64e217673f642ea53929a05b7aeed6f1b127f4b627a28727c9253cfb9438a7a7",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/publication-files.ts",
+                      "kind":  "source",
+                      "sha256":  "3a45f0e2528ba762c7aa93994216d9d2cc9240a05e025415895e75ba95091434",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/publication-marker.test.ts",
+                      "kind":  "test",
+                      "sha256":  "78dee5ada44edd2c3ff9ca09e5ad3e1e575937aae4deb828d5346c41c2c4d9bb",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/publication-marker.ts",
+                      "kind":  "source",
+                      "sha256":  "ca05e1d70e685e87cf3604b84d45e1befe1390c36c5ede041c6cb225b56af4f6",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/publication.test.ts",
+                      "kind":  "test",
+                      "sha256":  "f81a33e0f9a034004733729c7c292b15752356ab7d41f8468d3d6fa8bd35e8cf",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/publication.ts",
+                      "kind":  "source",
+                      "sha256":  "297d588a17cd2a0c77d6c8cb5571fcd84cce14ef62c0c9c34570529e1d81a818",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/relevance.test.ts",
+                      "kind":  "test",
+                      "sha256":  "3a83e2a7edf676d66f2d06e3fbe88faa44bd5f2d51ee6664675a8478b108ecb2",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/relevance.ts",
+                      "kind":  "source",
+                      "sha256":  "0a2223060136d5311dd71f69c5df7752fdc6ac7d6e31d57a2c99986d66754579",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/reminder-outcomes.ts",
+                      "kind":  "source",
+                      "sha256":  "4c63593114ce87df31c9312742ee337da0656a742f051d3571397dcd706e40c5",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/role-failure-reports.test.ts",
+                      "kind":  "test",
+                      "sha256":  "4b0fc5237c3d233ab63daabaae3c1bbc8741285a178ec898fcdf276ec18924c2",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/role-failure-reports.ts",
+                      "kind":  "source",
+                      "sha256":  "92f2d5664a41b79a69a8797317cfae970e7b125275b55ac5369a148daca27743",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/roster-image-attachment.test.ts",
+                      "kind":  "test",
+                      "sha256":  "d1d50316e58984fe866e04b0a6392d286dc6077002f26ac1c1c4de182d60e623",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/roster-image-attachment.ts",
+                      "kind":  "source",
+                      "sha256":  "266cedbfa4f504304df30449334ff0537b9261eb1868ed8a6cacca5334767b4a",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/rules.test.ts",
+                      "kind":  "test",
+                      "sha256":  "142129864c590c5d8dd8391ad392ae51e9dc4891606fce29157c82fd6f260afd",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/rules.ts",
+                      "kind":  "source",
+                      "sha256":  "6e7baad58eadc46e8304d465f5f9636b4a27e4f4e4e823577013a6d031192dd5",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/signup-reminders.test.ts",
+                      "kind":  "test",
+                      "sha256":  "9f2eaedc6ecf979df5fa7859e0af4f33d65d34b89d370a6abb4888968b9ef04a",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/signup-reminders.ts",
+                      "kind":  "source",
+                      "sha256":  "ad8e12bf1e30fc9b7f739f216259ed342499aecec1ae81d6cdcc910985a678a1",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/team-request-notifications.test.ts",
+                      "kind":  "test",
+                      "sha256":  "22b21489b6e6458fe1ba209ea105cc9e28490adadd1deabe7e3b76788ef4f2ef",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/team-request-notifications.ts",
+                      "kind":  "source",
+                      "sha256":  "0c19370f1e74ba01c8894070013f2514fe2e6a38df7fd18dfbcebb2dc00bf4a3",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/team-request-worker.ts",
+                      "kind":  "source",
+                      "sha256":  "1f7d184e7013e3af2e7a85c6286ec41fa03219aa2d35f6f734306fe3780c3e41",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/work.test.ts",
+                      "kind":  "test",
+                      "sha256":  "7237eeda6fc5107f323f7c8948c1c45516eccaa36dedeac41359b731c217eb4b",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync/work.ts",
+                      "kind":  "source",
+                      "sha256":  "82980e737854dd34e823be16216ef1cb59af54eecb9aef87a27f78930e33438b",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "synchronization, membership and publication",
+                      "implementationPackages":  "D02,D03,D04,D05,D08,D10,D11,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/sync.ts",
+                      "kind":  "source",
+                      "sha256":  "8b995442797a8f780862e3b105e54c97f6d1c09ed0f55de806ffdc052e984ca9",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/types.ts",
+                      "kind":  "source",
+                      "sha256":  "1ecfb67ca204059f8d546e867d58dd53f0916abf47c0a9ffcfd657c4d65b7f91",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/ui/message-kit-field-action.test.ts",
+                      "kind":  "test",
+                      "sha256":  "138282b1040776d55f74e73fde6220d21b47698e9599fad5766040d4faa7287f",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/ui/message-kit.test.ts",
+                      "kind":  "test",
+                      "sha256":  "1cf2dece08d14dbde77e2dd2d383b8b12aa3be11e92a0ad75b6b7122de2a88a2",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/ui/message-kit.ts",
+                      "kind":  "source",
+                      "sha256":  "144a4c3ff78388e34370404b4e22e4c9c2890aa2ea16b86910d70fdd9d057318",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/ui/replies.test.ts",
+                      "kind":  "test",
+                      "sha256":  "b7dc6cd80e8a78b7fb8fbddacd6d38e6205fb0cb8d90a0ff3cf7cbaee06e5321",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/ui/replies.ts",
+                      "kind":  "source",
+                      "sha256":  "75d3364508fa3472da189e5da126b5ecc07aac9bdb8e106024281a505b0cc913",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/utils.test.ts",
+                      "kind":  "test",
+                      "sha256":  "3f261b2af5258733067271a74e3e2ab552c96b2ced8c3e545b4e91f1caa053bb",
+                      "status":  "full-read; existing coverage and gaps assessed; not proof of runtime performance",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/src/utils.ts",
+                      "kind":  "source",
+                      "sha256":  "78ffedbbfc4f9526982d6e8af2e8bf845bce001345cb501328b84537604dd51a",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  },
+                  {
+                      "path":  "discord-bot/test-fixtures/gateway-lifecycle.mjs",
+                      "kind":  "source",
+                      "sha256":  "71c0fc71f7d3bfa8cd425d2aea45669a4b6cac643999bef5637d53aa2306df03",
+                      "status":  "full-read; static review disposition recorded; remediation tracked separately",
+                      "disposition":  "runtime and shared bot adapters",
+                      "implementationPackages":  "D01,D03,D12"
+                  }
+              ],
+    "testFullReads":  98,
+    "testRemainingFullReads":  0,
+    "dependencies":  [
+                         {
+                             "path":  "convex/discordSync.ts",
+                             "sha256":  "108883b8e8cbf3b9db269725437bf168d671cdcc603a1e1e5d28a8330da0a579",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/discordCommands.ts",
+                             "sha256":  "5eabe8f27050b4fde5279f41511b9e0d21cc2854f9ee737d0893bf532787ce90",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/scheduledJobs.ts",
+                             "sha256":  "4cff37e259e9b7d718b08274319a17482b248fc5ab303764cb6cf59355d128c6",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/eventRecurrence.ts",
+                             "sha256":  "6da036d5f68acaf8314f627d2eb9ab9cecc7affe40d848ef9c672e62d35816e0",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/clanPlayerHistory.ts",
+                             "sha256":  "496199be3275ad5bc4f4d81109c33505cb4d02dc09cdad726d03d58504b7d880",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/discordPublicPanels.ts",
+                             "sha256":  "82387d68b781455e9327e0cf59fb515828243895515e04aef3061c035747445c",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/matchRecaps.ts",
+                             "sha256":  "a99dbabd0c066ee8dc8841a9bf392abe915f95d422ca583f6bbcde883067b712",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/discordSeedBot.ts",
+                             "sha256":  "74e36bd71934cc6c1e0d7f8ef498e5a32465875f1b8e3f80a7314ab9895103a1",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/discordPublications.ts",
+                             "sha256":  "d210f7c9a3dffdad50c3a0ebb910fd9a9651d50e73dfda1cb45520bac4132ae1",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/eventReminders.ts",
+                             "sha256":  "60ed96b992aae56eb0217194d137ead91adfa03782fa79ed9f5287ad129bc7d8",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/meetingAttendance.ts",
+                             "sha256":  "8b16d00c7feca8196114db851536ab17ef9d404ee467ada03ec19831993a17b3",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/rosterChanges.ts",
+                             "sha256":  "a6e3a104413d3732aa4de77fea9b43414630b2fbb0a3ba7e15f133e702a603ef",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/hllLiveData.ts",
+                             "sha256":  "54ae66d21821176929537771021cc54a5738628ca1f74cad52d341b0e66f45b3",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/hllLiveReads.ts",
+                             "sha256":  "190607b83d9622a125e28b94497055e0a3750ecb21d95aa83e8f50186bf4e288",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/warconData.ts",
+                             "sha256":  "e43ce771c554808ea1bd6694f57f5fcf60b11b16810a5a13c60e009464013518",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/warconReads.ts",
+                             "sha256":  "7d4c13ecde03500e32e6e8b24365da29b9f4237165c5b1c812b2c33d86d65636",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "convex/crons.ts",
+                             "sha256":  "32c050ce50b87b882e5944830bc6bc5905a1ad9082e108933452784cccfb3e23",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "src/application/discord-publications/results.ts",
+                             "sha256":  "759e01e68c090c7632d6eaa27a5822a152773a5b526f5d716e20352ecd7e1466",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "src/application/discord-publications/publish.ts",
+                             "sha256":  "e478dd8d8c8df31d6a060df7f51bd1630ca6a2ed3f07d9b31fa82b22ab12604c",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "src/domain/discord-publications/publication-freshness.ts",
+                             "sha256":  "38a181c79771384d4f0e3be1fd151aa0d67a501b3043916a37894553943bbe81",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "src/application/discord-seed/delivery.ts",
+                             "sha256":  "20881663cb57abf0abb5d64d2e2bf27d8b390b96e1823f672916b1f023c2c981",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "src/lib/system-logs.ts",
+                             "sha256":  "178662e634208403c67e25f6e4b4d886a883dde1754b0c291e41c02a657ac5f4",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "src/lib/calendar-items.ts",
+                             "sha256":  "1699adb94ded1560c6deea7d852898aedba6a21ee5333426d5bfba5357b8f1db",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "src/infrastructure/game-data/provider-http.ts",
+                             "sha256":  "9cf5316be61b37d96d5b4c253934f720f20b9d6aa4e9579b545e27d2ba71840c",
+                             "status":  "full-read; bot performance/ownership dependency assessed"
+                         },
+                         {
+                             "path":  "src/infrastructure/convex/discord-publications.test.ts",
+                             "sections":  "result native-ID fixtures and result-card expectations",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "convex/websiteEventCommands.ts",
+                             "sections":  "actor/event guild identity call sites",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "src/infrastructure/convex/testing/database.ts",
+                             "sections":  "isolated invocation and query fixture",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "node_modules/discord.js/src/managers/GuildMemberManager.js",
+                             "sections":  "fetch and multi-member request implementation",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "src/infrastructure/convex/server-read-model.ts",
+                             "sections":  "event normalization and identity mapping",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "src/domain/discord-publications/calendar-panel.ts",
+                             "sections":  "selection, row limit and view fitting",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "convex/housekeeping.ts",
+                             "sections":  "reminder, attendance, seed and roster retention",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "src/application/events/website-event-command.ts",
+                             "sections":  "actor identity and apply boundary",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "convex/discordMembership.ts",
+                             "sections":  "ticket create/close, application record/draft completion and close",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "node_modules/discord.js/src/util/Options.js",
+                             "sections":  "default cache policy",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "convex/membershipApplications.ts",
+                             "sections":  "definition subscription, submission/decision claim-release, queued discovery (lines 306-326 and 534-719)",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         },
+                         {
+                             "path":  "convex/discordRosters.ts",
+                             "sections":  "meeting attendance authoritative expiry/scope write",
+                             "status":  "targeted sections reviewed; not a full-file audit"
+                         }
+                     ],
+    "supportingFullReads":  [
+                                "discord-bot/README.md",
+                                "discord-bot/tsconfig.json",
+                                "patches/README.md",
+                                ".github/workflows/verify.yml",
+                                "scripts/test-env.ts"
+                            ],
+    "verification":  {
+                         "sourceHashMismatches":  [
+
+                                                  ],
+                         "botTests":  {
+                                          "fail":  0,
+                                          "pass":  648,
+                                          "node":  "24.22.1",
+                                          "tests":  648,
+                                          "skip":  0,
+                                          "durationMs":  18437.7611
+                                      },
+                         "probes":  [
+                                        "20 concurrent cold gets -\u003e 20 backend reads",
+                                        "identical match attachment -\u003e 1 upload, 0 retained",
+                                        "2010 unlimited weekly series -\u003e 0 November 2026 occurrences",
+                                        "deleted old channel -\u003e channel_missing, no new destination access",
+                                        "expired processing reminder and roster claims -\u003e 0 discovered"
+                                    ]
+                     }
+}

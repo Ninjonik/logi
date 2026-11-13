@@ -11,6 +11,7 @@ function setup() {
     const reports: RoleFailureReport[] = []
     const timers: Array<() => void> = []
     const reporter = createRoleFailureReporter({
+        failed: (error) => assert.fail(String(error)),
         report: async (report) => {
             reports.push(report)
         },
@@ -40,6 +41,33 @@ test("failures of one clan go out as one report with every member (L5-14)", asyn
             reasons: ["role_unmanageable_or_deleted", "discord_forbidden"],
         },
     ])
+})
+
+test("a failed grouped report is surfaced with its clan and role", async () => {
+    let run: (() => void) | undefined
+    const failures: Array<{ error: unknown; report: RoleFailureReport }> = []
+    const error = new Error("report transport failed")
+    const reporter = createRoleFailureReporter({
+        report: async () => {
+            throw error
+        },
+        failed: (error, report) => failures.push({ error, report }),
+        schedule: (callback) => {
+            run = callback
+        },
+    })
+    reporter.add({
+        guildId: "guild",
+        roleId: "role",
+        memberId: "member",
+        reason: "discord_forbidden",
+    })
+    run?.()
+    await Promise.resolve()
+    assert.equal(failures.length, 1)
+    assert.equal(failures[0].error, error)
+    assert.equal(failures[0].report.guildId, "guild")
+    assert.equal(failures[0].report.roleId, "role")
 })
 
 test("clans are reported separately; failures that fix themselves are not reported", async () => {

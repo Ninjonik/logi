@@ -381,3 +381,16 @@ In published roster images, a filled slot allocated to another clan shows that
 clan's logo instead of the player's avatar. The same slot shows the player's
 normal avatar in their own clan's image.
 Players already assigned elsewhere remain readable in both light and dark mode.
+
+### Interrupted bot delivery
+
+The updated bot remembers delivery progress for manual reminders, roster-change
+notifications, signup reminders and attendance reminders. After a restart it skips
+confirmed sends and continues recipients it has not attempted, while rechecking
+current eligibility. Confirmed sends still count in the final delivery result.
+
+If Discord may have accepted a message but its confirmation was lost, the bot
+keeps that outcome uncertain and does not automatically resend it. This does not
+mean the recipient has closed DMs. Check Discord before explicitly sending another
+reminder or republishing the roster. Interrupted requests from an older bot without
+delivery receipts still require that manual check.

@@ -5,9 +5,9 @@ import {
 } from "../../../src/domain/discord-publications/calendar-panel"
 import { panelImageCopy } from "../../../src/domain/discord-publications/panel-image-copy"
 import type { MessageView } from "../../../src/domain/discord-messages/message-view"
+import type { CalendarItem, CalendarSyncPayload, SyncPayload } from "../types"
 import { getPanelMessages } from "../../../src/lib/clan-language/panels"
 import { expandCalendarItems } from "../../../src/lib/calendar-items"
-import type { CalendarItem, SyncPayload } from "../types"
 import { eventMapLabel } from "../events/match-context"
 
 /**
@@ -18,18 +18,26 @@ import { eventMapLabel } from "../events/match-context"
  */
 export function calendarEntriesFromPayload(
     payload: Pick<
-        SyncPayload,
+        CalendarSyncPayload,
         "config" | "events" | "calendarItems" | "syncStates"
     > & { guild: Pick<SyncPayload["guild"], "eventCategories"> },
-    now: number
+    now: number,
+    options: { limit?: number; categories?: readonly string[] } = {}
 ): CalendarEntry[] {
     const copy = getPanelMessages(payload.config.defaultLanguage).calendarPanel
     const categories = Array.isArray(payload.guild.eventCategories)
         ? payload.guild.eventCategories
         : []
     const states = Array.isArray(payload.syncStates) ? payload.syncStates : []
+    const statesByEvent = new Map(states.map((entry) => [entry.eventId, entry]))
+    const categoriesById = new Map(
+        categories.map((category) => [category.id.toLowerCase(), category])
+    )
+    const wanted = new Set(
+        options.categories?.map((value) => value.toLowerCase())
+    )
     const link = (eventId: string) => {
-        const state = states.find((entry) => entry.eventId === eventId)
+        const state = statesByEvent.get(eventId)
         return state?.announcementChannelId && state.announcementMessageId
             ? `https://discord.com/channels/${payload.config.guildId}/${state.announcementChannelId}/${state.announcementMessageId}`
             : null
@@ -37,7 +45,17 @@ export function calendarEntriesFromPayload(
     const events: CalendarEntry[] = (
         Array.isArray(payload.events) ? payload.events : []
     )
-        .filter((event) => event.status !== "concluded" && !event.isDraft)
+        .filter(
+            (event) =>
+                event.status !== "concluded" &&
+                !event.isDraft &&
+                (!wanted.size ||
+                    wanted.has(
+                        event.kind === "training"
+                            ? "training"
+                            : (event.matchType ?? "match").toLowerCase()
+                    ))
+        )
         .map((event) => {
             const category =
                 event.kind === "training"
@@ -46,23 +64,15 @@ export function calendarEntriesFromPayload(
             const label =
                 event.kind === "training"
                     ? copy.training
-                    : (categories.find(
-                          (item) =>
-                              item.id.toLowerCase() ===
-                              event.matchType?.toLowerCase()
-                      )?.label ??
+                    : (categoriesById.get(event.matchType?.toLowerCase() ?? "")
+                          ?.label ??
                       event.matchType?.trim() ??
                       copy.match)
             const categoryColor =
                 event.kind === "training"
-                    ? (categories.find(
-                          (item) => item.id.toLowerCase() === "training"
-                      )?.color ?? null)
-                    : (categories.find(
-                          (item) =>
-                              item.id.toLowerCase() ===
-                              event.matchType?.toLowerCase()
-                      )?.color ?? null)
+                    ? (categoriesById.get("training")?.color ?? null)
+                    : (categoriesById.get(event.matchType?.toLowerCase() ?? "")
+                          ?.color ?? null)
             // L3-14: "ECL, 3. kolo" for a competition fixture with a round.
             const round =
                 event.kind !== "training" &&
@@ -94,8 +104,9 @@ export function calendarEntriesFromPayload(
         (Array.isArray(payload.calendarItems)
             ? payload.calendarItems
             : []) as CalendarItem[] as never,
-        new Date(now - 24 * 60 * 60 * 1000),
-        new Date(now + 366 * 24 * 60 * 60 * 1000)
+        new Date(now),
+        new Date(now + 366 * 24 * 60 * 60 * 1000),
+        { limitPerItem: options.limit }
     ).map((item) => ({
         id: item.id,
         title: item.title,
@@ -119,7 +130,7 @@ export function calendarEntriesFromPayload(
 
 /** When the shown plan last changed (the footer's "Aktualizováno"). */
 export function calendarUpdatedAt(
-    payload: Pick<SyncPayload, "config" | "events" | "calendarItems">,
+    payload: Pick<CalendarSyncPayload, "config" | "events" | "calendarItems">,
     entries: readonly CalendarEntry[]
 ) {
     const ids = new Set(entries.map((entry) => entry.id))
@@ -137,7 +148,7 @@ export function calendarUpdatedAt(
 
 export function buildCalendarPanelView(
     payload: Pick<
-        SyncPayload,
+        CalendarSyncPayload,
         "config" | "events" | "calendarItems" | "syncStates"
     > & {
         guild: Pick<SyncPayload["guild"], "eventCategories" | "id" | "name">
@@ -152,7 +163,10 @@ export function buildCalendarPanelView(
 ): MessageView {
     const language = payload.config.defaultLanguage
     const entries = calendarPanelEntries(
-        calendarEntriesFromPayload(payload, input.now),
+        calendarEntriesFromPayload(payload, input.now, {
+            limit: 10,
+            categories: input.categories,
+        }),
         { now: input.now, categories: input.categories }
     )
     const locale = ["cs", "de", "pl", "fr"].includes(language) ? language : "en"

@@ -1421,7 +1421,7 @@ export function closeApplicationReplyView(
         applicantName: string
         /** Role names the decision adds. */
         addedRoleNames: readonly string[]
-        dm: "sent" | "failed" | "off"
+        dm: "sent" | "failed" | "off" | "uncertain"
     }
 ): MessageView {
     const title =
@@ -1452,7 +1452,9 @@ export function closeApplicationReplyView(
             ? copy.command.delivered
             : input.dm === "off"
               ? copy.command.dmOff
-              : copy.command.notDelivered,
+              : input.dm === "uncertain"
+                ? copy.command.dmUncertain
+                : copy.command.notDelivered,
     ]
     return {
         accent: "clan",

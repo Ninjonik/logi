@@ -22,8 +22,8 @@ import {
 export type DecideApplicationPorts = {
     claim(): Promise<"ok" | "closed" | "busy" | "missing">
     release(): Promise<void>
-    writeAssignment(change: AssignmentAfterDecision): Promise<void>
-    close(): Promise<void>
+    /** Membership changes and closure commit in one transaction. */
+    commit(change: AssignmentAfterDecision): Promise<void>
     showDecision(roles: DecisionRoles): Promise<void>
     /**
      * The decision DM: "sent" when it arrived, "failed" when Discord refused
@@ -44,7 +44,7 @@ export type DecideApplicationInput = {
     mercenaryCategory?: Pick<DecisionCategory, "id" | "gameId"> | null
 }
 
-export type DecisionDm = "sent" | "failed" | "off"
+export type DecisionDm = "sent" | "failed" | "off" | "uncertain"
 
 export type DecideApplicationResult =
     | { status: "decided"; roles: DecisionRoles; dm: DecisionDm }
@@ -61,14 +61,13 @@ export async function decideApplication(
     const claim = await ports.claim()
     if (claim !== "ok") return { status: claim }
     try {
-        await ports.writeAssignment(
+        await ports.commit(
             assignmentAfterDecision(
                 input.outcome,
                 input.categoryType,
                 input.mercenaryCategory
             )
         )
-        await ports.close()
     } catch (error) {
         await ports.release().catch(() => undefined)
         throw error
@@ -83,6 +82,7 @@ export async function decideApplication(
     try {
         dm = await ports.sendDm(roles)
     } catch (error) {
+        dm = "uncertain"
         ports.report("dm", error)
     }
     try {

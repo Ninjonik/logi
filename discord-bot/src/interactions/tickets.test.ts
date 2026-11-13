@@ -1,3 +1,4 @@
+import { immediateMembershipEffects } from "../runtime/membership-effects.testing"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -99,6 +100,7 @@ function fakePorts(input: {
     records?: unknown[]
 }): TicketPorts {
     return {
+        effects: immediateMembershipEffects,
         config: async () =>
             input.config === undefined ? config() : input.config,
         createRecord: async (value) => {
@@ -141,6 +143,7 @@ function fakeGuild(input: {
     const refused = () =>
         Object.assign(new Error("Missing Permissions"), { code: 50013 })
     const thread = {
+        isThread: () => true,
         id: THREAD,
         name: "Nahlásit hráče",
         parentId: PARENT,
@@ -443,7 +446,7 @@ test("failures an admin must fix: the person reads one card, the errors channel 
         assert.match(text, /Ticket se nepodařilo otevřít/)
         assert.match(
             text,
-            /Nic se neuložilo\. Správci dostali upozornění; zkus to prosím za chvíli znovu\./
+            /Část kroků už může být uložená\. Před dalším pokusem zkontroluj Discord se správcem\./
         )
         assert.doesNotMatch(text, /oprávnění bota|Missing Permissions/)
         // The entry names the category and who tried (L5-12).
@@ -464,7 +467,11 @@ test("failures an admin must fix: the person reads one card, the errors channel 
         )
         const error = reports[0]!.error as { reason?: string; message: string }
         assert.equal(error.reason ?? error.message, scenario.failure)
-        if (scenario.recordFails) assert.ok(calls.includes("delete"))
+        if (scenario.recordFails)
+            assert.ok(
+                !calls.includes("delete"),
+                "an ambiguous record response must preserve the remembered thread"
+            )
     }
 })
 

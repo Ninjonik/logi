@@ -1,6 +1,14 @@
+import { startMembershipWorkflowRecovery } from "./runtime/membership-workflows"
 import { registerMembershipInvalidationEvents } from "./sync/membership-events"
+import { startMembershipEffectRecovery } from "./runtime/membership-effects"
+import { startScheduledDispatch } from "./runtime/scheduled-dispatch"
 import { startManagedRoleWorker } from "./sync/managed-member-roles"
+import { stopPreparedModals } from "./interactions/acknowledgement"
 import { startEventDeletionWorker } from "./sync/event-deletion"
+import { startRequestRecovery } from "./runtime/request-lease"
+import { startMatchRecapRecovery } from "./sync/match-recaps"
+import { BotLifecycle } from "./runtime/lifecycle"
+import { shutdownConvexClient } from "./convex"
 import { Worker } from "node:worker_threads"
 import { createRequire } from "node:module"
 import { Events } from "discord.js"
@@ -13,6 +21,7 @@ import {
 import {
     registerJoinedGuild,
     startCommandRegistration,
+    stopCommandRegistration,
 } from "./commands/runtime"
 import { RosterChangeRequestService } from "./rosters/roster-change-service"
 import { handlePreparedModalButton } from "./interactions/acknowledgement"
@@ -25,6 +34,12 @@ import { runInteraction } from "./interactions/registry"
 import { logError, logInfo, logWarn } from "./log"
 import { client } from "./discord-client"
 import { env } from "./environment"
+
+const lifecycle = new BotLifecycle((service, error) =>
+    logError("bot", "Service failed", { service, error })
+)
+let fallbackWorker: Worker | undefined
+let fallbackRestart: ReturnType<typeof setTimeout> | undefined
 
 const syncService = new DiscordSyncService(client)
 const meetingAttendanceRequestService = new MeetingAttendanceRequestService(
@@ -67,14 +82,14 @@ const interactionHandler = createInteractionHandler({
 })
 
 function startFallbackWorker() {
-    const fallbackWorker = new Worker(
+    const worker = new Worker(
         new URL("./runtime/fallback-worker.ts", import.meta.url),
         {
             execArgv: getWorkerExecArgv(),
         }
     )
 
-    fallbackWorker.on(
+    worker.on(
         "message",
         (message: {
             type: string
@@ -84,6 +99,7 @@ function startFallbackWorker() {
             removed?: number
             released?: number
         }) => {
+            if (lifecycle.stopped) return
             if (message.type === "scheduledJobsRecovered") {
                 logInfo("fallback-worker", "Recovered scheduled job queue", {
                     removed: message.removed ?? 0,
@@ -141,20 +157,22 @@ function startFallbackWorker() {
             }
         }
     )
-    fallbackWorker.on("error", (error) => {
+    worker.on("error", (error) => {
         logError("fallback-worker", "Worker crashed", { error })
     })
-    fallbackWorker.on("exit", (code) => {
-        if (code !== 0) {
+    worker.on("exit", (code) => {
+        if (!lifecycle.stopped) {
             logWarn("fallback-worker", "Worker exited unexpectedly", { code })
-            setTimeout(() => {
+            fallbackRestart = setTimeout(() => {
+                if (lifecycle.stopped) return
                 logInfo("fallback-worker", "Restarting fallback worker")
                 startFallbackWorker()
             }, 1000)
         }
     })
 
-    return fallbackWorker
+    fallbackWorker = worker
+    return worker
 }
 
 import { startApplicationWebSubmissionWorker } from "./interactions/membership-web-submissions"
@@ -166,122 +184,225 @@ import { startPublicPanelWorker } from "./public-panels/worker"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
 import { startSeedWorker } from "./seed/worker"
-client.once(Events.ClientReady, async (readyClient) => {
-    startEventDeletionWorker(client, (guildId) => {
-        syncService.queueGuildSync(guildId)
-        syncService.triggerSoon(250)
-    })
-    startReportRecovery(client)
-    startApplicationWebSubmissionWorker(client)
-    // Clan application windows open without a backend read (3 s rule).
-    startApplicationStateCache()
-    startLeagueWorker(client)
-    // A calendar request ("Obnovit teď", "Odeslat do kanálu") redraws it now.
-    startPublicPanelWorker(client, {
-        refreshCalendar: (guildId) => syncService.refreshCalendar(guildId),
-    })
-    startManagedRoleWorker(client)
-    // Seed calls, control messages and intros (board P5).
-    startSeedWorker(client)
-    startTeamRequestNotificationWorker(client)
-    startApplicationEmojiProvisioning(client)
-    try {
-        logInfo("bot", "Discord bot ready", {
-            user: readyClient.user.tag,
-            guildCount: readyClient.guilds.cache.size,
+client.once(Events.ClientReady, (readyClient) => {
+    void lifecycle.start("event deletion", () =>
+        startEventDeletionWorker(client, (guildId) => {
+            syncService.queueGuildSync(guildId)
+            syncService.triggerSoon(250)
         })
-
-        for (const guild of readyClient.guilds.cache.values())
+    )
+    void lifecycle.start("request recovery", () => startRequestRecovery())
+    void lifecycle.start("match recap recovery", () =>
+        startMatchRecapRecovery(client)
+    )
+    void lifecycle.start("application and ticket effects", () =>
+        startMembershipEffectRecovery(client)
+    )
+    void lifecycle.start("application and ticket workflows", () =>
+        startMembershipWorkflowRecovery(client)
+    )
+    void lifecycle.start("report recovery", () => startReportRecovery(client))
+    void lifecycle.start("web applications", () =>
+        startApplicationWebSubmissionWorker(client)
+    )
+    void lifecycle.start("application cache", () =>
+        startApplicationStateCache()
+    )
+    void lifecycle.start("league", () => startLeagueWorker(client))
+    void lifecycle.start("public panels", () =>
+        startPublicPanelWorker(client, {
+            refreshCalendar: (guildId) => syncService.refreshCalendar(guildId),
+        })
+    )
+    void lifecycle.start("managed roles", () => startManagedRoleWorker(client))
+    void lifecycle.start("seed", () => startSeedWorker(client))
+    void lifecycle.start("team notifications", () => {
+        const loop = startTeamRequestNotificationWorker(client)
+        return () => loop.stop()
+    })
+    void lifecycle.start("application emoji", () =>
+        startApplicationEmojiProvisioning(client)
+    )
+    void lifecycle.start(
+        "meeting attendance",
+        async () => {
+            await meetingAttendanceRequestService.start()
+        },
+        () => meetingAttendanceRequestService.stop()
+    )
+    void lifecycle.start(
+        "sync",
+        async () => {
+            await syncService.start()
+            if (lifecycle.stopped) return
+            void lifecycle.start("scheduled dispatch", () =>
+                startScheduledDispatch(async (row, delivery) => {
+                    for (const eventId of row.changedEventIds)
+                        await syncService.enqueueScheduled(
+                            eventId,
+                            eventId === row.eventId ? row.kind : "sync",
+                            delivery,
+                            row.dueAt
+                        )
+                })
+            )
+            void lifecycle.start("announcement migration", () =>
+                startAnnouncementMigration({
+                    queueEventSync: (eventId) =>
+                        syncService.queueEventSync(eventId),
+                    triggerSoon: () => syncService.triggerSoon(250),
+                })
+            )
+            void lifecycle.start(
+                "manual reminders",
+                async () => {
+                    await manualReminderRequestService.start()
+                },
+                () => manualReminderRequestService.stop()
+            )
+            void lifecycle.start(
+                "roster changes",
+                async () => {
+                    await rosterChangeRequestService.start()
+                },
+                () => rosterChangeRequestService.stop()
+            )
+        },
+        () => syncService.stop()
+    )
+    void lifecycle.start("membership reconciliation", async () => {
+        for (const guild of readyClient.guilds.cache.values()) {
+            if (lifecycle.stopped) break
             await invalidateMembershipGuild(guild.id)
-        // Slash commands in every server, then again whenever the clan
-        // language or the command settings change (M1-17, M1-19, M1-B01).
-        await startCommandRegistration(readyClient).catch((error) =>
-            logError("bot", "Failed to register guild commands", { error })
-        )
-
-        await meetingAttendanceRequestService.start()
-        await syncService.start()
-        // Redraws pre-redesign match announcements once, a few a minute.
-        startAnnouncementMigration({
-            queueEventSync: (eventId) => syncService.queueEventSync(eventId),
-            triggerSoon: () => syncService.triggerSoon(250),
-        })
-        // A backend without the reminder queue must not stop the rest of the
-        // bot from starting; reminders then simply wait for the deploy.
-        await manualReminderRequestService.start().catch((error) =>
-            logError("bot", "Manual reminder requests failed to start", {
-                error,
-            })
-        )
-        // The roster change digest and DMs the dashboard asks for (W6b).
-        await rosterChangeRequestService.start().catch((error) =>
-            logError("bot", "Roster change requests failed to start", {
-                error,
-            })
-        )
+        }
+    })
+    void lifecycle.start(
+        "command registration",
+        async () => {
+            await startCommandRegistration(readyClient)
+        },
+        stopCommandRegistration
+    )
+    void lifecycle.start("platform status", () =>
         startPlatformStatusMonitor(client)
-
+    )
+    void lifecycle.start("fallback", () => {
         startFallbackWorker()
-    } catch (error) {
-        logError("bot", "Ready handler failed", { error })
-    }
+        return async () => {
+            if (fallbackRestart) clearTimeout(fallbackRestart)
+            const worker = fallbackWorker
+            if (!worker || worker.threadId === -1) return
+            await new Promise<void>((resolve, reject) => {
+                worker.once("exit", () => resolve())
+                worker.once("error", reject)
+                worker.postMessage({ type: "stop" })
+            })
+        }
+    })
+    logInfo("bot", "Discord bot ready", {
+        user: readyClient.user.tag,
+        guildCount: readyClient.guilds.cache.size,
+    })
+})
+
+let stopping: Promise<void> | undefined
+function shutdown() {
+    if (stopping) return stopping
+    logInfo("bot", "Stopping intake and draining active work")
+    stopPreparedModals()
+    const deadline = setTimeout(() => {
+        logError(
+            "bot",
+            "Shutdown drain exceeded 120 seconds; forcing unsuccessful exit"
+        )
+        process.exit(1)
+    }, 120_000)
+    deadline.unref()
+    stopping = lifecycle
+        .stop(async () => {
+            await client.destroy()
+            await shutdownConvexClient()
+        })
+        .then(() => {
+            clearTimeout(deadline)
+            logInfo("bot", "Shutdown drained successfully")
+        })
+        .catch((error) => {
+            logError("bot", "Shutdown failed", { error })
+            process.exit(1)
+        })
+    return stopping
+}
+process.on("SIGTERM", () => {
+    void shutdown()
+})
+process.on("SIGINT", () => {
+    void shutdown()
 })
 
 client.on(Events.InteractionCreate, (source) =>
     // Any failure ends in the private "Tohle se nepovedlo" card (M3-08).
-    runInteraction(source, async (interaction) => {
-        if (
-            interaction.isButton() &&
-            (await handlePreparedModalButton(interaction))
-        )
-            return
-        if (interaction.isButton()) {
-            // Panel buttons route through the registry (public-panels/interactions.ts).
-            await interactionHandler.handleButtonInteraction(interaction)
-            return
-        }
-
-        if (interaction.isChannelSelectMenu()) {
-            await interactionHandler.handleChannelSelectMenuInteraction(
-                interaction
+    lifecycle.run(() =>
+        runInteraction(source, async (interaction) => {
+            if (
+                interaction.isButton() &&
+                (await handlePreparedModalButton(interaction))
             )
-            return
-        }
+                return
+            if (interaction.isButton()) {
+                // Panel buttons route through the registry (public-panels/interactions.ts).
+                await interactionHandler.handleButtonInteraction(interaction)
+                return
+            }
 
-        if (interaction.isStringSelectMenu()) {
-            await interactionHandler.handleStringSelectMenuInteraction(
-                interaction
-            )
-            return
-        }
+            if (interaction.isChannelSelectMenu()) {
+                await interactionHandler.handleChannelSelectMenuInteraction(
+                    interaction
+                )
+                return
+            }
 
-        if (interaction.isModalSubmit()) {
-            await interactionHandler.handleModalSubmit(interaction)
-            return
-        }
+            if (interaction.isStringSelectMenu()) {
+                await interactionHandler.handleStringSelectMenuInteraction(
+                    interaction
+                )
+                return
+            }
 
-        if (interaction.isAutocomplete()) {
-            await interactionHandler.handleAutocompleteInteraction(interaction)
-            return
-        }
+            if (interaction.isModalSubmit()) {
+                await interactionHandler.handleModalSubmit(interaction)
+                return
+            }
 
-        if (interaction.isChatInputCommand())
-            await interactionHandler.handleChatInputCommand(interaction)
-    })
+            if (interaction.isAutocomplete()) {
+                await interactionHandler.handleAutocompleteInteraction(
+                    interaction
+                )
+                return
+            }
+
+            if (interaction.isChatInputCommand())
+                await interactionHandler.handleChatInputCommand(interaction)
+        })
+    )
 )
 
 // A server that adds the bot gets the commands at once (M1-18).
 client.on(Events.GuildCreate, (guild) => {
-    void registerJoinedGuild(client, guild).catch((error) =>
-        logError("bot", "Failed to register guild commands", {
-            guildId: guild.id,
-            error,
-        })
-    )
+    void lifecycle
+        .run(() => registerJoinedGuild(client, guild))
+        .catch((error) =>
+            logError("bot", "Failed to register guild commands", {
+                guildId: guild.id,
+                error,
+            })
+        )
 })
 
 registerMembershipInvalidationEvents(client, {
-    invalidate: invalidateMembershipGuild,
+    invalidate: async (guildId) => {
+        await lifecycle.run(() => invalidateMembershipGuild(guildId))
+    },
     reconcile: () => syncService.requestFullResync(),
     failed: (guildId, error) =>
         logWarn("member-access", "Membership invalidation failed", {
@@ -291,38 +412,42 @@ registerMembershipInvalidationEvents(client, {
 })
 client.on(Events.GuildMemberAdd, (member) => {
     const config = syncService.getGuildConfig(member.guild.id)
-    void syncGuildMemberAccessMember(
-        member,
-        config?.dashboardAdminRoleId
-    ).catch((error) =>
-        logError("member-access", "Failed to add member access", {
-            guildId: member.guild.id,
-            userId: member.id,
-            error,
-        })
-    )
+    void lifecycle
+        .run(() =>
+            syncGuildMemberAccessMember(member, config?.dashboardAdminRoleId)
+        )
+        .catch((error) =>
+            logError("member-access", "Failed to add member access", {
+                guildId: member.guild.id,
+                userId: member.id,
+                error,
+            })
+        )
 })
 client.on(Events.GuildMemberUpdate, (_before, member) => {
     const config = syncService.getGuildConfig(member.guild.id)
-    void syncGuildMemberAccessMember(
-        member,
-        config?.dashboardAdminRoleId
-    ).catch((error) =>
-        logError("member-access", "Failed to update member access", {
-            guildId: member.guild.id,
-            userId: member.id,
-            error,
-        })
-    )
+    void lifecycle
+        .run(() =>
+            syncGuildMemberAccessMember(member, config?.dashboardAdminRoleId)
+        )
+        .catch((error) =>
+            logError("member-access", "Failed to update member access", {
+                guildId: member.guild.id,
+                userId: member.id,
+                error,
+            })
+        )
 })
 client.on(Events.GuildMemberRemove, (member) => {
-    void removeGuildMemberAccess(member.guild.id, member.id).catch((error) =>
-        logError("member-access", "Failed to remove member access", {
-            guildId: member.guild.id,
-            userId: member.id,
-            error,
-        })
-    )
+    void lifecycle
+        .run(() => removeGuildMemberAccess(member.guild.id, member.id))
+        .catch((error) =>
+            logError("member-access", "Failed to remove member access", {
+                guildId: member.guild.id,
+                userId: member.id,
+                error,
+            })
+        )
 })
 
 client.on(Events.Error, (error) => {

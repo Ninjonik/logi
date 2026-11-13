@@ -27,18 +27,31 @@ export type GuildRuntimeData = {
 
 type GuildChangeHandler = (guildIds: string[]) => void
 
+function byGuild<T extends { guildId: string }>(rows: readonly T[]) {
+    const grouped = new Map<string, T[]>()
+    for (const row of rows) {
+        const group = grouped.get(row.guildId)
+        if (group) group.push(row)
+        else grouped.set(row.guildId, [row])
+    }
+    return grouped
+}
+
 export class GuildCache {
     private runtimeByGuildId = new Map<string, GuildRuntimeData>()
     private signaturesByGuildId = new Map<string, string>()
+    private stopped = false
     private unsubscribe?: () => void
 
     async start(onGuildsChanged: GuildChangeHandler) {
+        if (this.stopped) return
         const initialSnapshot = (await convex.query(
             references.listGuildCacheSnapshot,
             {
                 secret: env.internalSecret,
             }
         )) as GuildCacheSnapshot
+        if (this.stopped) return
         this.applySnapshot(initialSnapshot)
         logInfo("guild-cache", "Loaded initial guild snapshot", {
             guildCount: initialSnapshot.guilds.length,
@@ -75,6 +88,7 @@ export class GuildCache {
     }
 
     stop() {
+        this.stopped = true
         this.unsubscribe?.()
     }
 
@@ -88,25 +102,20 @@ export class GuildCache {
 
     private applySnapshot(snapshot: GuildCacheSnapshot) {
         const nextRuntimeByGuildId = new Map<string, GuildRuntimeData>()
+        const configs = byGuild(snapshot.configs)
+        const groups = byGuild(snapshot.groups)
+        const calendar = byGuild(snapshot.calendarItems)
+        const squads = byGuild(snapshot.squadPresets)
+        const topics = byGuild(snapshot.topicPresets)
 
         for (const guild of snapshot.guilds) {
             nextRuntimeByGuildId.set(guild.discordId, {
                 guild,
-                config: snapshot.configs.find(
-                    (config) => config.guildId === guild.discordId
-                ),
-                groups: snapshot.groups.filter(
-                    (group) => group.guildId === guild.discordId
-                ),
-                calendarItems: snapshot.calendarItems.filter(
-                    (item) => item.guildId === guild.discordId
-                ),
-                squadPresets: snapshot.squadPresets.filter(
-                    (preset) => preset.guildId === guild.discordId
-                ),
-                topicPresets: snapshot.topicPresets.filter(
-                    (preset) => preset.guildId === guild.discordId
-                ),
+                config: configs.get(guild.discordId)?.[0],
+                groups: groups.get(guild.discordId) ?? [],
+                calendarItems: calendar.get(guild.discordId) ?? [],
+                squadPresets: squads.get(guild.discordId) ?? [],
+                topicPresets: topics.get(guild.discordId) ?? [],
             })
         }
 

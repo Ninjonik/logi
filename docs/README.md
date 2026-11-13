@@ -1,5 +1,13 @@
 # Technical documentation
 
+Maintenance planning: [codebase review](codebase-review-2026-11-11.md) and [implementation handoff](maintenance-implementation-plan.md).
+
+Bot release candidate: [validation and release boundary](maintenance/discord-bot-release-readiness.md) and [implementation progress / remaining TODOs](maintenance/discord-bot-implementation-progress.md).
+
+Completed bot source/test review: [performance audit](maintenance/discord-bot-performance-audit.md), [complete bot remediation plan](maintenance/discord-bot-implementation-plan.md), and [file coverage ledger](maintenance/discord-bot-review-ledger.json). Runtime performance acceptance remains implementation work.
+
+Review evidence: [scope and limitations](maintenance/audit-scope.md), [deeper findings](maintenance/audit-progress.md), [performance and caching](maintenance/performance-and-caching-audit.md), and [API parity work register](maintenance/api-parity-audit.md). Static coverage and manual review depth are distinguished explicitly.
+
 Logi's documentation is organized by audience and runtime:
 
 | Reference                                                              | Contents                                                               |

@@ -118,6 +118,10 @@ export const matchDetailMessages = {
                 "{present} présents · {excused} excusés · {absent} absents",
             reserveCounts: "{present} présents · {absent} absents",
             playerCount: "{count} joueurs",
+            roleEligibilityUnknown:
+                "Les r?les Discord requis ne sont pas v?rifi?s dans cette liste.",
+            unplacedTitle: "Inscrits en attente de placement",
+            signedUp: "Inscrit",
             memberCount: "{count} joueurs",
             loadFromVoice: "Charger depuis le salon vocal",
             loadingFromVoice: "Lecture du salon vocal…",

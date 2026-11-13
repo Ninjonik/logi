@@ -89,3 +89,28 @@ test("the subscription feeds the definitions", () => {
     cache.stop()
     assert.equal(stopped, true)
 })
+
+test("a late applicant read cannot overwrite a live definition or resurrect a removed clan", () => {
+    const cache = new ApplicationStateCache(() => 0)
+    const { guildId, ...clan } = definition
+    const stale = { ...clan, ...applicant } as ApplicationState
+    cache.applyDefinitions([{ ...definition, enabled: false }])
+    cache.remember(guildId, "1", stale)
+    assert.equal(cache.peek(guildId, "1")?.state.enabled, false)
+    cache.applyDefinitions([])
+    cache.remember(guildId, "1", stale)
+    assert.equal(cache.peek(guildId, "1"), undefined)
+})
+
+test("applicant bursts evict old entries without losing the newest state", () => {
+    const cache = new ApplicationStateCache(() => 0)
+    const { guildId, ...clan } = definition
+    const state = { ...clan, ...applicant } as ApplicationState
+    for (let i = 0; i < 10_000; i++) cache.remember(guildId, String(i), state)
+    assert.equal(cache.applicant(guildId, "0"), undefined)
+    assert.ok(cache.applicant(guildId, "9999"))
+    let retained = 0
+    for (let i = 0; i < 10_000; i++)
+        if (cache.applicant(guildId, String(i))) retained++
+    assert.equal(retained, 1000)
+})
