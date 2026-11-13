@@ -266,3 +266,15 @@ actions and have no API operation; images are uploaded in the dashboard.
 3. Use a disposable recruit and final role first and confirm the role changes
    on **Role changes** before using production roles.
 
+## Interrupted submissions and decisions
+
+Logi saves a membership decision and its application closure together. If the bot
+restarts, it skips confirmed cards and DMs and continues unfinished steps. A
+message or private thread that Discord may have accepted remains uncertain until
+an operator checks it; automatic recovery does not blindly create or send another.
+
+An interrupted submission can retain its pending membership and private thread.
+Ask the operator to inspect that operation before opening a replacement. A draft
+whose provisioning has started cannot be edited or cancelled until its retained
+work is reconciled. Known thread changes retry with bounded backoff, and uncertain
+DM delivery is reported separately from a confirmed DM refusal.

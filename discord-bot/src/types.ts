@@ -187,6 +187,7 @@ export type GuildRecord = {
 export type MembershipStatus = "pending" | "recruit" | "active"
 
 export type MembershipApplicationThreadRecord = {
+    decisionGameId?: string
     id: string
     guildId: string
     /** Missing values are legacy Hell Let Loose applications. */

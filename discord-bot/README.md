@@ -176,5 +176,93 @@ receipts per plan per pass. Finished scopes become eligible after 30 days; activ
 or retryable owners are retained. Automatic scopes are retained while their event
 is active or recently concluded. These guarantees cover the new runtime's recorded
 effects, not pre-upgrade sends or exactly-once delivery during an ambiguous network
-failure. Application/ticket transactions and other Discord effect families remain
-separate work in the implementation TODO register.
+failure. Uncertain receipts are retained for review rather than aged out with
+ordinary completed receipts.
+
+## Application and ticket crash recovery
+
+Application decisions now commit membership changes, cross-game movement,
+dependent roster/projection updates, role intent and application closure in one
+Convex transaction. Submission membership creation also remembers its assignment
+in the same transaction. Replaying a committed command does not repeat those
+writes. Upgraded claims are fenced; old workers cannot claim a draft or decision
+already using the upgraded protocol.
+
+The bot journals application/ticket thread creation, invitations, opening and
+closing cards, confirmation/decision DMs, transcript remembrance and thread
+changes. Confirmed sends are reused. An expired or failed create/send whose
+acceptance is unknown becomes `uncertain`; it is never blindly replayed. A
+remembered private thread is kept after a failed database response, because that
+transaction might already have committed. Do not manually open a replacement
+until checking the retained operation and Discord.
+
+Two drainable recovery lanes run non-overlapping passes over bounded batches every
+minute. Desired-state changes and interrupted workflows have renewable five-minute
+leases, at most five automatic attempts and exponential backoff capped at fifteen
+minutes. Recovery verifies bot ownership and current invitation eligibility.
+Completed receipts skip repeated effects; untouched steps can continue. Exhausted
+or ambiguous work remains visible for operators. Completed operation/effect/audit
+records are pruned after ninety days in bounded batches; unresolved work is retained.
+
+Old tickets/applications and reminder runs without receipts remain unproven. They
+are inspected and repaired manually; no upgrade backfill sends historical DMs.
+Legacy ticket closers do not opt into new recovery intents, so backend-first
+deployment cannot accidentally replay their unrecorded effects. Stop the old bot
+and wait for exit before starting the replacement. Do not roll back to an old bot
+while upgraded claims remain outstanding.
+
+### Operator reconciliation
+
+Run these from the repository root on an operator machine with the configured
+Convex URL and `INTERNAL_AUTH_SECRET`. The script reads existing environment
+configuration; never put secrets in command arguments or evidence. It makes no
+Discord calls. Reads return a bounded page and a continuation cursor.
+
+```bash
+node --import tsx scripts/discord-reconciliation.ts list GUILD_ID review
+node --import tsx scripts/discord-reconciliation.ts list GUILD_ID pending
+node --import tsx scripts/discord-reconciliation.ts effects OPERATION_ID
+node --import tsx scripts/discord-reconciliation.ts audit OPERATION_ID
+node --import tsx scripts/discord-reconciliation.ts legacy GUILD_ID ticket
+node --import tsx scripts/discord-reconciliation.ts legacy GUILD_ID application
+node --import tsx scripts/discord-reconciliation.ts requests GUILD_ID reminder failed
+node --import tsx scripts/discord-reconciliation.ts delivery GUILD_ID reminder REQUEST_ID
+node --import tsx scripts/discord-reconciliation.ts automatic GUILD_ID EVENT_ID PHASE
+```
+
+Append the returned cursor to request another page. `roster` is also supported
+by `requests` and `delivery`. For automatic phases, use the actual phase key
+recorded by the signup/attendance worker; a missing plan is `legacyUnproven`, not
+proof that no message was sent. Request status is the original workflow outcome;
+read individual receipts to distinguish confirmed, refused and uncertain effects.
+Private application answers/accounts stored for recovery are omitted from the
+operation-list output.
+
+After fixing permissions or availability, an operator can resume a workflow:
+
+```bash
+node --import tsx scripts/discord-reconciliation.ts resume OPERATION_ID OPERATOR "Permissions repaired and the old process has exited"
+```
+
+This renews only the workflow retry budget and preserves all send receipts. It
+does not authorize resending an uncertain message. Stop conflicting workers and
+wait for their leases to expire before resolving an effect. Check the actual
+bot-owned Discord resource and retain concrete evidence:
+
+```bash
+node --import tsx scripts/discord-reconciliation.ts resolve OPERATION_ID EFFECT_ID confirm OPERATOR "Verified the bot-owned thread and its parent in Discord" THREAD_ID
+node --import tsx scripts/discord-reconciliation.ts resolve OPERATION_ID EFFECT_ID proven_not_sent OPERATOR "Transport rejected before sending; old process is stopped"
+```
+
+`confirm` remembers a completed effect; thread creation requires the real Discord
+thread ID. `proven_not_sent` permits an unexhausted effect to retry only after
+positive evidence of non-delivery. An incomplete channel/archive search, a timeout
+or a missing local log is not that evidence. If Discord cannot prove acceptance,
+leave the effect uncertain or repair manually and confirm the result. Exhausted
+effect budgets require manual repair and confirmation. Every resolution/resume is
+audited. These controls do not promise exactly-once delivery.
+
+The application/ticket effect journal is an internal Discord lifecycle. There is
+no new `/api/v1` write: an API key is not a substitute for the current Discord
+thread/category authority used by recruitment and ticket commands. Dashboard/v1
+membership writes continue to use the existing shared assignment commands.

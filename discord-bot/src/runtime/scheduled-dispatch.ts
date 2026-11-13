@@ -63,7 +63,13 @@ export function startScheduledDispatch(
                         "Dispatch retained for retry",
                         { dispatchId: row.id, error }
                     )
-                    await call("retry", { owner }).catch(() => undefined)
+                    await call("retry", { owner }).catch((retryError) =>
+                        logWarn(
+                            "scheduled-dispatch",
+                            "Retry scheduling failed; leased dispatch remains recoverable",
+                            { dispatchId: row.id, error: retryError }
+                        )
+                    )
                 }
             }
         },

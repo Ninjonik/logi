@@ -220,6 +220,7 @@ export type ApplicationCopy = {
         roles: { one: string; other: string }
         delivered: string
         notDelivered: string
+        dmUncertain: string
         /** Decision DMs are switched off in "Zprávy a panely" (N1-39). */
         dmOff: string
         wrongPlace: { title: string; body: string }

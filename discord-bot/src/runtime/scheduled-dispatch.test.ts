@@ -58,3 +58,48 @@ test("dispatch shutdown finishes the active acknowledgment and claims no new wor
     assert.equal(acknowledged, 1)
     assert.equal(claims, 1)
 })
+
+test("failed retry persistence is reported while the leased dispatch remains recoverable", async (t) => {
+    let claims = 0,
+        retries = 0
+    const warnings: string[] = []
+    t.mock.method(console, "warn", (...args: unknown[]) =>
+        warnings.push(args.map(String).join(" "))
+    )
+    t.mock.method(
+        ConvexReactClient.prototype,
+        "mutation",
+        async (reference: Parameters<typeof getFunctionName>[0]) => {
+            switch (getFunctionName(reference)) {
+                case "discordScheduledDispatch:claim":
+                    return claims++ === 0
+                        ? {
+                              id: "dispatch",
+                              eventId: "event",
+                              guildId: "guild",
+                              kind: "refresh-announcement",
+                              claimToken: "owner",
+                              changedEventIds: [],
+                              scoreEventIds: [],
+                          }
+                        : null
+                case "discordRequestRecovery:heartbeat":
+                    return true
+                case "discordScheduledDispatch:retry":
+                    retries++
+                    throw new Error("Database unavailable")
+                default:
+                    throw new Error("Unexpected mutation")
+            }
+        }
+    )
+    const stop = startScheduledDispatch(async () => {
+        throw new Error("processing failed")
+    })
+    for (let i = 0; i < 50 && retries === 0; i++) await Promise.resolve()
+    await stop()
+    assert.equal(retries, 1)
+    assert.ok(
+        warnings.some((message) => message.includes("Retry scheduling failed"))
+    )
+})

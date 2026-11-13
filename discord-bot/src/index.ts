@@ -1,4 +1,6 @@
+import { startMembershipWorkflowRecovery } from "./runtime/membership-workflows"
 import { registerMembershipInvalidationEvents } from "./sync/membership-events"
+import { startMembershipEffectRecovery } from "./runtime/membership-effects"
 import { startScheduledDispatch } from "./runtime/scheduled-dispatch"
 import { startManagedRoleWorker } from "./sync/managed-member-roles"
 import { stopPreparedModals } from "./interactions/acknowledgement"
@@ -189,6 +191,12 @@ client.once(Events.ClientReady, (readyClient) => {
         })
     )
     void lifecycle.start("request recovery", () => startRequestRecovery())
+    void lifecycle.start("application and ticket effects", () =>
+        startMembershipEffectRecovery(client)
+    )
+    void lifecycle.start("application and ticket workflows", () =>
+        startMembershipWorkflowRecovery(client)
+    )
     void lifecycle.start("report recovery", () => startReportRecovery(client))
     void lifecycle.start("web applications", () =>
         startApplicationWebSubmissionWorker(client)

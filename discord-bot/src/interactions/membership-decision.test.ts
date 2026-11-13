@@ -133,9 +133,21 @@ function backend(
             args: Record<string, unknown>
         ) => {
             const name = getFunctionName(reference)
+            if (name === "discordMembershipEffects:open") return "operation"
+            if (name === "discordMembershipEffects:begin")
+                return { state: "execute", token: "effect" }
+            if (name.startsWith("discordMembershipEffects:")) return true
             writes.push({ name, args })
             if (name === "membershipApplications:claimApplicationDecision")
-                return { ok: true }
+                return { ok: true, claimToken: "decision-claim" }
+            if (name === "membershipDecisions:commit")
+                return {
+                    assignmentId: "assignment-1",
+                    gameId:
+                        args.outcome === "mercenary"
+                            ? "wardogs"
+                            : "hell_let_loose",
+                }
             if (name === "userAssignments:upsertByServerDiscordId")
                 return "assignment-1"
             return { ok: true }
@@ -189,7 +201,10 @@ function discord(input: {
             users: {
                 fetch: async () => ({
                     send: async (payload: unknown) => {
-                        if (input.dmFails) throw new Error("Cannot send")
+                        if (input.dmFails)
+                            throw Object.assign(new Error("Cannot send"), {
+                                code: 50007,
+                            })
                         dms.push(payload)
                     },
                 }),
@@ -339,12 +354,11 @@ test("/close_application by a recruiter writes the membership, closes and DMs (M
         writes.map((write) => write.name),
         [
             "membershipApplications:claimApplicationDecision",
-            "userAssignments:upsertByServerDiscordId",
-            "discordMembership:closeMembershipApplicationThread",
+            "membershipDecisions:commit",
         ]
     )
-    assert.equal(writes[1]!.args.status, "active")
-    assert.equal(writes[2]!.args.closeOutcome, "member")
+    assert.equal(writes[1]!.args.outcome, "member")
+    assert.equal(writes[1]!.args.claimToken, "decision-claim")
     // Older threads without a card get the decision as a new message.
     assert.match(texts(sent[0]), /PŘIHLÁŠKA #42 · UZAVŘENA/)
     assert.doesNotMatch(texts(sent[0]), /Role <@&/)
@@ -516,18 +530,11 @@ test("Přijmout jako žoldáka grants the clan's mercenary category, not @Člen 
         writes.map((write) => write.name),
         [
             "membershipApplications:claimApplicationDecision",
-            "userAssignments:upsertByServerDiscordId",
-            "userAssignments:remove",
-            "discordMembership:closeMembershipApplicationThread",
+            "membershipDecisions:commit",
         ]
     )
-    // The Wardogs mercenary category: its game first, then the HLL membership goes.
-    assert.equal(writes[1]!.args.gameId, "wardogs")
-    assert.equal(writes[1]!.args.type, "mercenary")
-    assert.equal(writes[1]!.args.status, "active")
-    assert.equal(writes[1]!.args.membershipCategoryId, "merc-wd")
-    assert.equal(writes[1]!.args.assignmentId, undefined)
-    assert.equal(writes[2]!.args.assignmentId, "assignment-1")
+    assert.equal(writes[1]!.args.outcome, "mercenary")
+    assert.equal(writes[1]!.args.claimToken, "decision-claim")
     assert.doesNotMatch(texts(sent[0]), /Role <@&/)
     assert.doesNotMatch(texts(sent[0]), /<@&member>/)
     const dm = texts(dms[0])

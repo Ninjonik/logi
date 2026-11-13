@@ -1388,6 +1388,7 @@ export default defineSchema({
         updatedAt: v.number(),
     })
         .index("scope_key", ["scope", "key"])
+        .index("scope_state", ["scope", "state"])
         .index("scope", ["scope"]),
     eventScheduleJobs: defineTable({
         eventId: v.id("events"),
@@ -1445,6 +1446,11 @@ export default defineSchema({
         error: v.optional(v.string()),
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
+        .index("guildId_status_requestedAt", [
+            "guildId",
+            "status",
+            "requestedAt",
+        ])
         .index("status", ["status"])
         .index("status_leaseUntil", ["status", "leaseUntil"])
         .index("status_retryAt", ["status", "retryAt"])
@@ -1511,6 +1517,11 @@ export default defineSchema({
         error: v.optional(v.string()),
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
+        .index("guildId_status_requestedAt", [
+            "guildId",
+            "status",
+            "requestedAt",
+        ])
         .index("status", ["status"])
         .index("status_leaseUntil", ["status", "leaseUntil"])
         .index("status_retryAt", ["status", "retryAt"])
@@ -1780,6 +1791,85 @@ export default defineSchema({
         ])
         .index("guild_reporter_state", ["guildId", "reporterId", "state"])
         .index("guild_state_leaseUntil", ["guildId", "state", "leaseUntil"]),
+    discordMembershipOperations: defineTable({
+        key: v.string(),
+        expectedKeys: v.optional(v.array(v.string())),
+        requestJson: v.optional(v.string()),
+        workGeneration: v.optional(v.number()),
+        workDueAt: v.optional(v.number()),
+        workAttempts: v.optional(v.number()),
+        workToken: v.optional(v.string()),
+        workLeaseUntil: v.optional(v.number()),
+        guildId: v.string(),
+        kind: v.union(
+            v.literal("application-open"),
+            v.literal("application-close"),
+            v.literal("ticket-open"),
+            v.literal("ticket-close")
+        ),
+        subjectId: v.string(),
+        actorId: v.string(),
+        state: v.union(
+            v.literal("pending"),
+            v.literal("review"),
+            v.literal("complete")
+        ),
+        finishRequested: v.optional(v.boolean()),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    })
+        .index("key", ["key"])
+        .index("guild_state", ["guildId", "state"])
+        .index("state_updatedAt", ["state", "updatedAt"])
+        .index("state_workDueAt", ["state", "workDueAt"]),
+    discordMembershipEffects: defineTable({
+        repairable: v.optional(v.boolean()),
+        operationId: v.id("discordMembershipOperations"),
+        key: v.string(),
+        mode: v.union(v.literal("send"), v.literal("reconcile")),
+        state: v.union(
+            v.literal("started"),
+            v.literal("confirmed"),
+            v.literal("skipped"),
+            v.literal("refused"),
+            v.literal("uncertain"),
+            v.literal("retry"),
+            v.literal("failed")
+        ),
+        attempts: v.number(),
+        token: v.string(),
+        leaseUntil: v.number(),
+        retryAt: v.number(),
+        resourceId: v.optional(v.string()),
+        error: v.optional(v.string()),
+        repair: v.optional(
+            v.object({
+                threadId: v.string(),
+                action: v.union(
+                    v.literal("member"),
+                    v.literal("rename"),
+                    v.literal("lock"),
+                    v.literal("archive")
+                ),
+                value: v.optional(v.string()),
+            })
+        ),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    })
+        .index("operation_key", ["operationId", "key"])
+        .index("operation_state", ["operationId", "state"])
+        .index("state_retryAt", ["state", "retryAt"])
+        .index("repairable_state_retryAt", ["repairable", "state", "retryAt"])
+        .index("state_leaseUntil", ["state", "leaseUntil"]),
+    discordMembershipReconciliations: defineTable({
+        operationId: v.id("discordMembershipOperations"),
+        effectId: v.optional(v.id("discordMembershipEffects")),
+        operator: v.string(),
+        evidence: v.string(),
+        action: v.string(),
+        at: v.number(),
+    }).index("operationId", ["operationId"]),
     ticketThreads: defineTable({
         guildId: v.string(),
         threadId: v.string(),
@@ -1846,6 +1936,9 @@ export default defineSchema({
         undecidedAt: v.optional(v.string()),
         // One decision at a time across the buttons and /close_application.
         decisionLeaseUntil: v.optional(v.number()),
+        decisionClaimToken: v.optional(v.string()),
+        resumableDecision: v.optional(v.boolean()),
+        decisionGameId: v.optional(v.string()),
         closedAt: v.optional(v.string()),
         closedByUserId: v.optional(v.string()),
         closeReason: v.optional(v.string()),
@@ -1866,6 +1959,11 @@ export default defineSchema({
         .index("threadId", ["threadId"])
         .index("guildId_applicationNumber", ["guildId", "applicationNumber"]),
     membershipApplicationFormDrafts: defineTable(applicationDraftFields)
+        .index("source_submissionStatus_claimedUntil", [
+            "source",
+            "submissionStatus",
+            "claimedUntil",
+        ])
         .index("guildId_creatorId", ["guildId", "creatorId"])
         .index("submissionStatus", ["submissionStatus"])
         .index("expiresAt", ["expiresAt"]),

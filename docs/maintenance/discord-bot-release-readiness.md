@@ -1,5 +1,20 @@
 # Discord bot release candidate — 2026-11-12
 
+## Application/ticket recovery continuation — 2026-11-13
+
+The current working candidate adds atomic membership decisions and submission
+provisioning, durable application/ticket effect receipts, bounded restart repair,
+and an evidence-based operator CLI. It preserves accepted resources after lost
+record responses and distinguishes uncertain DM delivery from confirmed refusal.
+New protocol claims cannot be taken by old bots; legacy ticket close calls do not
+create resumable intents that could replay their unrecorded sends.
+
+Validation and final Convex rollout results are pending the current run's final
+checks. Live Discord crash tests and host shutdown-grace verification were skipped
+at the user's explicit request. This does not certify the broader D00-D12 audit
+program or every secondary effect family. See the current progress register and
+the bot README's operator reconciliation procedure.
+
 ## Current durable handoff and recipient resume pass (2026-11-12)
 
 The worker-to-main handoff now uses a transactional durable inbox. Schedule removal

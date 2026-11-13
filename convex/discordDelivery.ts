@@ -1,4 +1,4 @@
-import { mutation, type MutationCtx } from "./_generated/server"
+import { mutation, query, type MutationCtx } from "./_generated/server"
 import { assertInternalSecret } from "./discord_shared"
 import { v } from "convex/values"
 
@@ -270,6 +270,23 @@ export async function pruneDeliveryPlans(ctx: MutationCtx) {
         .withIndex("expiresAt", (q) => q.lte("expiresAt", now))
         .take(5)
     for (const plan of plans) {
+        const unresolved =
+            (await ctx.db
+                .query("discordDeliveryEffects")
+                .withIndex("scope_state", (q) =>
+                    q.eq("scope", plan.scope).eq("state", "uncertain")
+                )
+                .first()) ??
+            (await ctx.db
+                .query("discordDeliveryEffects")
+                .withIndex("scope_state", (q) =>
+                    q.eq("scope", plan.scope).eq("state", "started")
+                )
+                .first())
+        if (unresolved) {
+            await ctx.db.patch(plan._id, { expiresAt: now + 86400000 })
+            continue
+        }
         const table =
             plan.ownerKind === "reminder"
                 ? "eventReminderRequests"
@@ -300,3 +317,110 @@ export async function pruneDeliveryPlans(ctx: MutationCtx) {
         if (effects.length < 100) await ctx.db.delete(plan._id)
     }
 }
+
+/** Exact-scope operator reads; legacy rows are evidence gaps, never resend authorization. */
+export const inspect = query({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        kind: v.union(v.literal("reminder"), v.literal("roster")),
+        requestId: v.string(),
+        cursor: v.union(v.string(), v.null()),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const table =
+            args.kind === "reminder"
+                ? "eventReminderRequests"
+                : "rosterChangeRequests"
+        const id = ctx.db.normalizeId(table, args.requestId)
+        const owner = id ? await ctx.db.get(id) : null
+        if (!owner || owner.guildId !== args.guildId)
+            throw new Error("Delivery scope mismatch")
+        const receipts = await ctx.db
+            .query("discordDeliveryEffects")
+            .withIndex("scope_key", (q) =>
+                q.eq("scope", `${args.kind}:${args.requestId}`)
+            )
+            .paginate({ cursor: args.cursor, numItems: 50 })
+        return {
+            status: owner.status,
+            legacyUnproven: !owner.resumable,
+            error: owner.error ?? null,
+            receipts,
+        }
+    },
+})
+
+export const requests = query({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        kind: v.union(v.literal("reminder"), v.literal("roster")),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("sent"),
+            v.literal("failed")
+        ),
+        cursor: v.union(v.string(), v.null()),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const page =
+            args.kind === "reminder"
+                ? await ctx.db
+                      .query("eventReminderRequests")
+                      .withIndex("guildId_status_requestedAt", (q) =>
+                          q
+                              .eq("guildId", args.guildId)
+                              .eq("status", args.status)
+                      )
+                      .paginate({ cursor: args.cursor, numItems: 25 })
+                : await ctx.db
+                      .query("rosterChangeRequests")
+                      .withIndex("guildId_status_requestedAt", (q) =>
+                          q
+                              .eq("guildId", args.guildId)
+                              .eq("status", args.status)
+                      )
+                      .paginate({ cursor: args.cursor, numItems: 25 })
+        return {
+            ...page,
+            page: page.page.map((row) => ({
+                id: String(row._id),
+                eventId: String(row.eventId),
+                status: row.status,
+                requestedAt: row.requestedAt,
+                legacyUnproven: !row.resumable,
+                error: row.error ?? null,
+            })),
+        }
+    },
+})
+
+export const inspectAutomatic = query({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        eventId: v.id("events"),
+        phase: v.string(),
+        cursor: v.union(v.string(), v.null()),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const event = await ctx.db.get(args.eventId)
+        if (!event || event.guildId !== args.guildId || args.phase.length > 100)
+            throw new Error("Delivery scope mismatch")
+        const scope = `${args.guildId}:${args.eventId}:${args.phase}`
+        const plan = await ctx.db
+            .query("discordDeliveryPlans")
+            .withIndex("scope", (q) => q.eq("scope", scope))
+            .unique()
+        const receipts = await ctx.db
+            .query("discordDeliveryEffects")
+            .withIndex("scope_key", (q) => q.eq("scope", scope))
+            .paginate({ cursor: args.cursor, numItems: 50 })
+        return { legacyUnproven: !plan, receipts }
+    },
+})

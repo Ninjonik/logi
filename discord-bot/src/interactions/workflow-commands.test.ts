@@ -80,9 +80,19 @@ for (const scenario of [
             },
             category: { supportRoleIds: [] },
         }))
-        t.mock.method(ConvexReactClient.prototype, "mutation", async () => {
-            writes++
-        })
+        t.mock.method(
+            ConvexReactClient.prototype,
+            "mutation",
+            async (reference: Parameters<typeof getFunctionName>[0]) => {
+                const name = getFunctionName(reference)
+                if (name === "discordMembershipEffects:open") return "operation"
+                if (name === "discordMembershipEffects:begin")
+                    return { state: "execute", token: "effect" }
+                if (name.startsWith("discordMembershipEffects:")) return true
+                writes++
+                return { ok: true }
+            }
+        )
         const noop = async () => {}
         await handler().handleChatInputCommand({
             commandName: "close_ticket",

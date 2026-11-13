@@ -71,6 +71,7 @@ export type SaveWindowResult =
 
 export type ApplicationSubmission = {
     draftId: string
+    claimToken: string
     source: "discord" | "web"
     config: EventInteractionContext["config"]
     clanName: string
@@ -123,6 +124,12 @@ export type ApplicationThreadContext = {
 }
 
 export const applicationRefs = {
+    prepareSubmission: makeFunctionReference<"mutation">(
+        "membershipDecisions:prepareSubmission"
+    ),
+    commitDecision: makeFunctionReference<"mutation">(
+        "membershipDecisions:commit"
+    ),
     state: makeFunctionReference<"query">(
         "membershipApplications:getApplicationState"
     ),
@@ -253,19 +260,25 @@ export async function claimApplicationSubmission(input: {
     draftId: string
     source: "discord" | "web"
 }) {
-    return (await convex.mutation(applicationRefs.claim, {
+    const result = (await convex.mutation(applicationRefs.claim, {
         secret: secret(),
         ...input,
+        fenced: true,
     })) as ClaimResult
+    if (result.ok && !result.submission.claimToken)
+        throw new Error("Submission claim requires the updated backend")
+    return result
 }
 
 export async function releaseApplicationSubmission(
     draftId: string,
+    claimToken: string,
     error?: string
 ) {
     await convex.mutation(applicationRefs.release, {
         secret: secret(),
         draftId,
+        claimToken,
         ...(error ? { error } : {}),
     })
 }
@@ -278,7 +291,7 @@ export async function loadApplicationThreadContext(threadId: string) {
 }
 
 export type DecisionClaim =
-    | { ok: true }
+    | { ok: true; claimToken?: string }
     | { ok: false; reason: "missing" | "busy" }
     | {
           ok: false
@@ -291,13 +304,18 @@ export async function claimApplicationDecision(threadId: string) {
     return (await convex.mutation(applicationRefs.claimDecision, {
         secret: secret(),
         threadId,
+        fenced: true,
     })) as DecisionClaim
 }
 
-export async function releaseApplicationDecision(threadId: string) {
+export async function releaseApplicationDecision(
+    threadId: string,
+    claimToken: string
+) {
     await convex.mutation(applicationRefs.releaseDecision, {
         secret: secret(),
         threadId,
+        claimToken,
     })
 }
 

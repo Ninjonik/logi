@@ -54,6 +54,7 @@ import {
     readWindowValues,
 } from "./membership-application-modals"
 import { applicationStateCache } from "./membership-application-cache"
+import { MembershipEffects } from "../runtime/membership-effects"
 import { watchVerifiedSteam } from "./membership-steam-watch"
 import { dmSettingsUrl } from "../events/match-context"
 import type { InteractionFeature } from "./registry"
@@ -441,28 +442,55 @@ async function sendConfirmationDm(
     number: number,
     url: string
 ) {
-    if (submission.config.membershipSettings?.sendConfirmationDm === false)
+    if (!interaction.guildId)
+        throw new Error("Application confirmation requires a guild")
+    const effects = new MembershipEffects({
+        key: `application-open:${submission.draftId}`,
+        kind: "application-open",
+        guildId: interaction.guildId,
+        subjectId: submission.draftId,
+        actorId: interaction.user.id,
+    })
+    if (submission.config.membershipSettings?.sendConfirmationDm === false) {
+        await effects.skip(`confirmation-dm:${interaction.user.id}`)
+        await effects.complete()
         return
+    }
     const copy = getApplicationMessages(submission.config.defaultLanguage)
-    await interaction.user
-        .send(
-            messagePayload(
-                applicationConfirmationDmView(copy, {
-                    clanName:
-                        submission.clanName || interaction.guild?.name || "",
-                    number,
-                    threadUrl: url,
-                    settingsUrl: dmSettingsUrl(
-                        submission.config.defaultLanguage
-                    ),
-                }),
-                {
-                    language: submission.config.defaultLanguage,
-                    style: submission.config.messageStyle,
-                }
+    await effects
+        .effect(
+            `confirmation-dm:${interaction.user.id}`,
+            "send",
+            () =>
+                interaction.user.send(
+                    messagePayload(
+                        applicationConfirmationDmView(copy, {
+                            clanName:
+                                submission.clanName ||
+                                interaction.guild?.name ||
+                                "",
+                            number,
+                            threadUrl: url,
+                            settingsUrl: dmSettingsUrl(
+                                submission.config.defaultLanguage
+                            ),
+                        }),
+                        {
+                            language: submission.config.defaultLanguage,
+                            style: submission.config.messageStyle,
+                        }
+                    )
+                ),
+            true
+        )
+        .catch((error) =>
+            logWarn(
+                "membership-recovery",
+                "Application confirmation outcome retained",
+                { guildId: interaction.guildId, error }
             )
         )
-        .catch(() => null)
+    await effects.complete()
 }
 
 /**
@@ -668,12 +696,15 @@ export async function handleApplicationButton(interaction: ButtonInteraction) {
         submission: claim.submission,
     })
     if (!result.ok) {
-        await releaseApplicationSubmission(draft.id, result.failedAt).catch(
-            (error) =>
-                logWarn("interaction", "Could not release an application", {
-                    guildId: interaction.guildId,
-                    error,
-                })
+        await releaseApplicationSubmission(
+            draft.id,
+            claim.submission.claimToken,
+            result.failedAt
+        ).catch((error) =>
+            logWarn("interaction", "Could not release an application", {
+                guildId: interaction.guildId,
+                error,
+            })
         )
         await show(interaction, applicationErrors.sendFailed(copy), options)
         return

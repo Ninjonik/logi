@@ -1,3 +1,4 @@
+import { immediateMembershipEffects } from "../runtime/membership-effects.testing"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -67,6 +68,7 @@ function ports(input: {
     reports?: unknown[]
 }): CloseTicketPorts {
     return {
+        effects: immediateMembershipEffects,
         thread: async () =>
             input.thread === undefined ? context() : input.thread,
         close: async (value) => {
@@ -91,6 +93,7 @@ function command(input: {
     roles?: string[]
     rolesFail?: boolean
     dmFails?: boolean
+    dmUncertain?: boolean
     cardFails?: boolean
     fail?: Array<"rename" | "lock" | "archive">
     reason?: string | null
@@ -168,7 +171,12 @@ function command(input: {
             users: {
                 fetch: async () => ({
                     send: async (value: unknown) => {
-                        if (input.dmFails) throw new Error("Cannot send")
+                        if (input.dmUncertain)
+                            throw new Error("Connection closed after sending")
+                        if (input.dmFails)
+                            throw Object.assign(new Error("Cannot send"), {
+                                code: 50007,
+                            })
                         sent.push({ to: "dm", value })
                     },
                 }),
@@ -252,6 +260,32 @@ test("a closed DM is reported in the reply, not hidden (M3-31, M3-B06)", async (
         fake.text("reply"),
         /Autorovi nejde poslat DM, shrnutí najde ve vlákně\./
     )
+})
+
+test("a concurrent ticket close does not replay Discord close effects", async () => {
+    const fake = command({ roles: [SUPPORT] })
+    await handleCloseTicketCommand(fake.interaction, {
+        ...ports({}),
+        close: async () => false,
+    })
+    assert.equal(fake.text("dm"), "[]")
+    assert.equal(fake.text("thread"), "[]")
+    assert.deepEqual(
+        fake.calls.filter(
+            (call) =>
+                ["locked", "archived"].includes(call) ||
+                call.startsWith("name:")
+        ),
+        []
+    )
+    assert.match(fake.text("reply"), /Ticket #12 je už uzavřený/)
+})
+
+test("an ambiguous DM result is described as unconfirmed rather than closed DMs", async () => {
+    const fake = command({ roles: [SUPPORT], dmUncertain: true })
+    await handleCloseTicketCommand(fake.interaction, ports({}))
+    assert.match(fake.text("reply"), /Doručení DM se nepodařilo potvrdit/)
+    assert.doesNotMatch(fake.text("reply"), /Autorovi nejde poslat DM/)
 })
 
 test("with the ticket-closed DM switched off the author gets no DM and the reply says so (N1-42)", async () => {

@@ -574,3 +574,42 @@ test("a resumed signup reservation still respects fresh registration deadlines a
     })
     assert.equal(await invoke(reserveSignup, ctx, { secret, owner }), false)
 })
+
+test("retention never erases unresolved send evidence for a terminal owner", async (t) => {
+    const ctx = fixture(t)
+    for (const state of ["started", "uncertain"]) {
+        const id = `eventReminderRequests:${state}`,
+            scope = `reminder:${id}`
+        ctx.db.seed("eventReminderRequests", {
+            _id: id,
+            guildId: "guild",
+            eventId: "events:one",
+            status: "failed",
+        })
+        ctx.db.seed("discordDeliveryPlans", {
+            _id: `discordDeliveryPlans:${state}`,
+            scope,
+            ownerKind: "reminder",
+            ownerId: id,
+            eventId: "events:one",
+            recipientIds: ["user"],
+            expiresAt: now - 1,
+            createdAt: now - 31 * 86400000,
+        })
+        ctx.db.seed("discordDeliveryEffects", {
+            _id: `discordDeliveryEffects:${state}`,
+            scope,
+            key: "dm:user",
+            claimToken: "old",
+            state,
+            createdAt: now - 31 * 86400000,
+            updatedAt: now - 31 * 86400000,
+        })
+    }
+    await pruneDeliveryPlans(ctx as unknown as MutationCtx)
+    assert.equal(ctx.db.tables.discordDeliveryPlans.length, 2)
+    assert.equal(ctx.db.tables.discordDeliveryEffects.length, 2)
+    assert.ok(
+        ctx.db.tables.discordDeliveryPlans.every((row) => row.expiresAt > now)
+    )
+})

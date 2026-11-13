@@ -349,6 +349,8 @@ const cs: Copy = {
         notDelivered:
             "Rozhodnutí je ve vlákně. Uchazeči nejde poslat DM, najde ho tam.",
         dmOff: "Rozhodnutí je ve vlákně. DM o rozhodnutí má klan v nastavení zpráv vypnuté.",
+        dmUncertain:
+            "Rozhodnutí je uložené. Doručení DM se nepodařilo potvrdit. Před dalším odesláním zkontroluj Discord.",
         wrongPlace: {
             title: "/close_application funguje jen ve vlákně přihlášky",
             body: "Otevři vlákno přihlášky a spusť příkaz tam.",
@@ -707,6 +709,8 @@ const pl: Copy = {
         notDelivered:
             "Decyzja jest w wątku. Nie udało się dostarczyć wiadomości prywatnej — osoba zgłaszająca się znajdzie ją w wątku.",
         dmOff: "Decyzja jest w wątku. Klan wyłączył prywatne powiadomienia o decyzjach w ustawieniach wiadomości.",
+        dmUncertain:
+            "Decyzja została zapisana. Nie można potwierdzić doręczenia DM. Sprawdź Discord przed ponowną wysyłką.",
         wrongPlace: {
             title: "/close_application działa tylko w wątku zgłoszenia rekrutacyjnego",
             body: "Otwórz wątek zgłoszenia i uruchom tam komendę.",
@@ -796,7 +800,10 @@ const fr: Copy = {
             help: "La façon dont tu souhaites jouer avec nous.",
             placeholder: "Choisir une catégorie",
         },
-        name: { label: "Pseudo en jeu", help: "Exactement tel qu’il apparaît en jeu." },
+        name: {
+            label: "Pseudo en jeu",
+            help: "Exactement tel qu’il apparaît en jeu.",
+        },
         previous: {
             label: "T’avons-nous trouvé sur les serveurs du clan ?",
             help: "À partir du pseudo {name} saisi dans le premier formulaire.",
@@ -890,8 +897,7 @@ const fr: Copy = {
         member: "{field} : choisis un membre de ce serveur.",
         steam: "Le Steam ID semble incorrect. Il doit comporter 17 chiffres et commencer par 7656119.",
         accountMissing: "Renseigne au moins un compte de jeu.",
-        unknown:
-            "Le formulaire a changé entre-temps. Remplis-le à nouveau.",
+        unknown: "Le formulaire a changé entre-temps. Remplis-le à nouveau.",
     },
     sent: {
         title: "Candidature envoyée",
@@ -926,7 +932,8 @@ const fr: Copy = {
     closed: {
         title: "Les candidatures sont actuellement fermées",
         body: "Réessaie plus tard ou contacte les administrateurs dans {channel}.",
-        bodyNoChannel: "Réessaie plus tard ou contacte les administrateurs du clan.",
+        bodyNoChannel:
+            "Réessaie plus tard ou contacte les administrateurs du clan.",
     },
     sendFailed: {
         title: "Impossible d’envoyer la candidature",
@@ -1062,6 +1069,8 @@ const fr: Copy = {
         notDelivered:
             "La décision a été publiée dans le fil. Le candidat ne peut pas recevoir de messages privés et pourra la consulter là-bas.",
         dmOff: "La décision a été publiée dans le fil. Le clan a désactivé les décisions par message privé dans les paramètres des messages.",
+        dmUncertain:
+            "La décision est enregistrée. La réception du message privé n’a pas pu être confirmée. Vérifie Discord avant de réessayer.",
         wrongPlace: {
             title: "/close_application fonctionne uniquement dans un fil de candidature",
             body: "Ouvre le fil de candidature et lance la commande dedans.",
@@ -1417,6 +1426,8 @@ const en: Copy = {
         notDelivered:
             "The decision is in the thread. The applicant cannot receive DMs and will find it there.",
         dmOff: "The decision is in the thread. The clan switched decision DMs off in the message settings.",
+        dmUncertain:
+            "The decision is saved. DM delivery could not be confirmed. Check Discord before sending again.",
         wrongPlace: {
             title: "/close_application only works in an application thread",
             body: "Open the application thread and run the command there.",
@@ -1776,6 +1787,8 @@ const de: Copy = {
         notDelivered:
             "Die Entscheidung steht im Thread. Dem Bewerber kann keine DM geschickt werden, er findet sie dort.",
         dmOff: "Die Entscheidung steht im Thread. Der Clan hat Entscheidungs-DMs in den Nachrichteneinstellungen ausgeschaltet.",
+        dmUncertain:
+            "Die Entscheidung ist gespeichert. Die DM-Zustellung konnte nicht bestätigt werden. Prüfe Discord vor einem erneuten Versand.",
         wrongPlace: {
             title: "/close_application funktioniert nur im Bewerbungsthread",
             body: "Öffne den Bewerbungsthread und starte den Befehl dort.",

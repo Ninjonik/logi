@@ -10,8 +10,13 @@
  * colour, never English (M3-06).
  */
 
+import {
+    MessageFlags,
+    type ChatInputCommandInteraction,
+    type Client,
+    type ThreadChannel,
+} from "discord.js"
 import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
-import { MessageFlags, type ChatInputCommandInteraction } from "discord.js"
 
 import {
     closedTicketThreadName,
@@ -25,6 +30,11 @@ import {
     ticketCloseUnverifiableCard,
     type TicketThreadStep,
 } from "../../../src/domain/discord-tickets/ticket-views"
+import {
+    MembershipEffects,
+    type MembershipEffectPort,
+    type MembershipOperation,
+} from "../runtime/membership-effects"
 import {
     replyError,
     replyPrivately,
@@ -40,6 +50,7 @@ import type { BotErrorSource } from "../../../src/domain/discord-messages/bot-er
 import { getIntlLocaleForClanLanguage } from "../../../src/lib/clan-language/core"
 import { getTicketMessages } from "../../../src/lib/clan-language/tickets"
 import { messagePayload, type MessageKitOptions } from "../ui/message-kit"
+import { confirmedDmRefusal } from "../runtime/durable-delivery"
 import { dmSettingsUrl } from "../events/match-context"
 import { checkCloseAuthority } from "./close-authority"
 import type { InteractionFeature } from "./registry"
@@ -57,12 +68,13 @@ export type TicketThreadContext = {
 
 /** What `/close_ticket` reads and writes; Convex in production, fakes in tests. */
 export type CloseTicketPorts = {
+    effects(operation: MembershipOperation): MembershipEffectPort
     thread(threadId: string): Promise<TicketThreadContext | null>
     close(input: {
         threadId: string
         closedByUserId: string
         closeReason?: string
-    }): Promise<void>
+    }): Promise<boolean | void>
     /** The account page a DM's footer opens ("Nastavit zprávy"). */
     settingsUrl(language: string): string | undefined
     /**
@@ -164,38 +176,144 @@ export async function handleCloseTicketCommand(
 
     const reason = interaction.options.getString("reason")?.trim() || undefined
     const closedAt = (ports.now ?? Date.now)()
-    await ports.close({
+    const closeResult = await ports.close({
         threadId: interaction.channelId,
         closedByUserId: interaction.user.id,
         closeReason: reason,
     })
+    // A concurrent closer may have committed while authority was checked.
+    // It must not duplicate the close card, DM, or archive operations.
+    if (closeResult === false) {
+        await replyError(
+            interaction,
+            ticketAlreadyClosedCard(copy, ticket.ticketNumber),
+            options
+        )
+        return
+    }
+    const effects = ports.effects({
+        expectedKeys: [
+            "close-card",
+            "rename",
+            "lock",
+            "archive",
+            ...(isMessageEnabled(context.config, "ticketCloseDm")
+                ? [`dm:${ticket.creatorId}`]
+                : []),
+        ],
+        key: `ticket-close:${interaction.channelId}`,
+        kind: "ticket-close",
+        guildId: interaction.guildId,
+        subjectId: interaction.channelId,
+        actorId: interaction.user.id,
+    })
 
-    const threadUrl = `https://discord.com/channels/${interaction.guildId}/${interaction.channelId}`
+    const result = await deliverTicketClose({
+        context,
+        channel,
+        threadId: interaction.channelId,
+        guildId: interaction.guildId,
+        client: interaction.client,
+        actorId: interaction.user.id,
+        actorName: displayName(interaction),
+        clan: await clanName(interaction),
+        reason,
+        closedAt,
+        effects,
+        settingsUrl: ports.settingsUrl,
+        reporter: ports.reporter,
+    })
+    await replyPrivately(
+        interaction,
+        ticketClosedReplyView({
+            copy,
+            ticketNumber: ticket.ticketNumber,
+            dmDelivered: result.dmDelivered,
+            cardPosted: result.cardPosted,
+            threadFailed: result.threadFailed,
+        }),
+        options
+    )
+    await Promise.all(result.reports)
+    await effects.complete()
+}
+
+/** Shared by the command and restart recovery after the close transaction. */
+export async function deliverTicketClose(input: {
+    context: TicketThreadContext
+    channel: ThreadChannel
+    threadId: string
+    guildId: string
+    client: Client
+    actorId: string
+    actorName: string
+    clan: string
+    reason?: string
+    closedAt: number
+    effects: MembershipEffectPort
+    settingsUrl(language: string): string | undefined
+    reporter?: ErrorsChannelReporter
+}) {
+    const {
+        context,
+        channel,
+        threadId,
+        guildId,
+        client,
+        actorId,
+        actorName,
+        clan,
+        reason,
+        closedAt,
+        effects,
+    } = input
+    const { ticket } = context
+    const language = context.config.defaultLanguage
+    const copy = getTicketMessages(language)
+    const options = { language, style: context.config.messageStyle }
+
+    const threadUrl = `https://discord.com/channels/${guildId}/${threadId}`
+    const skipped = !isMessageEnabled(context.config, "ticketCloseDm") ? await effects.skip(`dm:${ticket.creatorId}`) : null
     // The "DM o uzavření ticketu" switch on the messages page (N1-42).
     const dmDelivered = !isMessageEnabled(context.config, "ticketCloseDm")
-        ? ("off" as const)
-        : await interaction.client.users
+        ? (skipped?.state === "uncertain" ? "uncertain" as const : skipped?.state === "confirmed" ? true : skipped?.state === "refused" ? false : "off" as const)
+        : await client.users
               .fetch(ticket.creatorId)
               .then(async (author) => {
-                  await author.send(
-                      messagePayload(
-                          ticketClosedDmView({
-                              copy,
-                              clanName: await clanName(interaction),
-                              ticketNumber: ticket.ticketNumber,
-                              category: ticket.categoryLabel,
-                              closerName: displayName(interaction),
-                              reason,
-                              threadUrl,
-                              settingsUrl: ports.settingsUrl(language),
-                          }),
-                          options
-                      )
+                  const receipt = await effects.effect(
+                      `dm:${ticket.creatorId}`,
+                      "send",
+                      async () =>
+                          author.send(
+                              messagePayload(
+                                  ticketClosedDmView({
+                                      copy,
+                                      clanName: clan,
+                                      ticketNumber: ticket.ticketNumber,
+                                      category: ticket.categoryLabel,
+                                      closerName: actorName,
+                                      reason,
+                                      threadUrl,
+                                      settingsUrl: input.settingsUrl(language),
+                                  }),
+                                  options
+                              )
+                          ),
+                      true
                   )
-                  return true
+                  return receipt.state === "skipped" ? "off" as const : receipt.state === "confirmed"
               })
               // Closed DMs are reported to the closer, not to the errors channel (L2-63).
-              .catch(() => false)
+              .catch((error) => {
+                  logWarn(
+                      "membership-recovery",
+                      "Ticket close DM remains unconfirmed",
+                      { guildId, threadId, error }
+                  )
+                  return confirmedDmRefusal(error)
+                      ? false
+                      : ("uncertain" as const)
+              })
 
     // What an admin can fix goes to the errors channel (W9), after the reply.
     const reports: Promise<void>[] = []
@@ -203,41 +321,43 @@ export async function handleCloseTicketCommand(
         reports.push(
             reportToErrorsChannel(
                 {
-                    client: interaction.client,
-                    guildId: interaction.guildId,
+                    client,
+                    guildId,
                     error,
                     source,
                     channelId: ticket.parentChannelId,
                     categoryLabel: ticket.categoryLabel,
                     number: ticket.ticketNumber,
-                    userId: interaction.user.id,
+                    userId: actorId,
                 },
-                ports.reporter
+                input.reporter
             )
         )
 
     const locale = getIntlLocaleForClanLanguage(language)
     const timeZone = context.config.timezone || "UTC"
-    const cardPosted = await channel
-        .send(
-            messagePayload(
-                ticketClosedView({
-                    copy,
-                    ticketNumber: ticket.ticketNumber,
-                    closerId: interaction.user.id,
-                    closedAt,
-                    reason,
-                    locale,
-                    timeZone,
-                }),
-                options
+    const cardPosted = await effects
+        .effect("close-card", "send", () =>
+            channel.send(
+                messagePayload(
+                    ticketClosedView({
+                        copy,
+                        ticketNumber: ticket.ticketNumber,
+                        closerId: actorId,
+                        closedAt,
+                        reason,
+                        locale,
+                        timeZone,
+                    }),
+                    options
+                )
             )
         )
         .then(() => true)
         .catch((error) => {
             logWarn("interaction", "Failed to post the ticket close card", {
-                guildId: interaction.guildId,
-                threadId: interaction.channelId,
+                guildId,
+                threadId,
                 error,
             })
             report("ticketCloseCard", error)
@@ -251,7 +371,26 @@ export async function handleCloseTicketCommand(
         run: () => Promise<unknown>
     ) => {
         try {
-            await run()
+            await effects.effect(
+                name,
+                "reconcile",
+                async () => {
+                    await run()
+                },
+                false,
+                {
+                    threadId,
+                    action: name,
+                    value:
+                        name === "rename"
+                            ? closedTicketThreadName(
+                                  copy,
+                                  ticket.categoryLabel,
+                                  ticket.ticketNumber
+                              )
+                            : undefined,
+                }
+            )
         } catch (error) {
             threadFailed.push(name)
             threadError ??= error
@@ -272,18 +411,7 @@ export async function handleCloseTicketCommand(
     // One entry for the thread: the steps share the permission they need.
     if (threadFailed.length) report("ticketCloseThread", threadError)
 
-    await replyPrivately(
-        interaction,
-        ticketClosedReplyView({
-            copy,
-            ticketNumber: ticket.ticketNumber,
-            dmDelivered,
-            cardPosted,
-            threadFailed,
-        }),
-        options
-    )
-    await Promise.all(reports)
+    return { dmDelivered, cardPosted, threadFailed, reports }
 }
 
 /** Routes `/close_ticket`. */
@@ -302,16 +430,19 @@ export function closeTicketInteractions(
 
 /** `/close_ticket` wired to Convex. */
 export const closeTicketFeature = closeTicketInteractions(() => ({
+    effects: (operation) => new MembershipEffects(operation),
     thread: async (threadId) =>
         (await convex.query(references.getTicketThreadContext, {
             secret: env.internalSecret,
             threadId,
         })) as TicketThreadContext | null,
     close: async (input) => {
-        await convex.mutation(references.closeTicketThread, {
+        const result = (await convex.mutation(references.closeTicketThread, {
             secret: env.internalSecret,
+            durableEffects: true,
             ...input,
-        })
+        })) as { ok: boolean }
+        return result.ok
     },
     settingsUrl: dmSettingsUrl,
 }))

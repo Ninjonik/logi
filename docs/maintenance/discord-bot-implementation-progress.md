@@ -5,6 +5,42 @@
 Only this checkpoint and its remaining-work list are current; older sections are
 historical snapshots and can contain TODOs that have since been implemented.
 
+## Application/ticket recovery continuation (2026-11-13)
+
+Upgraded application-decision workers receive a claim token and must present it
+when releasing or closing the application. A stale or legacy attempt cannot
+clear a newer fenced lease or close a later decision. Submission workers likewise
+carry a claim token through release and application-record creation, so a stale
+worker cannot release or consume a later claim's draft. Legacy decision claims
+remain releasable for a backend-first rollout.
+
+Membership decisions now use one transaction for assignment changes, cross-game
+movement, dependent projections/rosters, managed-role intent, closure and recovery
+intent. Submission membership provisioning remembers its assignment transactionally.
+Ticket records are idempotent by their accepted thread ID, and concurrent close
+losers do not repeat Discord effects.
+
+The membership/ticket journal covers creates, cards, invitations, confirmation and
+decision DMs, transcript remembrance and thread changes. Restart workers use
+renewable fenced leases, indexed bounded batches and five-attempt backoff. They
+reuse confirmed effects, continue untouched steps, and preserve uncertain sends
+and creates for evidence-based operator reconciliation. Record-response failures
+retain accepted resources rather than deleting a possibly committed thread.
+Workflows cannot complete while expected steps are missing. Current invitation
+policy and bot ownership are rechecked during repair; later lifecycle transitions
+supersede opening work. Legacy bot ticket closers do not create replayable intents.
+
+The operator CLI documented in the bot README exposes pending/review operations,
+effect receipts, reconciliation audits, pre-upgrade tickets/applications and
+manual/roster/automatic reminder receipts. Resume preserves uncertain receipts;
+resolutions require evidence and cannot override an active owner. Unresolved send
+evidence is protected from retention cleanup. DM uncertainty has explicit copy in
+all five supported bot languages. Scheduled retry-write failures are now logged.
+
+Live test-guild crash testing and host shutdown-grace verification were skipped at
+the user's request. Local validation and backend rollout results will be recorded
+after the final checks; no bot host restart is performed by a Convex deploy.
+
 Implemented in this focused pass:
 
 - Scheduled completion atomically writes `discordScheduledDispatches` before
@@ -34,12 +70,15 @@ Implemented in this focused pass:
 
 ### Remaining release work
 
-1. Application/ticket atomic membership decisions, provisioning and close recovery.
-2. Secondary Discord effect reconciliation, including legacy nested handlers that
+1. Verify and deploy this application/ticket recovery continuation, then replace
+   the bot runtime without overlapping old and new workers.
+2. Broader secondary Discord effect reconciliation outside applications/tickets,
+   including legacy nested handlers that
    report some failures without propagating them. The durable acknowledgment proves
    the queued workflow returned; it does not certify every inherited effect family.
-3. Operator reconciliation/UI for uncertain sends and pre-upgrade interrupted runs.
-   Exactly-once delivery across a lost Discord confirmation is not claimed.
+3. The operator CLI covers this recovery scope. A dashboard reconciliation UI and
+   broader effect-family adoption remain separate work. Exactly-once delivery
+   across a lost Discord confirmation is not claimed.
 4. Live Discord/backend crash tests, bot host termination grace of at least 130
    seconds, and the bot runtime rollout. Offline tests and a backend deploy do not
    substitute for those operational checks.
@@ -240,3 +279,16 @@ Prioritized continuation:
 Use D00–D12 in the authoritative plan for the full acceptance criteria; the list above identifies exact current gaps rather than replacing those requirements. No D package is claimed fully complete.
 
 Final checkpoint: the full isolated source+bot suite passed **4,026 tests, zero failures/skips**, in 68.98 seconds. `npm.cmd run typecheck -- --incremental false` passed after correcting the backend admission callback's Promise return type. Changed TypeScript files were formatted with Prettier; `git diff --check` passed. Tests used the temporary offline loader described in the audit (dotenv disabled, synthetic credentials). No deploy was performed because the maintainer explicitly ended this implementation run with remaining work; the required final deployment remains outstanding together with the correctness/rollout gates above.
+## Historical decision fencing checkpoint (superseded by the continuation above)
+
+The local candidate fences release of upgraded application decision claims, so
+an expired attempt or a legacy release cannot clear a newer fenced lease. The
+upgraded bot fails closed if the backend does not return a claim token. Existing
+legacy claims remain releasable. Deploy the compatible backend before starting
+the upgraded bot, and drain old bot processes before starting the new worker.
+
+This is **not** complete decision crash recovery: assignment writes and closure
+are still separate and are not fenced by this token, and Discord effects still
+need durable receipts and reconciliation. Do not treat this change as a release
+gate clearance. Live crash tests and host shutdown-grace verification were skipped
+at the user's request. The new backend changes have not yet been deployed.

@@ -230,3 +230,16 @@ before connecting production roles.
     Review permission and channel choices with a server owner before making
     broad changes.
 </Callout>
+## Interrupted ticket work
+
+Closing a ticket is saved before its Discord effects run. If two staff members
+close it at once, the second close does not repeat the DM or close card. After a
+restart, confirmed sends are skipped while unfinished thread changes can retry.
+
+If Discord may have accepted a thread or message without confirming it, Logi
+retains an uncertain operation for the operator to check. It preserves a remembered
+thread after a failed database response instead of deleting a ticket that may
+already be saved. Check the existing thread and ask the operator to reconcile the
+operation before opening a replacement or deliberately sending another message.
+Older work without receipts requires manual inspection; the upgrade does not
+send historical confirmation DMs.

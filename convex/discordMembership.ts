@@ -7,6 +7,7 @@ import {
     normalizeConfigDoc,
     normalizeDoc,
 } from "./discord_shared"
+import { rememberMembershipOperation } from "./discordMembershipEffects"
 import { mutation, query } from "./_generated/server"
 import { getGuildByDiscordId } from "./identity"
 import { v } from "convex/values"
@@ -42,6 +43,29 @@ export const createTicketThread = mutation({
             (item) => item.id === args.categoryId
         )
         if (!category) throw new Error("Ticket category not found.")
+        const existing = await ctx.db
+            .query("ticketThreads")
+            .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+            .unique()
+        if (existing) {
+            if (
+                existing.guildId !== args.guildId ||
+                existing.creatorId !== args.creatorId ||
+                existing.categoryId !== args.categoryId
+            )
+                throw new Error("Ticket scope mismatch.")
+            return {
+                ticket: {
+                    id: String(existing._id),
+                    threadId: existing.threadId,
+                    ticketNumber: existing.ticketNumber,
+                    categoryId: existing.categoryId,
+                    categoryLabel: existing.categoryLabel,
+                },
+                category,
+                config: normalizeConfigDoc(config),
+            }
+        }
         const nextTicketNumber = (config.ticketCounter ?? 0) + 1
         const now = new Date().toISOString()
         await ctx.db.patch(config._id, { ticketCounter: nextTicketNumber })
@@ -100,6 +124,7 @@ export const createMembershipApplicationThread = mutation({
         ),
         // The application form in windows (L6): the draft is consumed here.
         draftId: v.optional(v.string()),
+        submissionClaimToken: v.optional(v.string()),
         source: v.optional(v.union(v.literal("discord"), v.literal("web"))),
         applicantName: v.optional(v.string()),
         games: v.optional(v.array(gameIdValidator)),
@@ -122,6 +147,65 @@ export const createMembershipApplicationThread = mutation({
                     (args.gameId ?? "hell_let_loose")
         )
         if (!category) throw new Error("Application category not found.")
+        const existing = await ctx.db
+            .query("membershipApplicationThreads")
+            .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
+            .unique()
+        if (existing) {
+            if (
+                existing.guildId !== args.guildId ||
+                existing.creatorId !== args.creatorId ||
+                existing.categoryId !== args.categoryId
+            )
+                throw new Error("Application scope mismatch.")
+            return {
+                application: {
+                    id: String(existing._id),
+                    threadId: existing.threadId,
+                    applicationNumber: existing.applicationNumber,
+                    categoryLabel: existing.categoryLabel,
+                },
+                category,
+                config: normalizeConfigDoc(effectiveConfig),
+            }
+        }
+        const draftId = args.draftId
+            ? ctx.db.normalizeId(
+                  "membershipApplicationFormDrafts",
+                  args.draftId
+              )
+            : null
+        const draft = draftId ? await ctx.db.get(draftId) : null
+        if (
+            args.submissionClaimToken &&
+            (!draft ||
+                draft.submissionStatus !== "claimed" ||
+                (draft.claimedUntil ?? 0) <= Date.now())
+        )
+            throw new Error("Application submission ownership lost.")
+        if (
+            draft &&
+            (draft.guildId !== args.guildId ||
+                draft.creatorId !== args.creatorId ||
+                draft.submissionClaimToken !== args.submissionClaimToken)
+        )
+            throw new Error("Application submission ownership lost.")
+        if (
+            draft?.provisionedAssignmentId &&
+            draft.provisionedAssignmentId !== args.assignmentId
+        )
+            throw new Error("Application provisioned membership mismatch.")
+        if (args.assignmentId) {
+            const assignment = await ctx.db.get(args.assignmentId)
+            if (
+                !assignment ||
+                assignment.serverId !== args.guildId ||
+                assignment.userId !== args.creatorId ||
+                (assignment.gameId ?? "hell_let_loose") !==
+                    (args.gameId ?? "hell_let_loose")
+            )
+                throw new Error("Application membership scope mismatch.")
+        }
         const nextApplicationNumber =
             (effectiveConfig.membershipApplicationCounter ?? 0) + 1
         const now = new Date().toISOString()
@@ -155,13 +239,6 @@ export const createMembershipApplicationThread = mutation({
             }
         )
         // The thread exists now; the applicant's draft is done (L6-B04).
-        const draftId = args.draftId
-            ? ctx.db.normalizeId(
-                  "membershipApplicationFormDrafts",
-                  args.draftId
-              )
-            : null
-        const draft = draftId ? await ctx.db.get(draftId) : null
         if (
             draft &&
             draft.guildId === args.guildId &&
@@ -300,6 +377,7 @@ export const closeTicketThread = mutation({
         threadId: v.string(),
         closedByUserId: v.string(),
         closeReason: v.optional(v.string()),
+        durableEffects: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -308,6 +386,15 @@ export const closeTicketThread = mutation({
             .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
             .unique()
         if (!ticket) throw new Error("Ticket not found.")
+        if (ticket.status === "closed") return { ok: false }
+        if (args.durableEffects)
+            await rememberMembershipOperation(ctx, {
+                key: `ticket-close:${ticket.threadId}`,
+                kind: "ticket-close",
+                guildId: ticket.guildId,
+                subjectId: ticket.threadId,
+                actorId: args.closedByUserId,
+            })
         const now = new Date().toISOString()
         await ctx.db.patch(ticket._id, {
             status: "closed",
@@ -336,6 +423,7 @@ export const closeMembershipApplicationThread = mutation({
         threadId: v.string(),
         closedByUserId: v.string(),
         closeReason: v.optional(v.string()),
+        decisionClaimToken: v.optional(v.string()),
         closeOutcome: v.union(
             v.literal("denied"),
             v.literal("pending"),
@@ -353,6 +441,11 @@ export const closeMembershipApplicationThread = mutation({
             .unique()
         if (!application) throw new Error("Application not found.")
         if (application.status === "closed") return { ok: false }
+        if (
+            application.decisionClaimToken !== args.decisionClaimToken ||
+            (application.decisionLeaseUntil ?? 0) <= Date.now()
+        )
+            throw new Error("Application decision ownership lost.")
         const now = new Date().toISOString()
         await ctx.db.patch(application._id, {
             status: "closed",
@@ -361,6 +454,7 @@ export const closeMembershipApplicationThread = mutation({
             closedByUserId: args.closedByUserId,
             closeReason: args.closeReason?.trim() || undefined,
             decisionLeaseUntil: undefined,
+            decisionClaimToken: undefined,
             updatedAt: now,
         })
         return { ok: true }
