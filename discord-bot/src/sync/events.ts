@@ -267,6 +267,7 @@ export async function syncPayloadEvents(
                 lastRosterUpdatedAt: roster?.updatedAt,
                 lastConfigUpdatedAt: payload.config.updatedAt,
                 lastCalendarSyncVersion: getCalendarSyncVersion(event),
+                resourceProtocol: 1,
                 lastSyncedAt: new Date().toISOString(),
             })
             continue
@@ -634,6 +635,7 @@ async function syncEvent(
                     lastRosterUpdatedAt: state?.lastRosterUpdatedAt,
                     lastConfigUpdatedAt: state?.lastConfigUpdatedAt,
                     lastCalendarSyncVersion: state?.lastCalendarSyncVersion,
+                    resourceProtocol: 1,
                     lastSyncedAt: new Date().toISOString(),
                     secret: env.internalSecret,
                     eventId: event.id as never,
@@ -719,6 +721,7 @@ async function syncEvent(
                     lastConfigUpdatedAt: payload.config.updatedAt,
                     lastCalendarSyncVersion: getCalendarSyncVersion(event),
                     squadVoiceChannelIds,
+                    resourceProtocol: 1,
                     lastSyncedAt: new Date().toISOString(),
                 })
             }
@@ -885,6 +888,7 @@ async function syncEvent(
         lastConfigUpdatedAt: payload.config.updatedAt,
         lastCalendarSyncVersion: getCalendarSyncVersion(event),
         squadVoiceChannelIds,
+        resourceProtocol: 1,
         lastSyncedAt: new Date().toISOString(),
     })
     logInfo("event-sync", "Persisted event sync state", {

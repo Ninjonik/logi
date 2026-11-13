@@ -216,6 +216,12 @@ test("member repair rechecks current support-role eligibility before adding anyo
             }),
         },
     } as unknown as Client
+    t.mock.method(ConvexReactClient.prototype, "watchQuery", () => ({
+        localQueryResult: () => ({ key: "repair", dueAt: 0 }),
+        onUpdate: () => () => {},
+    }))
+    client.on = (() => client) as typeof client.on
+    client.off = (() => client) as typeof client.off
     const stop = startMembershipEffectRecovery(client)
     for (let i = 0; i < 40 && !outcomes.length; i++) await Promise.resolve()
     await stop()

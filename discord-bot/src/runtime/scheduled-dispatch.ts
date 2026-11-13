@@ -1,7 +1,7 @@
+import { startConvexWorkSignal } from "./convex-work-signal"
 import { makeFunctionReference } from "convex/server"
 import { DurableDelivery } from "./durable-delivery"
 import { withRequestLease } from "./request-lease"
-import { startOwnedInterval } from "./task-owner"
 import { convex, references } from "../convex"
 import { env } from "../environment"
 import { logWarn } from "../log"
@@ -30,7 +30,8 @@ export function startScheduledDispatch(
             { secret: env.internalSecret, ...args }
         )
     let stopped = false
-    const stop = startOwnedInterval(
+    const stop = startConvexWorkSignal(
+        "dispatch",
         async () => {
             for (let i = 0; i < 25 && !stopped; i++) {
                 const row = (await call("claim")) as ScheduledDispatch | null
@@ -73,9 +74,8 @@ export function startScheduledDispatch(
                 }
             }
         },
-        15_000,
         (error) =>
-            logWarn("scheduled-dispatch", "Dispatch poll failed", { error })
+            logWarn("scheduled-dispatch", "Dispatch wakeup failed", { error })
     )
     return () => {
         stopped = true

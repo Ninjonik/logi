@@ -1,5 +1,5 @@
 import type { EventDiscordDeletion } from "../../../src/domain/events/deletion"
-import { startOwnedInterval } from "../runtime/task-owner"
+import { startConvexWorkSignal } from "../runtime/convex-work-signal"
 import { Routes, type Client } from "discord.js"
 import { convex, references } from "../convex"
 import { env } from "../environment"
@@ -40,6 +40,7 @@ export function startEventDeletionWorker(
     afterCleanup?: (guildId: string) => void
 ) {
     let running = false
+    let stopped = false
     const tick = async () => {
         if (running) return
         running = true
@@ -48,6 +49,7 @@ export function startEventDeletionWorker(
                 secret: env.internalSecret,
             })) as string[]
             for (const requestId of ids) {
+                if (stopped) break
                 const claimed = (await convex.mutation(
                     references.claimEventDeletion,
                     { secret: env.internalSecret, requestId }
@@ -85,7 +87,15 @@ export function startEventDeletionWorker(
             running = false
         }
     }
-    return startOwnedInterval(tick, 30_000, (error) =>
-        console.warn("[sync/event-deletion.ts] Worker pass failed", error)
+    const stop = startConvexWorkSignal(
+        "deletion",
+        tick,
+        (error) =>
+            console.warn("[sync/event-deletion.ts] Worker pass failed", error),
+        client
     )
+    return () => {
+        stopped = true
+        return stop()
+    }
 }

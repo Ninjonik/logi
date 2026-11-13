@@ -1,3 +1,4 @@
+import { startConvexWorkSignal } from "./convex-work-signal"
 import { confirmedDmRefusal } from "./durable-delivery"
 import { makeFunctionReference } from "convex/server"
 import { startOwnedInterval } from "./task-owner"
@@ -205,7 +206,8 @@ export function startMembershipEffectRecovery(client: Client) {
             { secret: env.internalSecret, ...args }
         )
     let stopped = false
-    const stop = startOwnedInterval(
+    const stop = startConvexWorkSignal(
+        "membership-effect",
         async () => {
             // Sequential admission precedes the claim; no overlapping repair passes.
             for (let i = 0; i < 10 && !stopped; i++) {
@@ -328,9 +330,9 @@ export function startMembershipEffectRecovery(client: Client) {
                     await call("complete", { operationId: row.operationId })
             }
         },
-        60_000,
         (error) =>
-            logWarn("membership-recovery", "Recovery pass failed", { error })
+            logWarn("membership-recovery", "Recovery pass failed", { error }),
+        client
     )
     return () => {
         stopped = true

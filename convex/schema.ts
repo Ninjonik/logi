@@ -694,6 +694,32 @@ export default defineSchema({
     discordPanelStatus,
     discordPanelServers,
     discordBotHeartbeats,
+    discordEventResources: defineTable({
+        eventId: v.id("events"),
+        guildId: v.string(),
+        key: v.string(),
+        resourceId: v.union(v.string(), v.null()),
+        state: v.union(
+            v.literal("ready"),
+            v.literal("started"),
+            v.literal("bound"),
+            v.literal("uncertain"),
+            v.literal("rejected")
+        ),
+        fence: v.number(),
+        leaseUntil: v.number(),
+        retryAt: v.number(),
+        attempts: v.number(),
+        updatedAt: v.number(),
+    }).index("eventId_key", ["eventId", "key"]),
+    discordEventResourceAudits: defineTable({
+        resourceId: v.id("discordEventResources"),
+        operator: v.string(),
+        evidence: v.string(),
+        action: v.string(),
+        discordId: v.optional(v.string()),
+        createdAt: v.number(),
+    }).index("resourceId", ["resourceId"]),
     peopleIntegrationState: defineTable({
         key: v.literal("global"),
         generation: v.string(),
@@ -1612,6 +1638,21 @@ export default defineSchema({
         .index("guildId_userId", ["guildId", "userId"])
         .index("guildId_updatedAt", ["guildId", "updatedAt"]),
     matchRecaps: defineTable({
+        deliveryState: v.optional(
+            v.union(
+                v.literal("ready"),
+                v.literal("claimed"),
+                v.literal("started"),
+                v.literal("confirmed"),
+                v.literal("refused"),
+                v.literal("uncertain"),
+                v.literal("failed")
+            )
+        ),
+        deliveryDueAt: v.optional(v.number()),
+        deliveryAttempts: v.optional(v.number()),
+        deliveryToken: v.optional(v.string()),
+        deliveryMessageId: v.optional(v.string()),
         sourceEventId: v.optional(v.id("events")),
         resultVersion: v.optional(v.number()),
         eventId: v.id("events"),
@@ -1633,8 +1674,26 @@ export default defineSchema({
         sentAt: v.optional(v.string()),
     })
         .index("eventId", ["eventId"])
+        .index("deliveryState_deliveryDueAt", [
+            "deliveryState",
+            "deliveryDueAt",
+        ])
+        .index("eventId_deliveryState_deliveryDueAt", [
+            "eventId",
+            "deliveryState",
+            "deliveryDueAt",
+        ])
         .index("eventId_userId", ["eventId", "userId"])
         .index("sourceEventId_userId", ["sourceEventId", "userId"]),
+    matchRecapDeliveryAudits: defineTable({
+        recapId: v.id("matchRecaps"),
+        guildId: v.string(),
+        operator: v.string(),
+        evidence: v.string(),
+        action: v.union(v.literal("confirm"), v.literal("proven_not_sent")),
+        at: v.number(),
+        messageId: v.optional(v.string()),
+    }).index("recapId", ["recapId"]),
     // The match announcement card the bot keeps in the announcement channel
     // (board L1): whether its first post pinged the roles, so a re-created
     // card never pings again, and the card layout it was last drawn with, so
@@ -1656,6 +1715,7 @@ export default defineSchema({
     discordEventSyncs: defineTable({
         eventId: v.id("events"),
         guildId: v.string(),
+        resourceProtocol: v.optional(v.literal(1)),
         announcementChannelId: v.optional(v.string()),
         announcementMessageId: v.optional(v.string()),
         rosterUpdateChannelId: v.optional(v.string()),
@@ -2424,6 +2484,18 @@ export default defineSchema({
         notificationNextAttemptAt: v.union(v.number(), v.null()),
         notificationLeaseUntil: v.union(v.number(), v.null()),
         notificationSentAt: v.union(v.string(), v.null()),
+        notificationClaimToken: v.optional(v.string()),
+        notificationDeliveryState: v.optional(
+            v.union(
+                v.literal("ready"),
+                v.literal("started"),
+                v.literal("confirmed"),
+                v.literal("refused"),
+                v.literal("uncertain")
+            )
+        ),
+        notificationMessageId: v.optional(v.string()),
+        notificationRecipientId: v.optional(v.string()),
         createdAt: v.string(),
         updatedAt: v.string(),
     })
@@ -2436,6 +2508,15 @@ export default defineSchema({
             "notificationStatus",
             "notificationNextAttemptAt",
         ]),
+    teamRequestDeliveryAudits: defineTable({
+        requestId: v.id("teamRequests"),
+        guildId: v.string(),
+        operator: v.string(),
+        evidence: v.string(),
+        action: v.union(v.literal("confirm"), v.literal("proven_not_sent")),
+        at: v.number(),
+        messageId: v.optional(v.string()),
+    }).index("requestId", ["requestId"]),
     imageAssets: defineTable({
         guildId: v.string(),
         kind: imageAssetKind,

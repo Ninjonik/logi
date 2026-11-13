@@ -17,6 +17,7 @@ import {
 } from "./membership-effects"
 import { resumeApplicationDecision } from "../interactions/membership-decision"
 import { convexTicketPorts, provisionTicket } from "../interactions/tickets"
+import { startConvexWorkSignal } from "./convex-work-signal"
 import { dmSettingsUrl } from "../events/match-context"
 import { makeFunctionReference } from "convex/server"
 import { ChannelType, type Client } from "discord.js"
@@ -283,7 +284,8 @@ export function startMembershipWorkflowRecovery(client: Client) {
             { secret: env.internalSecret, ...args }
         )
     let stopped = false
-    const stop = startOwnedInterval(
+    const stop = startConvexWorkSignal(
+        "membership-workflow",
         async () => {
             for (let i = 0; i < 5 && !stopped; i++) {
                 const row = (await call(
@@ -330,11 +332,11 @@ export function startMembershipWorkflowRecovery(client: Client) {
                 })
             }
         },
-        60_000,
         (error) =>
             logWarn("membership-recovery", "Workflow recovery pass failed", {
                 error,
-            })
+            }),
+        client
     )
     return () => {
         stopped = true

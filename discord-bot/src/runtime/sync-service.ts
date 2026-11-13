@@ -12,7 +12,9 @@ import type { EventSyncContext, EventSyncIndex, SyncPayload } from "../types"
 import { processSignupReminders } from "../sync/signup-reminders"
 import { isHistoricalConcludedEvent } from "../sync/relevance"
 import { processMatchRecaps } from "../sync/match-recaps"
+import { makeFunctionReference } from "convex/server"
 import { getCalendarSyncVersion } from "../sync/work"
+import type { CalendarSyncPayload } from "../types"
 import { logError, logInfo, logWarn } from "../log"
 import { syncCalendarPanel } from "../sync/panels"
 import { convex, references } from "../convex"
@@ -90,6 +92,7 @@ export class DiscordSyncService {
             references.listEventSyncIndex,
             {
                 secret: env.internalSecret,
+                compact: true,
             }
         )) as EventSyncIndex
         if (this.tasks.stopped) return
@@ -101,6 +104,7 @@ export class DiscordSyncService {
 
         const watch = convex.watchQuery(references.listEventSyncIndex, {
             secret: env.internalSecret,
+            compact: true,
         })
         this.eventIndexUnsubscribe = watch.onUpdate(() => {
             try {
@@ -635,10 +639,39 @@ export class DiscordSyncService {
 
         const eventIds = this.eventIdsByGuild.get(guildId) ?? []
         const contexts = await mapConcurrent(eventIds, 4, (eventId) =>
-            this.loadEventSyncContext(eventId)
+            this.loadCalendarEventContext(guildId, eventId)
         )
-        const payload = buildGuildPayload(runtime, contexts)
+        const payload: CalendarSyncPayload = {
+            guild: runtime.guild,
+            config: runtime.config,
+            calendarItems: runtime.calendarItems,
+            events: contexts.flatMap((context) =>
+                context ? [context.event] : []
+            ),
+            syncStates: contexts.flatMap((context) =>
+                context?.syncState ? [context.syncState] : []
+            ),
+        }
         await syncCalendarPanel(this.client, payload)
+    }
+
+    private async loadCalendarEventContext(
+        guildId: string,
+        eventId: string
+    ): Promise<{
+        event: CalendarSyncPayload["events"][number]
+        syncState: CalendarSyncPayload["syncStates"][number] | null
+    } | null> {
+        return convex.query(
+            makeFunctionReference<"query">(
+                "discordSync:getCalendarEventContext"
+            ),
+            {
+                secret: env.internalSecret,
+                guildId,
+                eventId,
+            }
+        )
     }
 }
 

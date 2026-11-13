@@ -1,7 +1,11 @@
+import { resourceFixture } from "../runtime/event-resource.fixture"
 import { syncSignupThread } from "./signup-thread"
+import test, { beforeEach } from "node:test"
 import { ChannelType } from "discord.js"
 import assert from "node:assert/strict"
-import test from "node:test"
+beforeEach((t) => {
+    if ("mock" in t) resourceFixture(t)
+})
 
 test("replaces a public discussion and applies signups and explicit declines without enumerating members", async () => {
     const calls: string[] = []
@@ -127,5 +131,56 @@ for (const stored of [true, false]) {
             "private"
         )
         assert.deepEqual(renamed, ["Match"])
+    })
+}
+
+for (const ambiguous of [false, true]) {
+    test(`a discussion create ${ambiguous ? "with a lost response is withheld" : "with a saved receipt is recovered"} after restart`, async () => {
+        let creates = 0
+        const thread = {
+            id: "private",
+            name: "Match",
+            type: ChannelType.PrivateThread,
+            parentId: "channel",
+            invitable: false,
+            isThread: () => true,
+        }
+        const channel = {
+            id: "channel",
+            type: ChannelType.GuildText,
+            threads: {
+                fetchActive: async () => ({ threads: new Map() }),
+                create: async () => {
+                    creates++
+                    if (ambiguous) throw new Error("Lost response")
+                    return thread
+                },
+            },
+        }
+        const input = {
+            guild: {
+                id: "guild",
+                channels: {
+                    fetch: async (id: string) =>
+                        id === "channel" ? channel : thread,
+                },
+            } as never,
+            event: {
+                id: "event",
+                name: "Match",
+                createSignupThread: true,
+                participants: [],
+            } as never,
+            announcementMessageId: "message",
+            announcementChannelId: "channel",
+        }
+        if (ambiguous) {
+            await assert.rejects(syncSignupThread(input), /Lost response/)
+            await assert.rejects(syncSignupThread(input), /uncertain/)
+        } else {
+            assert.equal(await syncSignupThread(input), "private")
+            assert.equal(await syncSignupThread(input), "private")
+        }
+        assert.equal(creates, 1)
     })
 }

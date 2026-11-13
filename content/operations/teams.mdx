@@ -11,6 +11,12 @@ A team is a reusable profile for one game. The same team can enter several
 competitions for that game, with a separate registration and fixtures in each.
 You do not need a Discord server or Logi bot to own and manage a team.
 
+When the bot sends a catalogue-request decision by DM, an interrupted send may
+have reached Discord even if Logi could not save its confirmation. Such a
+notification can appear as failed while its delivery remains uncertain. The bot
+does not automatically send it again. An operator can inspect the receipt and
+reconcile it using concrete Discord evidence; the team decision itself stays saved.
+
 ## Create a team from a competition
 
 Open **Leagues**, select a competition and choose **Register team**. Select an

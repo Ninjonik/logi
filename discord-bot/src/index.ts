@@ -6,6 +6,7 @@ import { startManagedRoleWorker } from "./sync/managed-member-roles"
 import { stopPreparedModals } from "./interactions/acknowledgement"
 import { startEventDeletionWorker } from "./sync/event-deletion"
 import { startRequestRecovery } from "./runtime/request-lease"
+import { startMatchRecapRecovery } from "./sync/match-recaps"
 import { BotLifecycle } from "./runtime/lifecycle"
 import { shutdownConvexClient } from "./convex"
 import { Worker } from "node:worker_threads"
@@ -191,6 +192,9 @@ client.once(Events.ClientReady, (readyClient) => {
         })
     )
     void lifecycle.start("request recovery", () => startRequestRecovery())
+    void lifecycle.start("match recap recovery", () =>
+        startMatchRecapRecovery(client)
+    )
     void lifecycle.start("application and ticket effects", () =>
         startMembershipEffectRecovery(client)
     )

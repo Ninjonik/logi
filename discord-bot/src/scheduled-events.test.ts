@@ -1,6 +1,10 @@
 import { ChannelType, GuildScheduledEventStatus } from "discord.js"
+import { resourceFixture } from "./runtime/event-resource.fixture"
+import test, { beforeEach } from "node:test"
 import assert from "node:assert/strict"
-import test from "node:test"
+beforeEach((t) => {
+    if ("mock" in t) resourceFixture(t)
+})
 
 import {
     cancelScheduledDiscordEvent,
@@ -178,6 +182,122 @@ test("syncScheduledDiscordEvent creates and advances scheduled events when neede
         scheduledEventStatus: "active",
     })
     assert.deepEqual(edits, [{ status: GuildScheduledEventStatus.Active }])
+})
+
+for (const ambiguous of [false, true]) {
+    test(`scheduled event receipt ${ambiguous ? "withholds a lost create response" : "survives a crash before sync state is saved"}`, async () => {
+        let creates = 0
+        const scheduled = {
+            id: "scheduled",
+            status: GuildScheduledEventStatus.Scheduled,
+            edit: async () => scheduled,
+        }
+        const input = {
+            guild: {
+                id: "guild-1",
+                scheduledEvents: {
+                    fetch: async () => scheduled,
+                    create: async () => {
+                        creates++
+                        if (ambiguous) throw new Error("Lost response")
+                        return scheduled
+                    },
+                },
+            } as never,
+            event: baseEvent,
+            content: { name: "Operation Test", description: "Briefing" },
+            meetingChannel: {
+                id: "voice",
+                type: ChannelType.GuildVoice,
+            } as never,
+            desiredLifecycle: "scheduled" as const,
+        }
+        if (ambiguous) {
+            await assert.rejects(
+                syncScheduledDiscordEvent(input),
+                /Lost response/
+            )
+            await assert.rejects(syncScheduledDiscordEvent(input), /uncertain/)
+        } else {
+            assert.equal(
+                (await syncScheduledDiscordEvent(input)).scheduledEventId,
+                "scheduled"
+            )
+            assert.equal(
+                (await syncScheduledDiscordEvent(input)).scheduledEventId,
+                "scheduled"
+            )
+        }
+        assert.equal(creates, 1)
+    })
+}
+
+test("a recovered active event can be rescheduled and its recovered replacement receives fresh metadata", async () => {
+    let creates = 0
+    const objects = new Map<
+        string,
+        {
+            id: string
+            status: GuildScheduledEventStatus
+            edit(input: {
+                status?: GuildScheduledEventStatus
+                name?: string
+            }): Promise<unknown>
+        }
+    >()
+    const edits: Array<{ status?: GuildScheduledEventStatus; name?: string }> =
+        []
+    const guild = {
+        id: "guild-1",
+        scheduledEvents: {
+            fetch: async (input: string | { guildScheduledEvent: string }) =>
+                objects.get(
+                    typeof input === "string"
+                        ? input
+                        : input.guildScheduledEvent
+                ) ?? null,
+            create: async () => {
+                const object = {
+                    id: `scheduled-${++creates}`,
+                    status: GuildScheduledEventStatus.Scheduled,
+                    edit: async (input: {
+                        status?: GuildScheduledEventStatus
+                        name?: string
+                    }) => {
+                        edits.push(input)
+                        if (input.status) object.status = input.status
+                        return object
+                    },
+                }
+                objects.set(object.id, object)
+                return object
+            },
+        },
+    }
+    const input = {
+        guild: guild as never,
+        event: baseEvent,
+        content: { name: "Original", description: "Briefing" },
+        meetingChannel: { id: "voice", type: ChannelType.GuildVoice } as never,
+    }
+    await syncScheduledDiscordEvent({ ...input, desiredLifecycle: "active" })
+    const replaced = await syncScheduledDiscordEvent({
+        ...input,
+        desiredLifecycle: "scheduled",
+    })
+    assert.equal(replaced.scheduledEventId, "scheduled-2")
+    await syncScheduledDiscordEvent({
+        ...input,
+        content: { name: "Updated", description: "New briefing" },
+        desiredLifecycle: "scheduled",
+    })
+    assert.equal(creates, 2)
+    assert.ok(
+        edits.some(
+            (edit) => edit.status === GuildScheduledEventStatus.Completed
+        )
+    )
+    assert.equal(edits.at(-1)?.name, "Updated")
 })
 
 test("syncScheduledDiscordEvent edits existing scheduled events and tolerates edit failures", async () => {

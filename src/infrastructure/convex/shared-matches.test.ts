@@ -604,7 +604,7 @@ test("shared recaps use the player's clan delivery settings and one canonical st
             await invoke(recaps.listPendingForEvent, ctx, {
                 secret,
                 eventId: localId,
-                deliveryVersion: 2,
+                deliveryVersion: 3,
             })
         )[0].kills,
         10

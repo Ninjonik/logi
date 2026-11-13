@@ -20,5 +20,11 @@ test("operator CLI help runs in the repository module format without backend con
     assert.equal(result.status, 0, result.stderr)
     assert.match(result.stdout, /Commands: list, effects, audit/)
     assert.match(result.stdout, /resolve, resume/)
+    assert.match(result.stdout, /team-delivery, team-audit, team-resolve/)
+    assert.match(result.stdout, /recap-delivery, recap-audit, recap-resolve/)
+    assert.match(
+        result.stdout,
+        /event-resources, resource-audit, resource-resolve/
+    )
     assert.equal(result.stderr, "")
 })

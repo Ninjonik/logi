@@ -9,6 +9,12 @@ import { Callout, Steps, Tabs } from "nextra/components"
 
 This guide is for the person hosting Logi and the Discord server manager who configures a workspace. The bot is optional for browsing the public site, but it is required for Discord announcements, interactive sign-ups, event forum posts, scheduled events, panels, role automation, and Discord-based attendance features.
 
+Durable notifications and recovery work wake from saved changes and scheduled
+retry deadlines. A small safety check remains for interrupted connections; the
+bot does not need to repeatedly scan empty queues. Live server panels still use
+timed refreshes where the external provider cannot push updates. These scheduling
+changes preserve permissions, recipient preferences and uncertain-send safeguards.
+
 <Callout type="warning">
     Never put real tokens, secrets, or API keys in a wiki page, screenshot,
     ticket, Discord message, or Git commit. Use placeholders such as

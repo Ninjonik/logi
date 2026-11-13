@@ -6,6 +6,7 @@ import {
 } from "discord.js"
 import { mapConcurrent } from "../runtime/work-queue"
 
+import { provisionEventResource } from "../runtime/event-resource"
 import type { EventRecord } from "../types"
 import { logWarn } from "../log"
 
@@ -81,11 +82,38 @@ export async function syncSignupThread(input: {
                     candidate.type === ChannelType.PrivateThread &&
                     candidate.name === legacyName
             ) ??
-            (await channel.threads.create({
-                name,
-                type: ChannelType.PrivateThread,
-                invitable: false,
-                autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+            (await provisionEventResource({
+                guildId: input.guild.id,
+                eventId: input.event.id,
+                key: `signup-thread:${channel.id}`,
+                find: async (id) => {
+                    const found = await input.guild.channels
+                        .fetch(id, { force: true })
+                        .catch((error: unknown) => {
+                            if (
+                                typeof error === "object" &&
+                                error !== null &&
+                                "code" in error &&
+                                error.code === 10003
+                            )
+                                return null
+                            throw error
+                        })
+                    if (!found) return null
+                    if (
+                        found.type !== ChannelType.PrivateThread ||
+                        found.parentId !== channel.id
+                    )
+                        throw new Error("Invalid recovered event discussion")
+                    return found
+                },
+                create: () =>
+                    channel.threads.create({
+                        name,
+                        type: ChannelType.PrivateThread,
+                        invitable: false,
+                        autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+                    }),
             }))
     }
     if (!thread.isThread()) throw new Error("Invalid event discussion")

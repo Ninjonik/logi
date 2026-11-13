@@ -1,5 +1,132 @@
 # Logi Discord bot
 
+## Event resource crash recovery
+
+Signup discussions, scheduled Discord events and squad voice categories/channels
+persist a fenced creation boundary before POST. Confirmed IDs and ordinary event
+sync bindings commit together; restarts reuse those IDs. A lost response or expired
+started attempt is withheld, never blindly recreated. Only confirmed missing or
+retired resources can be replaced. Definite rejections have five attempts with
+backoff. A definite squad-category rejection retains the configured-category
+fallback; an ambiguous response does not activate that fallback.
+The shared Discord REST adapter also prevents automatic timeout/5xx replays for
+channel, scheduled-event and private-thread creates. Rate-limit waiting and read
+retries remain enabled; the durable journal decides whether creation may retry.
+
+Existing saved IDs remain usable. Older sync records without protocol evidence
+require review before missing resources can be created. New syncs carry the
+protocol marker. Orphans from an old process that saved neither sync nor receipt
+cannot be identified retroactively: inspect the guild and pre-adopt known resources
+before rollout. Names, partial thread listings and missing database IDs do not
+prove that nothing was created.
+
+The operator CLI never calls Discord. Verify the exact guild, resource, type and
+parent before recording evidence:
+
+```bash
+node --import tsx scripts/discord-reconciliation.ts event-resources GUILD_ID EVENT_ID
+node --import tsx scripts/discord-reconciliation.ts resource-audit GUILD_ID EVENT_ID RESOURCE_KEY
+node --import tsx scripts/discord-reconciliation.ts resource-resolve GUILD_ID EVENT_ID RESOURCE_KEY adopt OPERATOR "Verified exact resource and parent in Discord" DISCORD_ID
+node --import tsx scripts/discord-reconciliation.ts resource-resolve GUILD_ID EVENT_ID RESOURCE_KEY proven_absent OPERATOR "Verified nothing was created and the old process is stopped"
+```
+
+Keys: `signup-thread:CHANNEL_ID`, `scheduled-event`, `voice-category`,
+`voice-squad:SQUAD_NAME` (quote keys with spaces). Resolution is audited, rejects
+active leases and preserves attempt budgets. Deletion also uses committed receipt
+IDs missing from outer sync state. These bot-only controls have no public v1
+lifecycle equivalent and introduce no public API change.
+
+Deploy the backend first, drain the old bot, then start the updated bot without
+overlap. Keep journals on rollback. Backend deployment does not restart the bot.
+Live crash/host checks remain skipped by maintainer instruction; no exact-once
+guarantee is made.
+
+## Reactive work and narrow sync reads
+
+Scheduled dispatch, event cleanup, match-recap recovery, application/ticket workflow
+recovery, membership effect repair and team-request notifications now subscribe to
+small indexed queue-head signals. Queue changes wake work immediately; future retry
+times and lease expiry use one deadline timer. Empty queues no longer run claim or
+repair mutations every 15–60 seconds. A read-only head refresh every five minutes
+remains as recovery insurance. Gateway ready/resume events refresh the head too.
+Workers coalesce notifications, keep one active pass, drain it on stop and never
+treat a notification as authority to bypass a durable claim or effect receipt.
+Active lease heartbeats remain timed. Membership journal retention keeps its own
+90-day deadline in the workflow signal, so idle queues still receive bounded cleanup.
+
+The event subscription opts into compact roster IDs/update stamps; full roster
+bodies are loaded for actual event work. Legacy readers retain the full response.
+Calendar refreshes use a separate tenant-checked projection with event details,
+competition rounds and fresh announcement links, without roster/player/assignment
+or private server data. Rendering, permissions and reminder eligibility stay the same.
+The compact subscription reduces transport payload, not Convex's underlying row size.
+
+This pass does not replace provider, public-panel, seed, League or managed-role
+timers. Their remaining due-discovery and authority work is tracked in the maintenance
+plan. No load/soak benchmark or universal polling elimination is claimed. Deploy the
+backend before the updated runtime; no bot restart is performed by Convex deployment.
+
+## Match-recap recovery
+
+New recaps have recipient-bound receipts and five bounded preparation attempts
+with 1/5/15/60-minute backoff. The runtime claims each recipient, fetches Discord,
+then rechecks account binding, opt-out, current result/publication and the clan DM
+switch before persisting the send boundary. Accepted message IDs are remembered.
+An expired started send is uncertain and never automatically repeated. An expired
+claim that never started sending can retry. A reactive recovery worker visits small
+indexed batches without overlapping its own pass and drains active work on stop.
+Policy-blocked events are deferred fifteen minutes to keep discovery progressing.
+
+Old pending recaps have no delivery receipts and are withheld, including from
+version-2 bots. They are not migrated or assumed unsent. Operators can inspect
+them and explicitly confirm delivery or prove non-delivery before adoption:
+
+```bash
+node --import tsx scripts/discord-reconciliation.ts recap-delivery GUILD_ID EVENT_ID
+node --import tsx scripts/discord-reconciliation.ts recap-audit GUILD_ID RECAP_ID
+node --import tsx scripts/discord-reconciliation.ts recap-resolve GUILD_ID RECAP_ID confirm OPERATOR "Verified the recipient's actual Discord message" MESSAGE_ID
+node --import tsx scripts/discord-reconciliation.ts recap-resolve GUILD_ID RECAP_ID proven_not_sent OPERATOR "Verified no send started and stopped the prior runtime"
+```
+
+Pages accept optional cursors. Evidence must be concrete; absence in an incomplete
+search is not proof. Resolution cannot override active ownership, confirmed/refused
+receipts or an exhausted retry budget. Retry adoption also requires the original
+account binding and current result/recipient eligibility. Every resolution is
+audited and preserves the attempt count. This does not promise exactly-once sends.
+Deploy backend first, drain the old bot and start the new runtime. Keep additive
+receipt and audit fields on rollback. The backend deploy does not restart the bot.
+These internal delivery operations do not add a public `/api/v1` endpoint.
+
+## Team-request DM recovery
+
+Team-request decisions use a durable send boundary, the original recipient,
+fenced claims and confirmed/refused/uncertain receipts. A crash before that
+boundary can retry with the existing five-attempt backoff. A crash after it cannot
+prove non-delivery and is quarantined as uncertain, including expired pre-upgrade
+claims. The dashboard's existing failed notification status includes uncertain
+delivery; it does not mean Discord definitely rejected the message.
+
+The internal operator CLI exposes receipt state and an audited evidence workflow:
+
+```bash
+node --import tsx scripts/discord-reconciliation.ts team-delivery GUILD_ID
+node --import tsx scripts/discord-reconciliation.ts team-audit GUILD_ID REQUEST_ID
+node --import tsx scripts/discord-reconciliation.ts team-resolve GUILD_ID REQUEST_ID confirm OPERATOR "Verified the recipient's Discord message" MESSAGE_ID
+node --import tsx scripts/discord-reconciliation.ts team-resolve GUILD_ID REQUEST_ID proven_not_sent OPERATOR "Verified no send started and the prior process stopped"
+```
+
+Inspection/audit pages accept an optional cursor. Active leases cannot be
+overridden. Resolution requires concrete evidence and never resets the attempt
+budget. `proven_not_sent` waits at least one minute before retry; absence of a
+message in an incomplete search is insufficient evidence. A missing receipt is
+reported as `legacy_unproven`, never assumed undelivered. Roll out the backend
+first, drain the old bot, then start the updated bot. Old bots cannot claim
+upgraded rows. Retain additive fields and audit records on rollback.
+
+These controls are bot-only delivery operations; existing dashboard and `/api/v1`
+team decisions continue using the same shared command. No new API-key operation
+is provided for overriding Discord delivery evidence.
+
 The Discord.js runtime synchronizes Logi workspaces with Discord. Run commands from the repository root:
 
 ```bash

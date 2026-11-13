@@ -17,6 +17,7 @@ const notification = (
     overrides: Partial<TeamRequestNotification> = {}
 ): TeamRequestNotification => ({
     requestId: "req-1",
+    claimToken: "claim-one",
     discordUserId: USER,
     guildId: "200000000000000002",
     language: "en",
@@ -282,6 +283,7 @@ function fakePorts(input: {
             if (input.claimed instanceof Error) throw input.claimed
             return input.claimed
         },
+        begin: async () => ({ ok: true }),
         fetchUser: async (id) => {
             fetched.push(id)
             const user = input.users?.[id]
@@ -318,6 +320,21 @@ test("a pass sends each claimed DM and confirms it", async () => {
         ["req-1", "sent"],
         ["req-2", "sent"],
     ])
+})
+
+test("unknown send failures are uncertain and a rejected send boundary prevents delivery", async () => {
+    const user: FakeUser = { sent: [], fail: new Error("response lost") }
+    const { ports, marks } = fakePorts({
+        claimed: [notification()],
+        users: { [USER]: user },
+    })
+    await deliverTeamRequestNotifications(ports)
+    assert.deepEqual(marks, [["req-1", "uncertain"]])
+    delete user.fail
+    ports.begin = async () => ({ ok: false })
+    await deliverTeamRequestNotifications(ports)
+    assert.equal(user.sent.length, 0)
+    assert.equal(marks.length, 1)
 })
 
 test("unknown users and malformed claims are retried; closed DMs are final", async () => {
@@ -392,6 +409,7 @@ test("claim and confirmation failures never escape a pass", async () => {
 })
 
 test("the loop runs at once, on its interval, without overlap or escaping errors", async () => {
+    const failures: unknown[] = []
     let scheduled: (() => void) | null = null,
         interval = 0,
         unrefs = 0,
@@ -406,6 +424,7 @@ test("the loop runs at once, on its interval, without overlap or escaping errors
             if (runs === 2) throw new Error("boom")
         },
         {
+            failed: (error) => failures.push(error),
             intervalMs: 60_000,
             schedule: (tick, ms) => {
                 scheduled = tick
@@ -428,6 +447,7 @@ test("the loop runs at once, on its interval, without overlap or escaping errors
     ;(scheduled as () => void)()
     await new Promise((resolve) => setImmediate(resolve))
     assert.equal(runs, 2)
+    assert.equal(failures.length, 1)
     await loop.tick()
     assert.equal(runs, 3)
     loop.stop()

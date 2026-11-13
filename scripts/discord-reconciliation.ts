@@ -7,7 +7,7 @@ async function main() {
     const [command, ...values] = process.argv.slice(2)
     if (command === "--help") {
         console.log(
-            "Commands: list, effects, audit, legacy, requests, delivery, automatic, resolve, resume. See discord-bot/README.md for arguments and evidence requirements."
+            "Commands: list, effects, audit, legacy, requests, delivery, automatic, resolve, resume, team-delivery, team-audit, team-resolve, recap-delivery, recap-audit, recap-resolve, event-resources, resource-audit, resource-resolve. See discord-bot/README.md for arguments and evidence requirements."
         )
         process.exit(0)
     }
@@ -26,7 +26,141 @@ async function main() {
     const query = (name: string, args: Record<string, unknown>) =>
         client.query(makeFunctionReference<"query">(name), { secret, ...args })
     let result: unknown
-    if (command === "list") {
+    if (command === "event-resources") {
+        const [guildId, eventId] = values
+        if (!guildId || !eventId)
+            throw new Error("Usage: event-resources <guildId> <eventId>")
+        result = await query("discordEventResources:inspect", {
+            guildId,
+            eventId,
+        })
+    } else if (command === "resource-audit") {
+        const [guildId, eventId, key, cursor] = values
+        if (!guildId || !eventId || !key)
+            throw new Error(
+                "Usage: resource-audit <guildId> <eventId> <key> [cursor]"
+            )
+        result = await query("discordEventResources:audit", {
+            guildId,
+            eventId,
+            key,
+            cursor: cursor ?? null,
+        })
+    } else if (command === "resource-resolve") {
+        const [guildId, eventId, key, action, operator, evidence, discordId] =
+            values
+        if (
+            !guildId ||
+            !eventId ||
+            !key ||
+            !operator ||
+            !evidence ||
+            !["adopt", "proven_absent"].includes(action)
+        )
+            throw new Error(
+                "Usage: resource-resolve <guildId> <eventId> <key> <adopt|proven_absent> <operator> <evidence> [discordId]"
+            )
+        result = await client.mutation(
+            makeFunctionReference<"mutation">(
+                "discordEventResources:reconcile"
+            ),
+            {
+                secret,
+                guildId,
+                eventId,
+                key,
+                action,
+                operator,
+                evidence,
+                ...(discordId ? { discordId } : {}),
+            }
+        )
+    } else if (command === "recap-delivery") {
+        const [guildId, eventId, cursor] = values
+        if (!guildId || !eventId)
+            throw new Error(
+                "Usage: recap-delivery <guildId> <eventId> [cursor]"
+            )
+        result = await query("matchRecapDelivery:inspect", {
+            guildId,
+            eventId,
+            cursor: cursor ?? null,
+        })
+    } else if (command === "recap-audit") {
+        const [guildId, recapId, cursor] = values
+        if (!guildId || !recapId)
+            throw new Error("Usage: recap-audit <guildId> <recapId> [cursor]")
+        result = await query("matchRecapDelivery:audit", {
+            guildId,
+            recapId,
+            cursor: cursor ?? null,
+        })
+    } else if (command === "recap-resolve") {
+        const [guildId, recapId, action, operator, evidence, messageId] = values
+        if (
+            !guildId ||
+            !recapId ||
+            !operator ||
+            !evidence ||
+            !["confirm", "proven_not_sent"].includes(action)
+        )
+            throw new Error(
+                "Usage: recap-resolve <guildId> <recapId> <confirm|proven_not_sent> <operator> <evidence> [messageId]"
+            )
+        result = await client.mutation(
+            makeFunctionReference<"mutation">("matchRecapDelivery:reconcile"),
+            {
+                secret,
+                guildId,
+                recapId,
+                action,
+                operator,
+                evidence,
+                ...(messageId ? { messageId } : {}),
+            }
+        )
+    } else if (command === "team-delivery") {
+        const [guildId, cursor] = values
+        if (!guildId) throw new Error("Usage: team-delivery <guildId> [cursor]")
+        result = await query("teamRequestDelivery:inspect", {
+            guildId,
+            cursor: cursor ?? null,
+        })
+    } else if (command === "team-audit") {
+        const [guildId, requestId, cursor] = values
+        if (!guildId || !requestId)
+            throw new Error("Usage: team-audit <guildId> <requestId> [cursor]")
+        result = await query("teamRequestDelivery:audit", {
+            guildId,
+            requestId,
+            cursor: cursor ?? null,
+        })
+    } else if (command === "team-resolve") {
+        const [guildId, requestId, action, operator, evidence, messageId] =
+            values
+        if (
+            !guildId ||
+            !requestId ||
+            !operator ||
+            !evidence ||
+            !["confirm", "proven_not_sent"].includes(action)
+        )
+            throw new Error(
+                "Usage: team-resolve <guildId> <requestId> <confirm|proven_not_sent> <operator> <evidence> [messageId]"
+            )
+        result = await client.mutation(
+            makeFunctionReference<"mutation">("teamRequestDelivery:reconcile"),
+            {
+                secret,
+                guildId,
+                requestId,
+                action,
+                operator,
+                evidence,
+                ...(messageId ? { messageId } : {}),
+            }
+        )
+    } else if (command === "list") {
         const [guildId, state = "review", cursor] = values
         if (!guildId || !["pending", "review", "complete"].includes(state))
             throw new Error(
@@ -135,7 +269,7 @@ async function main() {
         )
     } else
         throw new Error(
-            "Commands: list, effects, audit, legacy, requests, delivery, automatic, resolve, resume. See discord-bot/README.md for evidence and repair policy."
+            "Commands: list, effects, audit, legacy, requests, delivery, automatic, resolve, resume, team-delivery, team-audit, team-resolve, recap-delivery, recap-audit, recap-resolve. See discord-bot/README.md for evidence and repair policy."
         )
     console.log(JSON.stringify(result, null, 2))
 }

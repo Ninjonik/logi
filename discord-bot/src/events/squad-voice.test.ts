@@ -1,6 +1,10 @@
+import { resourceFixture } from "../runtime/event-resource.fixture"
 import { ChannelType, type Guild } from "discord.js"
+import test, { beforeEach } from "node:test"
 import assert from "node:assert/strict"
-import test from "node:test"
+beforeEach((t) => {
+    if ("mock" in t) resourceFixture(t)
+})
 
 import { syncSquadVoiceChannels, type SquadVoiceNames } from "./squad-voice"
 import { boardEvent, boardRoster } from "./board-example.fixture"
@@ -71,7 +75,9 @@ function fakeGuild(options: { failCategory?: boolean } = {}) {
                     options.failCategory &&
                     input.type === ChannelType.GuildCategory
                 )
-                    throw new Error("Missing Permissions")
+                    throw Object.assign(new Error("Missing Permissions"), {
+                        status: 403,
+                    })
                 return add({
                     id: `ch-${next++}`,
                     name: String(input.name),
@@ -176,6 +182,52 @@ test("a later sync reuses the category and creates nothing twice", async () => {
     })
     assert.deepEqual(third, second)
     assert.equal(fake.created.length, 3)
+})
+
+for (const failCategory of [false, true]) {
+    test(`receipts recover all voice IDs after an outer sync crash, category fallback=${failCategory}`, async () => {
+        const fake = fakeGuild({ failCategory })
+        const input = {
+            guild: fake.guild,
+            event,
+            roster,
+            defaultCategoryId: "anchor",
+            existingIds: [],
+            names,
+            now: afterMeeting,
+        }
+        const first = await syncSquadVoiceChannels(input)
+        assert.deepEqual(await syncSquadVoiceChannels(input), first)
+        assert.equal(fake.created.length, 3)
+        await syncSquadVoiceChannels({
+            ...input,
+            event: { ...event, status: "concluded" },
+        })
+        assert.equal(fake.deleted.length, first.length)
+        assert.ok(fake.channels.has("anchor"))
+    })
+}
+test("an ambiguous category response never falls back or creates another category", async () => {
+    const fake = fakeGuild()
+    const original = fake.guild.channels.create.bind(fake.guild.channels)
+    Object.assign(fake.guild.channels, {
+        create: async (input: Parameters<typeof original>[0]) => {
+            await original(input)
+            throw new Error("Lost response")
+        },
+    })
+    const input = {
+        guild: fake.guild,
+        event,
+        roster,
+        defaultCategoryId: "anchor",
+        existingIds: [],
+        names,
+        now: afterMeeting,
+    }
+    await assert.rejects(syncSquadVoiceChannels(input), /Lost response/)
+    await assert.rejects(syncSquadVoiceChannels(input), /uncertain/)
+    assert.equal(fake.created.length, 1)
 })
 
 test("without permission for a category the channels use the configured one", async () => {

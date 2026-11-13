@@ -434,7 +434,7 @@ export const listGuildAssignments = query({
  * queues the events it still sees, so a drop-out is not a deletion.
  */
 export const listEventSyncIndex = query({
-    args: { secret: v.string() },
+    args: { secret: v.string(), compact: v.optional(v.boolean()) },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
 
@@ -457,10 +457,69 @@ export const listEventSyncIndex = query({
                     updatedAt: normalized.updatedAt,
                 }
             }),
-            rosters: rosters.map((roster) => ({
-                ...normalizeDoc(localRosterLists(roster)),
-                eventId: String(roster.eventId),
-            })),
+            rosters: rosters.map((roster) =>
+                args.compact
+                    ? {
+                          id: String(roster._id),
+                          eventId: String(roster.eventId),
+                          updatedAt: roster.updatedAt,
+                      }
+                    : {
+                          ...normalizeDoc(localRosterLists(roster)),
+                          eventId: String(roster.eventId),
+                      }
+            ),
+        }
+    },
+})
+
+/** Calendar-only read: no roster, people, assignment, logo or private event payload. */
+export const getCalendarEventContext = query({
+    args: { secret: v.string(), guildId: v.string(), eventId: v.id("events") },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const row = await ctx.db.get(args.eventId)
+        if (
+            !row ||
+            row.guildId !== args.guildId ||
+            row.sharedAccessRevoked ||
+            isDraftEvent(row)
+        )
+            return null
+        const [state, fixture] = await Promise.all([
+            ctx.db
+                .query("discordEventSyncs")
+                .withIndex("eventId", (q) => q.eq("eventId", row._id))
+                .unique(),
+            ctx.db
+                .query("competitionFixtures")
+                .withIndex("eventId", (q) => q.eq("eventId", row._id))
+                .first(),
+        ])
+        const event = normalizeEventDoc(row)
+        return {
+            event: {
+                id: event.id,
+                guildId: event.guildId,
+                gameId: event.gameId,
+                kind: event.kind,
+                matchType: event.matchType,
+                competitionRound: fixture?.round,
+                name: event.name,
+                gameStart: event.gameStart,
+                gameEnd: event.gameEnd,
+                registrationEnd: event.registrationEnd,
+                map: event.map,
+                status: event.status,
+                updatedAt: event.updatedAt,
+            },
+            syncState: state
+                ? {
+                      eventId: String(row._id),
+                      announcementChannelId: state.announcementChannelId,
+                      announcementMessageId: state.announcementMessageId,
+                  }
+                : null,
         }
     },
 })
@@ -708,6 +767,7 @@ export const updateEventSyncState = mutation({
         lastCalendarSyncVersion: v.optional(v.string()),
         squadVoiceChannelIds: v.optional(v.array(v.string())),
         lastSyncedAt: v.string(),
+        resourceProtocol: v.optional(v.literal(1)),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -770,6 +830,9 @@ export const updateEventSyncState = mutation({
 
         const stateId = await ctx.db.insert("discordEventSyncs", {
             eventId: args.eventId,
+            ...(args.resourceProtocol
+                ? { resourceProtocol: args.resourceProtocol }
+                : {}),
             ...payload,
             createdAt: now,
         })

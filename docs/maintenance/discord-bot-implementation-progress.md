@@ -1,5 +1,118 @@
 # Discord bot implementation progress
 
+## Event resource creation recovery (2026-11-13)
+
+Signup discussions, scheduled events and squad voice creates use per-event/key
+journals, fenced leases, pre-POST boundaries, confirmed IDs and uncertainty holds.
+Receipts and ordinary sync bindings commit together. Definite failures use bounded
+backoff; category rejection retains the fallback decision. Deletion includes
+receipt IDs and late creates. Operator inspection/adoption/proven-absence resolution
+is scoped and audited. Older syncs cannot blindly create missing resources; saved
+IDs remain usable. Legacy orphans with neither sync nor receipt still need guild
+inspection/pre-adoption before rollout. These are bot-only controls, without a
+public v1 lifecycle equivalent. The shared REST adapter prevents SDK timeout/5xx
+replays of resource creates while preserving read retries and rate-limit waiting.
+
+Validation passed: 64 focused tests; full suite 4,164 passed, zero failed, four
+existing gateway socket skips (64.30 seconds). Non-incremental typecheck,
+changed-file ESLint/Prettier, production build, Convex bundles (197 V8 / 12 Node),
+both Node 20 ESM bot bundles and diff checks passed. The HTTP fixture was aligned
+with the SDK's Undici response type and its eight focused tests rerun successfully.
+Final `bunx convex deploy` succeeded on `https://convex.igportals.eu` on 2026-11-13;
+schema/bindings validated and no indexes were deleted. No bot host restart occurred.
+Drain the old runtime before starting its replacement, retain additive journals
+on rollback and review legacy missing IDs before rollout. Live crash/host checks
+remain intentionally skipped; no exact-once or live acceptance claim is made.
+
+## Focused read/polling reduction (2026-11-13)
+
+Six durable work lanes now use reactive indexed queue-head subscriptions and exact
+retry/lease timers: scheduled dispatch, event deletion, match recaps, membership
+workflows, membership effect repair and team-request notifications. Empty queues
+do not repeatedly run claim/recovery mutations. A five-minute read-only safety
+refresh and gateway ready/resume wakeup preserve recovery without 15–60-second
+idle scans. Membership retention remains discoverable at its 90-day deadline.
+Notification bursts cannot overlap passes; stop cancels subscriptions/timers and
+drains active work. Existing durable fences, retry budgets and uncertain-send
+handling remain authoritative.
+
+Global event subscriptions now opt into compact roster IDs/revisions rather than
+roster bodies. Legacy responses remain compatible. Calendar refreshes use a
+separate current, tenant-checked read that does not query users, rosters, assignments
+or logos, and does not return private event bodies. Calendar rendering and fresh
+Discord announcement links remain intact. This is transport/read reduction, not a
+claim that Convex projects partial stored rows at the database layer.
+
+Validation passed: 37 focused tests; 4,138 full-suite passes, zero failures and
+four existing gateway socket skips (54.47 seconds). Non-incremental typecheck,
+changed-file ESLint/Prettier, production build, Convex bundles (196 V8 / 12 Node)
+and both Node 20 ESM bot bundles passed. The compact-response regression uses a
+1,000-player roster and checks a response smaller than one fifth of the legacy
+fixture, while retaining change stamps and legacy compatibility. This is a payload
+assertion, not an end-to-end throughput benchmark.
+Final `bunx convex deploy` succeeded on `https://convex.igportals.eu` on 2026-11-13;
+schema and generated bindings validated, with no index additions/deletions.
+The bot runtime has not been restarted; deploy it after draining the old process.
+Provider, panel/seed/League and managed-role timers and the broader D00-D12 work
+remain open. No live host acceptance or workload/soak measurements are claimed.
+
+## Match-recap recovery continuation (2026-11-13)
+
+New match recaps now have fenced recipient claims, a durable send boundary,
+message receipts, five preparation attempts and indexed bounded restart recovery.
+Unrecorded sends become uncertain and are never automatically replayed. Fresh
+account binding, user opt-out, clan switch and result/publication checks precede
+sending; draft or revoked shared events are withheld. Policy-blocked discovery
+pages are deferred rather than pinning later events. Old pending recaps without
+receipts require operator evidence; old bot readers cannot consume new work.
+The CLI adds scoped receipt/audit inspection and audited reconciliation without
+resetting retry budgets or overriding active owners. The wiki now describes the
+uncertainty guarantee accurately instead of warning of blind crash duplicates.
+
+Grouped role-report failures now invoke an explicit failure callback. Errors-channel
+context/guild/channel lookup failures are logged. Their report intents remain
+in memory, so this does not certify grouped diagnostic crash recovery. That needs
+transactional intent capture alongside the role-operation outcome and a separate
+receipt-backed reporter; simply retrying the current best-effort sender is unsafe.
+
+Final validation passed: 4,127 tests passed, zero failures, four existing gateway
+socket tests skipped (48.64 seconds). Focused recap/CLI checks passed 28 tests;
+the shared-result/reporting adapter batch passed 41. Non-incremental typecheck,
+changed-file ESLint/Prettier, production build, Convex bundles (195 V8 / 12 Node)
+and both Node 20 ESM bot bundles passed. Integration fixtures now use protocol 3
+and establish ownership before recording success; protocol-2 rejection remains tested.
+Final `bunx convex deploy` succeeded on `https://convex.igportals.eu` on 2026-11-13,
+adding three indexes and deleting none, with schema and generated bindings validated.
+No live Discord crash tests or host checks were run, as requested, and no bot host
+restart occurred. Drain the old bot before rolling out the new runtime; retain
+additive receipt/audit state on rollback. The broader program remains open.
+
+## Team-request secondary delivery continuation (2026-11-13)
+
+Team-request decision DMs now persist a send boundary before Discord. A lost
+send response or outcome write is retained as uncertain instead of being retried
+after lease expiry. Work that never reached that boundary can resume with the
+existing five-attempt backoff. Recipient receipts retain accepted message IDs;
+tokens fence stale acknowledgments and block legacy consumers of upgraded rows.
+Expired old claims are quarantined because their acceptance cannot be proved.
+
+The CLI adds tenant-scoped `team-delivery`, `team-audit` and evidence-based
+`team-resolve`. Resolutions cannot override active leases or reset attempt budgets.
+Notification worker pass failures now have an explicit reporting callback, and
+recipient lookup errors are logged rather than silently converted to null.
+The wiki and bot README document uncertain versus confirmed delivery and rollout.
+
+Validation passed: 4,120 tests passed, zero failures, four existing gateway socket
+tests skipped (42.68 seconds); focused delivery/CLI tests passed as well.
+Non-incremental typecheck, changed-file ESLint/Prettier, production build,
+Convex bundles (194 V8 / 12 Node) and both Node 20 ESM bot bundles passed.
+Final `bunx convex deploy` succeeded on `https://convex.igportals.eu` on 2026-11-13;
+one audit index was added, none deleted, and bindings regenerated by tooling.
+No bot runtime restart or real Discord operation was performed.
+The next secondary-effect review includes match recap sends and grouped diagnostic
+reports; their existing non-durable error handling is not certified by this pass.
+The broader secondary effect inventory and D00-D12 program remain incomplete.
+
 ## Current durable handoff and recipient resume checkpoint (2026-11-12)
 
 Only this checkpoint and its remaining-work list are current; older sections are

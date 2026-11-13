@@ -31,11 +31,12 @@ async function currentRecipient(ctx: QueryCtx, recap: Doc<"matchRecaps">) {
     return current?._id === user._id ? recap.discordUserId : null
 }
 
-async function pendingDelivery(
+export async function pendingDelivery(
     ctx: QueryCtx,
     recap: Doc<"matchRecaps">,
     event: Doc<"events">
 ) {
+    if (event.isDraft || event.sharedAccessRevoked) return null
     if (event.gameId === "wardogs") {
         if (
             !event.wardogsReportId ||
@@ -133,18 +134,23 @@ export const listPendingForEvent = query({
     args: {
         secret: v.string(),
         eventId: v.id("events"),
-        deliveryVersion: v.optional(v.literal(2)),
+        deliveryVersion: v.optional(v.union(v.literal(2), v.literal(3))),
     },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
         // Older bots interpret userId as a Discord subject; never give them this queue.
-        if (args.deliveryVersion !== 2) return []
+        if (args.deliveryVersion !== 3) return []
         const [event, recaps] = await Promise.all([
             ctx.db.get(args.eventId),
             ctx.db
                 .query("matchRecaps")
-                .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
-                .collect(),
+                .withIndex("eventId_deliveryState_deliveryDueAt", (q) =>
+                    q
+                        .eq("eventId", args.eventId)
+                        .eq("deliveryState", "ready")
+                        .lte("deliveryDueAt", Date.now())
+                )
+                .take(25),
         ])
         if (!event) return []
         const deliveries = await Promise.all(
@@ -160,6 +166,7 @@ export const prepareDelivery = query({
         recapId: v.id("matchRecaps"),
         eventId: v.id("events"),
         discordUserId: v.string(),
+        deliveryVersion: v.optional(v.literal(3)),
     },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
@@ -167,7 +174,8 @@ export const prepareDelivery = query({
         if (
             !recap ||
             recap.eventId !== args.eventId ||
-            recap.discordUserId !== args.discordUserId
+            recap.discordUserId !== args.discordUserId ||
+            (recap.deliveryState && args.deliveryVersion !== 3)
         )
             return null
         const event = await ctx.db.get(recap.eventId)
@@ -225,6 +233,8 @@ export const markSent = mutation({
         secret: v.string(),
         recapId: v.id("matchRecaps"),
         discordUserId: v.string(),
+        deliveryToken: v.optional(v.string()),
+        messageId: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
@@ -232,12 +242,29 @@ export const markSent = mutation({
         if (
             recap &&
             recap.status === "pending" &&
-            recap.discordUserId === args.discordUserId
-        )
+            recap.discordUserId === args.discordUserId &&
+            (!recap.deliveryState ||
+                (recap.deliveryState === "started" &&
+                    !!args.deliveryToken &&
+                    recap.deliveryToken === args.deliveryToken &&
+                    (recap.deliveryDueAt ?? 0) > Date.now()))
+        ) {
             await ctx.db.patch(recap._id, {
                 status: "sent",
                 sentAt: new Date().toISOString(),
+                ...(recap.deliveryState
+                    ? {
+                          deliveryState: "confirmed" as const,
+                          deliveryDueAt: undefined,
+                          ...(args.messageId
+                              ? { deliveryMessageId: args.messageId }
+                              : {}),
+                      }
+                    : {}),
             })
+            return { ok: true }
+        }
+        return { ok: false }
     },
 })
 

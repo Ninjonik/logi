@@ -117,7 +117,7 @@ test("calendar contexts use a guild index, bounded reads and fresh data on the n
     const control = service as unknown as {
         applyEventIndex(index: EventSyncIndex, initial: boolean): void
         guildCache: { get(id: string): unknown }
-        loadEventSyncContext(id: string): Promise<null>
+        loadCalendarEventContext(guildId: string, id: string): Promise<null>
         syncGuildCalendar(id: string, requested?: boolean): Promise<void>
     }
     control.guildCache.get = () => ({ config: boardConfig })
@@ -135,7 +135,7 @@ test("calendar contexts use a guild index, bounded reads and fresh data on the n
     let active = 0,
         maximum = 0
     const reads: string[] = []
-    control.loadEventSyncContext = async (id) => {
+    control.loadCalendarEventContext = async (_guildId, id) => {
         reads.push(id)
         active++
         maximum = Math.max(maximum, active)

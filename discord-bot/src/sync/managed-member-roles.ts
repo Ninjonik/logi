@@ -113,6 +113,12 @@ let roleFailures: ReturnType<typeof createRoleFailureReporter> | null = null
 /** One grouped errors-channel report per clan for role changes an admin must fix (L5-14). */
 function roleFailureReporter(client: Client) {
     roleFailures ??= createRoleFailureReporter({
+        failed: (error, report) =>
+            logWarn("managed-roles", "Grouped role failure report failed", {
+                guildId: report.guildId,
+                roleId: report.roleId,
+                error,
+            }),
         // The role and Discord's answer pick "role above Logi", "role
         // deleted" or the missing permission (L5-14, L5-21).
         report: (report) =>

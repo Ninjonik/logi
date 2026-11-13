@@ -550,7 +550,39 @@ export type EventSyncIndex = {
         gameEnd: string
         updatedAt: string
     }>
-    rosters: Array<Roster>
+    rosters: Array<Pick<Roster, "id" | "eventId" | "updatedAt">>
+}
+
+/** Calendar rendering needs no player, roster, password or role data. */
+export type CalendarSyncPayload = Pick<
+    SyncPayload,
+    "guild" | "config" | "calendarItems"
+> & {
+    events: Array<
+        Pick<
+            EventRecord,
+            | "id"
+            | "guildId"
+            | "gameId"
+            | "kind"
+            | "matchType"
+            | "competitionRound"
+            | "name"
+            | "gameStart"
+            | "gameEnd"
+            | "registrationEnd"
+            | "map"
+            | "status"
+            | "isDraft"
+            | "updatedAt"
+        >
+    >
+    syncStates: Array<
+        Pick<
+            SyncState,
+            "eventId" | "announcementChannelId" | "announcementMessageId"
+        >
+    >
 }
 
 export type EventSyncContext = {

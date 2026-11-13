@@ -5,9 +5,9 @@ import {
 } from "../../../src/domain/discord-publications/calendar-panel"
 import { panelImageCopy } from "../../../src/domain/discord-publications/panel-image-copy"
 import type { MessageView } from "../../../src/domain/discord-messages/message-view"
+import type { CalendarItem, CalendarSyncPayload, SyncPayload } from "../types"
 import { getPanelMessages } from "../../../src/lib/clan-language/panels"
 import { expandCalendarItems } from "../../../src/lib/calendar-items"
-import type { CalendarItem, SyncPayload } from "../types"
 import { eventMapLabel } from "../events/match-context"
 
 /**
@@ -18,7 +18,7 @@ import { eventMapLabel } from "../events/match-context"
  */
 export function calendarEntriesFromPayload(
     payload: Pick<
-        SyncPayload,
+        CalendarSyncPayload,
         "config" | "events" | "calendarItems" | "syncStates"
     > & { guild: Pick<SyncPayload["guild"], "eventCategories"> },
     now: number,
@@ -130,7 +130,7 @@ export function calendarEntriesFromPayload(
 
 /** When the shown plan last changed (the footer's "Aktualizováno"). */
 export function calendarUpdatedAt(
-    payload: Pick<SyncPayload, "config" | "events" | "calendarItems">,
+    payload: Pick<CalendarSyncPayload, "config" | "events" | "calendarItems">,
     entries: readonly CalendarEntry[]
 ) {
     const ids = new Set(entries.map((entry) => entry.id))
@@ -148,7 +148,7 @@ export function calendarUpdatedAt(
 
 export function buildCalendarPanelView(
     payload: Pick<
-        SyncPayload,
+        CalendarSyncPayload,
         "config" | "events" | "calendarItems" | "syncStates"
     > & {
         guild: Pick<SyncPayload["guild"], "eventCategories" | "id" | "name">

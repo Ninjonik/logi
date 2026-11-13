@@ -611,16 +611,36 @@ export async function reportClanDiscordError(input: ClanErrorReportInput) {
             guildId: input.guildId,
             ...(eventId ? { eventId } : {}),
         })
-        .catch(() => null)) as ErrorReportContext | null
+        .catch((error) => {
+            logWarn(
+                "error-reporting",
+                "Failed to load clan error report context",
+                { guildId: input.guildId, error }
+            )
+            return null
+        })) as ErrorReportContext | null
     if (!context?.errorsChannelId) return
 
     const guild = await input.client.guilds
         .fetch(input.guildId)
-        .catch(() => null)
+        .catch((error) => {
+            logWarn("error-reporting", "Failed to load clan for error report", {
+                guildId: input.guildId,
+                error,
+            })
+            return null
+        })
     if (!guild) return
     const errorsChannel = await guild.channels
         .fetch(context.errorsChannelId)
-        .catch(() => null)
+        .catch((error) => {
+            logWarn("error-reporting", "Failed to load errors channel", {
+                guildId: input.guildId,
+                channelId: context.errorsChannelId,
+                error,
+            })
+            return null
+        })
     if (
         !errorsChannel?.isTextBased() ||
         (errorsChannel.type !== ChannelType.GuildText &&

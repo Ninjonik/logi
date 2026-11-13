@@ -888,10 +888,12 @@ test("decision DMs are leased, retried with backoff and marked failed after the 
     )
     const claimed = await invoke(teamRequests.claimNotifications, ctx, {
         secret,
+        durable: true,
     })
     assert.deepEqual(claimed, [
         {
             requestId: submitted.requestId,
+            claimToken: `${submitted.requestId}:1:${now}`,
             discordUserId: actorFixture.subject,
             guildId,
             language: "cs",
@@ -917,6 +919,7 @@ test("decision DMs are leased, retried with backoff and marked failed after the 
             secret,
             requestId: submitted.requestId,
             outcome: "failed",
+            claimToken: ctx.db.tables.teamRequests[0].notificationClaimToken,
         })
         assert.equal(
             ctx.db.tables.teamRequests[0].notificationStatus,
@@ -924,8 +927,12 @@ test("decision DMs are leased, retried with backoff and marked failed after the 
         )
         now = ctx.db.tables.teamRequests[0].notificationNextAttemptAt
         assert.equal(
-            (await invoke(teamRequests.claimNotifications, ctx, { secret }))
-                .length,
+            (
+                await invoke(teamRequests.claimNotifications, ctx, {
+                    secret,
+                    durable: true,
+                })
+            ).length,
             1
         )
     }
@@ -933,6 +940,7 @@ test("decision DMs are leased, retried with backoff and marked failed after the 
         secret,
         requestId: submitted.requestId,
         outcome: "failed",
+        claimToken: ctx.db.tables.teamRequests[0].notificationClaimToken,
     })
     assert.equal(ctx.db.tables.teamRequests[0].notificationStatus, "failed")
     assert.equal(ctx.db.tables.teamRequests[0].notificationAttempts, 5)
@@ -999,7 +1007,7 @@ test("cancel is limited to the requesting workspace and a sent DM is recorded on
     )
 })
 
-test("an unrecorded DM outcome is retried a bounded number of times; closed DMs are final", async (t) => {
+test("an unrecorded legacy DM outcome is quarantined after expiry; closed DMs are final", async (t) => {
     let now = Date.parse("2026-10-04T12:00:00.000Z")
     t.mock.method(Date, "now", () => now)
     const ctx = setup()
@@ -1021,12 +1029,12 @@ test("an unrecorded DM outcome is retried a bounded number of times; closed DMs 
         })
         decided.push(submitted.requestId)
     }
-    // The bot sends but never manages to record the outcome: each lease expires.
-    for (let claim = 1; claim <= 5; claim++) {
+    // An old bot may have sent successfully. Expiry never proves non-delivery.
+    for (let claim = 1; claim <= 2; claim++) {
         assert.equal(
             (await invoke(teamRequests.claimNotifications, ctx, { secret }))
                 .length,
-            claim === 1 ? 2 : 1
+            claim === 1 ? 2 : 0
         )
         if (claim === 1)
             await invoke(teamRequests.markNotified, ctx, {
@@ -1042,7 +1050,8 @@ test("an unrecorded DM outcome is retried a bounded number of times; closed DMs 
     )
     const [first, second] = ctx.db.tables.teamRequests
     assert.equal(first.notificationStatus, "failed")
-    assert.equal(first.notificationAttempts, 5)
+    assert.equal(first.notificationAttempts, 1)
+    assert.equal(first.notificationDeliveryState, "uncertain")
     assert.equal(second.notificationStatus, "failed")
     assert.equal(second.notificationAttempts, 1)
 })

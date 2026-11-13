@@ -15,6 +15,7 @@ import { messagePayload } from "../ui/message-kit"
 /** One claimed decision DM, as `teamRequests:claimNotifications` returns it. */
 export const teamRequestNotificationSchema = z.object({
     requestId: z.string().min(1),
+    claimToken: z.string().min(1).optional(),
     discordUserId: z.string(),
     guildId: z.string(),
     language: z.string(),
@@ -131,13 +132,16 @@ export type TeamRequestNotificationPorts = {
     fetchUser(discordUserId: string): Promise<{
         send(message: TeamRequestDecisionMessage): Promise<unknown>
     } | null>
+    begin(requestId: string, claimToken: string): Promise<{ ok: boolean }>
     /**
      * `failed` schedules a retry with backoff until the attempts run out;
      * `undeliverable` (DMs closed) is final.
      */
     mark(
         requestId: string,
-        outcome: "sent" | "failed" | "undeliverable"
+        outcome: "sent" | "failed" | "undeliverable" | "uncertain",
+        claimToken?: string,
+        messageId?: string
     ): Promise<unknown>
     /** Operational log; receives IDs and Discord error codes only. */
     warn(message: string, context: Record<string, string | number>): void
@@ -162,9 +166,8 @@ function discordErrorCode(error: unknown): string | number {
 
 /**
  * One delivery pass. Every claimed DM is confirmed: `sent` after Discord
- * accepted it, `failed` when the user cannot be fetched, has DMs closed or
- * the payload is unusable. Nothing is thrown; a failed confirmation leaves
- * the lease to expire so the DM is claimed again.
+ * accepted it. A durable started receipt precedes every send; a lost response
+ * or confirmation remains uncertain and must never be replayed automatically.
  */
 export async function deliverTeamRequestNotifications(
     ports: TeamRequestNotificationPorts
@@ -183,7 +186,18 @@ export async function deliverTeamRequestNotifications(
             ? parsed.data.requestId
             : requestIdOf(raw)
         if (!requestId) continue
-        let outcome: "sent" | "failed" | "undeliverable" = "failed"
+        let outcome: "sent" | "failed" | "undeliverable" | "uncertain" =
+            "failed"
+        const claimToken = parsed.success
+            ? parsed.data.claimToken
+            : raw &&
+                typeof raw === "object" &&
+                "claimToken" in raw &&
+                typeof raw.claimToken === "string"
+              ? raw.claimToken
+              : undefined
+        let messageId: string | undefined
+        let started = false
         if (!parsed.success)
             ports.warn("Team request notification is malformed", {
                 requestId,
@@ -199,8 +213,23 @@ export async function deliverTeamRequestNotifications(
                     message && DISCORD_USER_ID.test(userId)
                         ? await ports.fetchUser(userId)
                         : null
-                if (user && message) {
-                    await user.send(message)
+                if (user && message && claimToken) {
+                    const receipt = await ports.begin(requestId, claimToken)
+                    if (!receipt.ok) {
+                        ports.warn("Team request DM ownership lost", {
+                            requestId,
+                        })
+                        continue
+                    }
+                    started = true
+                    const sent = await user.send(message)
+                    if (
+                        sent &&
+                        typeof sent === "object" &&
+                        "id" in sent &&
+                        typeof sent.id === "string"
+                    )
+                        messageId = sent.id
                     outcome = "sent"
                 } else
                     ports.warn("Team request DM recipient unavailable", {
@@ -210,7 +239,11 @@ export async function deliverTeamRequestNotifications(
                 const code = discordErrorCode(error)
                 // 50007: the user does not accept DMs from this bot; retrying
                 // cannot help, so the decision stays recorded as undelivered.
-                if (code === 50007) outcome = "undeliverable"
+                if (started)
+                    outcome =
+                        code === 50007 || code === "50007"
+                            ? "undeliverable"
+                            : "uncertain"
                 ports.warn("Team request DM could not be delivered", {
                     requestId,
                     code,
@@ -218,7 +251,7 @@ export async function deliverTeamRequestNotifications(
             }
         }
         try {
-            await ports.mark(requestId, outcome)
+            await ports.mark(requestId, outcome, claimToken, messageId)
             totals[outcome === "sent" ? "sent" : "failed"] += 1
         } catch {
             ports.warn("Team request DM outcome could not be recorded", {
@@ -241,7 +274,8 @@ export function startTeamRequestNotificationLoop(
         intervalMs?: number
         schedule?: (tick: () => void, ms: number) => NotificationTimer
         cancel?: (timer: NotificationTimer) => void
-    } = {}
+        failed: (error: unknown) => void
+    }
 ): { tick(): Promise<void>; stop(): Promise<void> } {
     const schedule =
         options.schedule ??
@@ -259,8 +293,8 @@ export function startTeamRequestNotificationLoop(
         try {
             active = pass()
             await active
-        } catch {
-            // The pass reports its own failures; the loop keeps running.
+        } catch (error) {
+            options.failed(error)
         } finally {
             running = false
         }

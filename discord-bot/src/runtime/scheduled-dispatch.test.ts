@@ -1,10 +1,20 @@
 import { startScheduledDispatch } from "./scheduled-dispatch"
+import test, { afterEach, type TestContext } from "node:test"
 import { ConvexReactClient } from "convex/react"
 import { getFunctionName } from "convex/server"
+import { closeConvexClient } from "../convex"
 import assert from "node:assert/strict"
-import test from "node:test"
+
+afterEach(closeConvexClient)
+function signal(t: TestContext) {
+    t.mock.method(ConvexReactClient.prototype, "watchQuery", () => ({
+        localQueryResult: () => ({ key: "dispatch", dueAt: 0 }),
+        onUpdate: () => () => {},
+    }))
+}
 
 test("dispatch shutdown finishes the active acknowledgment and claims no new work", async (t) => {
+    signal(t)
     let claims = 0,
         acknowledged = 0,
         processing = false
@@ -60,6 +70,7 @@ test("dispatch shutdown finishes the active acknowledgment and claims no new wor
 })
 
 test("failed retry persistence is reported while the leased dispatch remains recoverable", async (t) => {
+    signal(t)
     let claims = 0,
         retries = 0
     const warnings: string[] = []

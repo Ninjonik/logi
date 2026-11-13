@@ -1,5 +1,109 @@
 # Discord bot release candidate — 2026-11-12
 
+## Event resource creation recovery — 2026-11-13
+
+Signup discussions, native Discord scheduled events and squad voice resources
+now persist fenced pre-create boundaries and confirmed receipts. Restart reuses
+saved resources; uncertain creates are withheld. Receipts and ordinary sync IDs
+commit together; deletion includes receipt-only IDs and late creates. Definite
+category rejection retains the configured-category fallback; uncertainty never
+triggers it. SDK timeout/5xx retries are disabled for these resource POSTs while
+read retries and rate-limit handling remain enabled. Operator evidence resolution
+is tenant-scoped and audited, without resetting retry budgets or active leases.
+
+Older sync records with missing resource IDs require evidence; existing IDs remain
+usable. Orphans with no legacy sync or receipt cannot be identified retroactively
+and require guild inspection/pre-adoption. No live crash tests or host grace checks
+were run, as requested. This closes the three identified forward crash windows,
+not the entire secondary-effect or performance program.
+
+Validation: 64 focused checks; full suite **4,164 passed, zero failed, four existing
+skips** (64.30 seconds). Non-incremental typecheck, changed-file ESLint/Prettier,
+production build, Convex bundles (197 V8 / 12 Node), both Node 20 ESM bot bundles
+and diff checks passed. Final `bunx convex deploy` succeeded on
+`https://convex.igportals.eu` on 2026-11-13, validating schema and generated bindings
+without deleting indexes. The bot host has not been restarted: drain the old process
+before starting the updated runtime, and retain additive journals on rollback.
+
+## Focused read and idle-poll reduction — 2026-11-13
+
+Six durable workers now wake from indexed Convex queue-head subscriptions and
+local retry/lease deadlines: dispatch, event cleanup, recaps, membership workflows,
+membership effect repair and team notifications. Idle claim/recovery mutation loops
+are removed from those workers. Five-minute read-only safety checks, gateway
+ready/resume wakeups, active lease heartbeats and membership retention remain.
+Notification coalescing, stale-read fencing and stop/drain behavior are covered.
+
+Event subscriptions opt into compact roster identifiers/change stamps; legacy
+responses stay available. Calendar refreshes read only their event/link projection,
+without querying people, rosters, assignments or logos. Fresh links, competition
+rounds, rendering and tenant/draft checks remain covered. A 1,000-player fixture
+checks a compact response smaller than one fifth of its legacy response; no general
+load or throughput claim is made.
+
+Validation: **4,138 passed, zero failed, four existing gateway socket skips** in
+54.47 seconds; 37 focused tests passed. Typecheck, changed-file lint/format,
+production build, Convex bundles (196 V8 / 12 Node) and both Node 20 ESM bot bundles
+passed. Final `bunx convex deploy` succeeded on `https://convex.igportals.eu`;
+schema/bindings validated and no indexes changed.
+
+No bot runtime restart or live host tests occurred. Drain the old bot before
+deploying the new runtime. Provider, panel/seed/League and managed-role timers remain
+outside this pass, alongside the larger performance plan and diagnostic durability.
+
+## Match-recap recovery — 2026-11-13
+
+Recaps now use fenced recipient claims, durable send boundaries and confirmed,
+refused or uncertain receipts. Unrecorded sends are quarantined; only work proven
+not to have started sending retries automatically, with five attempts and bounded
+backoff. Recovery uses indexed bounded discovery and a drainable non-overlapping
+worker. Binding, opt-out, result/publication and clan configuration are rechecked
+before sending; drafts and revoked shared events are withheld. Old pending work
+requires operator evidence, and version-2 bots cannot consume upgraded work.
+The CLI exposes scoped recap receipts, audits and evidence-based reconciliation.
+
+Validation: **4,127 passed, zero failures, four existing gateway socket tests
+skipped**, in 48.64 seconds. Focused recap/CLI and shared-result/reporting batches
+passed. Typecheck, changed-file lint/format, production build, Convex bundles
+(195 V8 / 12 Node) and both Node 20 ESM bot bundles passed. Old integration fixtures
+were updated to protocol 3 and now establish the fenced send boundary before
+recording success. Legacy-client rejection remains covered.
+
+Final `bunx convex deploy` succeeded on `https://convex.igportals.eu`; three indexes
+were added and none deleted, schema validated and generated bindings refreshed.
+No bot runtime restart or live Discord operation occurred. The updated bot must
+replace the drained old runtime without overlap. Keep additive receipts/audits
+on rollback; older workers cannot safely consume upgraded recap work.
+
+Grouped role-report failures and errors-channel lookup failures are now visible
+in logs. Their intents remain in memory: transactional intent capture, durable
+grouping and send receipts remain required before claiming crash recovery for
+diagnostics. This and the broader secondary-effect/D00-D12 program remain open.
+Live crash tests and host grace verification remain skipped by user instruction.
+
+## Team-request notification recovery — 2026-11-13
+
+Decision DMs now have fenced, recipient-bound send receipts. Restart can resume
+pre-send work, but never blindly resends after an accepted/ambiguous send or lost
+outcome write. Expired pre-upgrade attempts are uncertain. Operator inspection and
+audited evidence resolution are available through `team-delivery`, `team-audit`
+and `team-resolve`; active leases and exhausted attempt budgets remain protected.
+Worker pass and recipient lookup failures are reported explicitly.
+
+Validation: **4,120 passed, zero failed, four skipped** in 42.68 seconds. The skips
+are the existing gateway socket-abort compatibility tests for this Node runtime.
+Focused regressions, typecheck, changed-file lint/format, production build,
+Convex bundles (194 V8 / 12 Node) and both Node 20 ESM bot bundles passed.
+The full suite initially exposed two tests asserting the obsolete blind-retry
+behavior; those now distinguish safe pre-send retries from legacy uncertainty.
+
+Final `bunx convex deploy` succeeded on `https://convex.igportals.eu`, adding the
+audit index without deleting indexes; schema and generated bindings validated.
+No bot host restart occurred. Drain the old bot before starting the new runtime;
+keep additive receipt/audit data on rollback. Live Discord tests and host grace
+verification remain skipped by user instruction. Broader secondary effects,
+including match recaps and grouped diagnostics, and D00-D12 remain incomplete.
+
 ## Application/ticket recovery continuation — 2026-11-13
 
 The current working candidate adds atomic membership decisions and submission
