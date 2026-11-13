@@ -1,3 +1,9 @@
+import {
+    type DurableDelivery,
+    confirmedDmRefusal,
+    UnattemptedDelivery,
+} from "../runtime/durable-delivery"
+import { makeFunctionReference } from "convex/server"
 import type { Client, Guild } from "discord.js"
 
 import {
@@ -130,12 +136,27 @@ export async function processAttendanceReminders(
     queuedEventIds: Set<string>,
     payload: SyncPayload,
     dueEventIds: ReadonlySet<string>,
-    record: RecordAutomaticReminderOutcome = recordAutomaticReminderOutcome
+    record: RecordAutomaticReminderOutcome = recordAutomaticReminderOutcome,
+    delivery?: DurableDelivery
 ) {
+    if (delivery)
+        record = async (outcome) => {
+            await convex.mutation(
+                makeFunctionReference<"mutation">(
+                    "eventReminders:recordAutomatic"
+                ),
+                {
+                    secret: env.internalSecret,
+                    ...outcome,
+                    owner: delivery.owner,
+                }
+            )
+        }
     const guild = await client.guilds
         .fetch(payload.config.guildId)
         .catch(() => null)
     if (!guild) {
+        if (delivery) throw new Error("Attendance guild is unavailable")
         logWarn(
             "attendance-reminders",
             "Skipping attendance reminders because guild could not be fetched",
@@ -211,6 +232,7 @@ export async function processAttendanceReminders(
                 sentAt: string
             }> = []
             const failedByOffset = new Map<number, string[]>()
+            const plannedByOffset = new Map<number, Set<string>>()
             for (const userId of unacknowledgedUserIds) {
                 // Only the offsets the match chose (all four on older events).
                 const dueOffsets = resolveAttendanceReminderHours(
@@ -233,45 +255,92 @@ export async function processAttendanceReminders(
                 const offsetHours = dueOffsets[0]
                 if (offsetHours === undefined) continue
 
-                const user = await client.users.fetch(userId).catch(() => null)
-                if (!user) {
-                    failedByOffset.set(offsetHours, [
-                        ...(failedByOffset.get(offsetHours) ?? []),
-                        userId,
-                    ])
-                    continue
-                }
-
-                const sentAt = new Date().toISOString()
-                try {
-                    await user.send(
-                        buildAttendanceReminderDm({
-                            payload,
-                            event,
-                            place: assignmentsByUserId.get(userId),
-                            now: Date.now(),
-                        })
-                    )
-                    logInfo(
-                        "attendance-reminders",
-                        "Sent attendance reminder",
-                        {
-                            eventId: event.id,
-                            guildId: payload.config.guildId,
-                            userId,
+                const phase = `attendance:${offsetHours}`
+                if (delivery) {
+                    if (!plannedByOffset.has(offsetHours))
+                        plannedByOffset.set(
                             offsetHours,
+                            await delivery.prepare(phase, [
+                                ...unacknowledgedUserIds,
+                            ])
+                        )
+                    if (!plannedByOffset.get(offsetHours)?.has(userId)) continue
+                }
+                const sentAt = new Date().toISOString()
+                if (delivery) {
+                    const state = await delivery.effect(
+                        phase,
+                        `dm:${userId}`,
+                        async () => {
+                            const user = await client.users
+                                .fetch(userId)
+                                .catch((error) => {
+                                    if (confirmedDmRefusal(error)) return null
+                                    throw new UnattemptedDelivery(
+                                        "Recipient lookup failed"
+                                    )
+                                })
+                            if (!user) return false
+                            await user.send(
+                                buildAttendanceReminderDm({
+                                    payload,
+                                    event,
+                                    place: assignmentsByUserId.get(userId),
+                                    now: Date.now(),
+                                })
+                            )
+                            return true
                         }
                     )
-                } catch {
-                    // Closed DMs: never the errors channel (L2-63), the
-                    // match page instead (L2-64).
-                    failedByOffset.set(offsetHours, [
-                        ...(failedByOffset.get(offsetHours) ?? []),
-                        userId,
-                    ])
-                    continue
-                }
+                    if (state === "uncertain") continue
+                    if (state === "refused") {
+                        failedByOffset.set(offsetHours, [
+                            ...(failedByOffset.get(offsetHours) ?? []),
+                            userId,
+                        ])
+                        continue
+                    }
+                } else {
+                    const user = await client.users
+                        .fetch(userId)
+                        .catch(() => null)
+                    if (!user) {
+                        failedByOffset.set(offsetHours, [
+                            ...(failedByOffset.get(offsetHours) ?? []),
+                            userId,
+                        ])
+                        continue
+                    }
 
+                    try {
+                        await user.send(
+                            buildAttendanceReminderDm({
+                                payload,
+                                event,
+                                place: assignmentsByUserId.get(userId),
+                                now: Date.now(),
+                            })
+                        )
+                        logInfo(
+                            "attendance-reminders",
+                            "Sent attendance reminder",
+                            {
+                                eventId: event.id,
+                                guildId: payload.config.guildId,
+                                userId,
+                                offsetHours,
+                            }
+                        )
+                    } catch {
+                        // Closed DMs: never the errors channel (L2-63), the
+                        // match page instead (L2-64).
+                        failedByOffset.set(offsetHours, [
+                            ...(failedByOffset.get(offsetHours) ?? []),
+                            userId,
+                        ])
+                        continue
+                    }
+                }
                 remindersToLog.push({ userId, offsetHours, sentAt })
             }
 
@@ -323,6 +392,7 @@ export async function processAttendanceReminders(
                 eventId: event.id,
                 players,
             })
+            if (delivery) throw error
         }
     }
 }

@@ -15,6 +15,7 @@ import {
     type OverwriteResolvable,
 } from "discord.js"
 
+import { missingDiscordResource } from "../runtime/discord-resource"
 import type { EventRecord, Roster } from "../types"
 import { logWarn } from "../log"
 
@@ -31,7 +32,7 @@ async function fetchChannels(guild: Guild, ids: readonly string[]) {
             guild.channels
                 .fetch(id)
                 .then((channel) => channel ?? null)
-                .catch(() => null)
+                .catch(missingDiscordResource(10003))
         )
     )
     return channels.filter((channel): channel is GuildBasedChannel =>
@@ -71,18 +72,18 @@ export async function syncSquadVoiceChannels(input: {
     if (event.status === "concluded") {
         const channels = await fetchChannels(guild, existingIds)
         const remove = (channel: GuildBasedChannel) =>
-            channel.delete(`Event concluded: ${event.name}`).catch(() => null)
+            channel
+                .delete(`Event concluded: ${event.name}`)
+                .catch(missingDiscordResource(10003))
         // The voice channels first, so none is left loose without its category.
-        await Promise.all(
-            channels
-                .filter((channel) => channel.type !== ChannelType.GuildCategory)
-                .map(remove)
-        )
-        await Promise.all(
-            channels
-                .filter((channel) => channel.type === ChannelType.GuildCategory)
-                .map(remove)
-        )
+        for (const channel of channels.filter(
+            (channel) => channel.type !== ChannelType.GuildCategory
+        ))
+            await remove(channel)
+        for (const channel of channels.filter(
+            (channel) => channel.type === ChannelType.GuildCategory
+        ))
+            await remove(channel)
         return []
     }
 
@@ -118,7 +119,9 @@ export async function syncSquadVoiceChannels(input: {
         (channel) => channel.type === ChannelType.GuildCategory
     )?.id
     if (!parentId) {
-        const fetched = await guild.channels.fetch(anchorId).catch(() => null)
+        const fetched = await guild.channels
+            .fetch(anchorId)
+            .catch(missingDiscordResource(10003))
         const anchor =
             fetched?.type === ChannelType.GuildCategory ? fetched : null
         const category = await guild.channels

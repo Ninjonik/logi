@@ -1,3 +1,4 @@
+import { TaskOwner } from "./runtime/task-owner"
 import type { Client } from "discord.js"
 
 import { getMeetingChannelMemberIds } from "./meeting-attendance-members"
@@ -23,12 +24,18 @@ type AttendanceResult = {
 
 /** Handles dashboard-triggered requests using fresh REST reads of roster candidates only. */
 export class MeetingAttendanceRequestService {
+    private readonly tasks = new TaskOwner()
     private unsubscribe?: () => void
     private readonly processingRequestIds = new Set<string>()
 
     constructor(private readonly client: Client) {}
 
-    async start() {
+    start() {
+        return this.tasks.run(() => this.initialize())
+    }
+
+    private async initialize() {
+        if (this.tasks.stopped) return
         const watch = convex.watchQuery(
             references.listPendingMeetingAttendanceRequests,
             { secret: env.internalSecret }
@@ -36,7 +43,14 @@ export class MeetingAttendanceRequestService {
         this.unsubscribe = watch.onUpdate(() => {
             const requests = watch.localQueryResult() as
                 PendingRequest[] | undefined
-            if (requests) void this.processRequests(requests)
+            if (requests)
+                void this.tasks
+                    .run(() => this.processRequests(requests))
+                    .catch((error) =>
+                        logError("request-worker", "Request batch failed", {
+                            error,
+                        })
+                    )
         })
 
         const requests = (await convex.query(
@@ -49,15 +63,25 @@ export class MeetingAttendanceRequestService {
 
     stop() {
         this.unsubscribe?.()
+        this.unsubscribe = undefined
+        return this.tasks.stop()
     }
 
     private async processRequests(requests: PendingRequest[]) {
         for (const request of requests) {
+            if (this.tasks.stopped) break
             if (this.processingRequestIds.has(request._id)) continue
             this.processingRequestIds.add(request._id)
-            void this.processRequest(request).finally(() => {
-                this.processingRequestIds.delete(request._id)
-            })
+            void this.tasks
+                .run(() => this.processRequest(request))
+                .catch((error) =>
+                    logError("meeting-attendance", "Attendance task failed", {
+                        error,
+                    })
+                )
+                .finally(() => {
+                    this.processingRequestIds.delete(request._id)
+                })
         }
     }
 

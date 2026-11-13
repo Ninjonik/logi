@@ -137,7 +137,7 @@ export async function publishManagedMessage(
     }
 ) {
     const guild = await client.guilds.fetch(input.guildId)
-    const channel = async (id: string) => {
+    const readChannel = async (id: string) => {
         const found = await guild.channels
             .fetch(id, { force: true })
             .catch((error: unknown) => {
@@ -163,12 +163,31 @@ export async function publishManagedMessage(
             throw new PublicationPermissionError(missing, found.name, found.id)
         return found
     }
-    const owned = async (id: string, messageId: string) => {
+    const channels = new Map<string, ReturnType<typeof readChannel>>()
+    const channel = (id: string) => {
+        let pending = channels.get(id)
+        if (!pending) {
+            pending = readChannel(id)
+            channels.set(id, pending)
+        }
+        return pending
+    }
+    const readOwned = async (id: string, messageId: string) => {
         return fetchOwnedPublicationMessage(
             await channel(id),
             messageId,
             client.user?.id
         )
+    }
+    const messages = new Map<string, ReturnType<typeof readOwned>>()
+    const owned = (id: string, messageId: string) => {
+        const key = `${id}:${messageId}`
+        let pending = messages.get(key)
+        if (!pending) {
+            pending = readOwned(id, messageId)
+            messages.set(key, pending)
+        }
+        return pending
     }
     // A deleted previous channel means the old message is gone; the publication
     // must move on instead of failing every later sync.
@@ -176,7 +195,12 @@ export async function publishManagedMessage(
         try {
             return await owned(id, messageId)
         } catch (error) {
-            if (isUnknownChannel(error)) return null
+            if (
+                isUnknownChannel(error) ||
+                (error instanceof PublicationChannelError &&
+                    error.reason === "channel_missing")
+            )
+                return null
             throw error
         }
     }

@@ -1,3 +1,4 @@
+import { sanitizeLogContext } from "./system-log-context"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { mkdirSync } from "node:fs"
@@ -61,6 +62,8 @@ const LOG_DB_PATH =
 
 const requireNodeModule = createRequire(process.cwd() + "/system-logs.cjs")
 let database: SqliteDatabase | null = null
+let insertStatement: SqliteStatement | undefined
+let retryWriteAt = 0
 
 function getDatabaseSyncConstructor(): DatabaseSyncConstructor {
     const moduleName = ["node", "sqlite"].join(":")
@@ -113,62 +116,6 @@ function safeSerialize(value: unknown) {
     }
 }
 
-type SerializedError = {
-    name: string
-    message: string
-    stack?: string
-    cause?: unknown
-}
-
-function normalizeError(error: Error & { cause?: unknown }): SerializedError {
-    return {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        cause:
-            error.cause instanceof Error
-                ? normalizeError(error.cause)
-                : error.cause,
-    }
-}
-
-function sanitizeContextValue(value: unknown): unknown {
-    if (value instanceof Error) {
-        return normalizeError(value as Error & { cause?: unknown })
-    }
-
-    if (Array.isArray(value)) {
-        return value.map((entry) => sanitizeContextValue(entry))
-    }
-
-    if (value && typeof value === "object") {
-        return Object.fromEntries(
-            Object.entries(value).map(([key, entry]) => [
-                key,
-                sanitizeContextValue(entry),
-            ])
-        )
-    }
-
-    return value
-}
-
-function sanitizeContext(context?: SystemLogContext) {
-    if (!context) {
-        return null
-    }
-
-    const entries = Object.entries(context)
-        .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => [key, sanitizeContextValue(value)] as const)
-
-    if (!entries.length) {
-        return null
-    }
-
-    return Object.fromEntries(entries)
-}
-
 function mapRow(row: SqliteLogRow): SystemLogEntry {
     return {
         id: String(row.id),
@@ -214,21 +161,22 @@ export function writeSystemLog(input: {
     message: string
     context?: SystemLogContext
 }) {
-    const context = sanitizeContext(input.context)
+    const context = sanitizeLogContext(input.context)
     const timestamp = new Date().toISOString()
 
     const line = getLine(
         input.level,
         input.source,
         input.scope,
-        input.message,
+        input.message.slice(0, 4096),
         context
     )
-    try {
-        const db = ensureDatabase()
+    if (Date.now() >= retryWriteAt) {
+        try {
+            const db = ensureDatabase()
 
-        db.prepare(
-            `
+            insertStatement ??= db.prepare(
+                `
       INSERT INTO system_logs (
         timestamp,
         level,
@@ -241,40 +189,40 @@ export function writeSystemLog(input: {
         request_path
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
-        ).run(
-            timestamp,
-            input.level,
-            input.source,
-            input.scope,
-            input.message,
-            context ? safeSerialize(context) : null,
-            typeof context?.serverId === "string" ? context.serverId : null,
-            typeof context?.userId === "string" ? context.userId : null,
-            typeof context?.requestPath === "string"
-                ? context.requestPath
-                : null
-        )
-    } catch (error) {
-        const isSqliteLock =
-            typeof error === "object" &&
-            error !== null &&
-            "code" in error &&
-            (error as { code?: unknown }).code === "ERR_SQLITE_ERROR"
-
-        if (!isSqliteLock) {
-            throw error
+            )
+            insertStatement.run(
+                timestamp,
+                input.level,
+                input.source,
+                input.scope,
+                input.message.slice(0, 4096),
+                context ? safeSerialize(context) : null,
+                typeof context?.serverId === "string" ? context.serverId : null,
+                typeof context?.userId === "string" ? context.userId : null,
+                typeof context?.requestPath === "string"
+                    ? context.requestPath
+                    : null
+            )
+        } catch {
+            // Disk, SQLite availability and serialization must never break bot work.
+            retryWriteAt = Date.now() + 30_000
+            try {
+                console.warn(
+                    "[system-logs] Log storage unavailable; using console output, retrying in 30 seconds."
+                )
+            } catch {
+                /* closed output stream */
+            }
         }
     }
 
-    if (input.level === "ERROR") {
-        console.error(line)
-        return
+    try {
+        if (input.level === "ERROR") console.error(line)
+        else if (input.level === "WARN") console.warn(line)
+        else console.log(line)
+    } catch {
+        // A closed output stream is also a diagnostic failure, not a task failure.
     }
-    if (input.level === "WARN") {
-        console.warn(line)
-        return
-    }
-    console.log(line)
 }
 
 export function logNextInfo(

@@ -179,10 +179,12 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
     }
 
     /** Registers one server now; concurrent calls for it share one run. */
+    let stopped = false
     function registerGuild(
         guild: RegistrationGuild,
         reason: RegistrationReason
     ) {
+        if (stopped) return Promise.resolve()
         const current = running.get(guild.id)
         const next = (current ?? Promise.resolve())
             .then(() => register(guild, reason))
@@ -226,6 +228,12 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
 
     return {
         registerGuild,
+        async stop() {
+            stopped = true
+            for (const timer of timers.values()) cancel(timer)
+            timers.clear()
+            await Promise.allSettled([...running.values()])
+        },
 
         /** Every server the bot is in, one after another (ClientReady). */
         async registerAll(guilds: Iterable<RegistrationGuild>) {
@@ -237,6 +245,7 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
          * definitions differ or that asked for it, after a short pause.
          */
         configsChanged(guildIds: readonly string[]) {
+            if (stopped) return
             for (const guildId of guildIds) {
                 const guild = ports.guild(guildId)
                 if (!guild) continue

@@ -212,7 +212,7 @@ test("syncScheduledDiscordEvent edits existing scheduled events and tolerates ed
 
     assert.deepEqual(result, {
         scheduledEventId: "sched-1",
-        scheduledEventStatus: "active",
+        scheduledEventStatus: "scheduled",
     })
 })
 
@@ -365,4 +365,63 @@ test("cancelScheduledDiscordEvent returns false when missing and true when alrea
         "sched-1"
     )
     assert.equal(terminal, true)
+})
+
+for (const code of [50013, 503, 404]) {
+    test(`scheduled event lookup failure ${code} cannot create or clear an event`, async () => {
+        const error = Object.assign(new Error("Discord unavailable"), { code })
+        let creates = 0
+        const guild = {
+            id: "guild-1",
+            scheduledEvents: {
+                fetch: async () => {
+                    throw error
+                },
+                create: async () => {
+                    creates++
+                    throw new Error("unexpected create")
+                },
+            },
+        } as unknown as Parameters<typeof syncScheduledDiscordEvent>[0]["guild"]
+        await assert.rejects(
+            syncScheduledDiscordEvent({
+                guild,
+                event: baseEvent,
+                content: { name: "Match", description: "" },
+                meetingChannel: {
+                    id: "voice",
+                    type: ChannelType.GuildVoice,
+                } as Parameters<
+                    typeof syncScheduledDiscordEvent
+                >[0]["meetingChannel"],
+                scheduledEventId: "existing",
+                desiredLifecycle: "scheduled",
+            }),
+            error
+        )
+        await assert.rejects(
+            cancelScheduledDiscordEvent(guild, "existing"),
+            error
+        )
+        assert.equal(creates, 0)
+    })
+}
+
+test("explicit unknown scheduled event is treated as absent", async () => {
+    const guild = {
+        scheduledEvents: {
+            fetch: async () => {
+                throw { code: 10070 }
+            },
+        },
+    }
+    assert.equal(
+        await cancelScheduledDiscordEvent(
+            guild as unknown as Parameters<
+                typeof cancelScheduledDiscordEvent
+            >[0],
+            "gone"
+        ),
+        false
+    )
 })

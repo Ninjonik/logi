@@ -56,6 +56,13 @@ Workers use durable publication keys, leases, fences, and retry policies. Discor
 Published roster image downloads retry interrupted connections and temporary HTTP
 failures up to three times within a single 45-second deadline, including failures
 while reading the response body. Failed downloads never replace Discord media.
+Downloads enforce actual streamed byte limits even when Content-Length is
+missing or incorrect. Forum attachment downloads share a 45-second deadline per
+message and retain the existing individual and total attachment limits.
+
+Cold command configuration reads share one backend request and cannot replace a
+newer subscribed configuration. Applicant state is bounded separately from live
+application definitions; permission checks at submission remain authoritative.
 
 Public messages do not show server passwords. A player's private assignment response can show the password to eligible published-roster players. Signup discussions and external debriefs require regular text channels and private-thread permissions. Signups are invited and explicit declines are removed, without pruning other thread members. Discord administrators and members with Manage Threads retain access. This is a Discord delivery change; the v1 event configuration contract is unchanged.
 
@@ -91,3 +98,83 @@ Discord delivery only; dashboard and `/api/v1` contracts are unchanged.
 The guard cannot recover an interaction already expired before receipt, a stalled
 event loop, or a Discord/network outage. Keep handler work bounded: Discord's
 acknowledgement extends the response window but does not make it unlimited.
+
+## Sync ownership and diagnostics
+
+A guild sync step that exceeds 20 seconds emits a warning and keeps ownership
+until its actual work settles; it does not start conflicting work merely because
+the warning deadline elapsed. Temporary lookup failures preserve role, scheduled
+event, squad voice and primary forum bindings. Failed role/voice cleanup remains
+available for retry. Only explicit Discord unknown-resource errors count as absence.
+
+Changed events share one calendar refresh per clan per sync cycle. Calendar and
+full-guild context reads use up to four concurrent requests and do not retain
+stale contexts between cycles. Existing participant roles reuse their fetched
+objects rather than immediately fetching them again.
+
+System log context is bounded and cycle-safe. Storage failures fall back to
+console output with a 30-second write retry interval; log writes cannot fail bot
+work. Log administration reads still surface storage errors. This is not an
+asynchronous logging queue or a guarantee of crash recovery for Discord sends.
+
+## Shutdown and interrupted request delivery
+
+SIGTERM and SIGINT stop new intake and recurring producers, cancel prepared-form
+collectors, and drain startup, gateway, request and worker promises before closing
+Discord and Convex. The fallback thread stops cooperatively and does not respawn
+during shutdown. A failed drain or a 120-second drain deadline exits unsuccessfully;
+it is not reported as clean completion. Configure the process supervisor/container
+with at least **130 seconds** of termination grace so it does not kill the process
+before this drain window. Do not run overlapping old and new bot processes.
+
+Manual reminder and roster-change requests opt into fenced, resumable claims.
+A five-minute lease is renewed every 30 seconds. Delivery plans freeze the initial
+audience; resume intersects it with fresh eligibility. Each DM, digest and mention
+has a durable started/sent/refused/uncertain receipt. Confirmed sends are skipped,
+untouched effects continue, and ambiguous sends are never blindly repeated.
+Transient pre-send failures retry with a one-minute backoff (up to five request
+attempts); pending retries are polled every 30 seconds as well as watched.
+
+Expired resumable requests return to pending. Outcome totals come from receipts,
+including earlier confirmed sends; uncertain outcomes never become confirmed
+closed DMs. Legacy interrupted requests without receipts remain failed/uncertain:
+the bot cannot safely infer who received their old messages. Older bot versions
+cannot claim already-resumable requests, so do not roll back the runtime while
+such requests remain pending.
+
+Deploy the updated Convex backend **before** this bot. Added schema fields are
+optional and old bots can finish legacy claims during a backend-first rollout;
+upgraded bots fail closed against a backend without the new claim contract. Stop
+the old bot normally, wait for its exit, then start the replacement. Do not apply
+the archived deferred patch as a migration. HTTP/v1 paths, public response shapes
+and permission checks are unchanged; this is internal bot delivery behavior.
+
+## Scheduled claim recovery
+
+The fallback worker recovers expired claims every minute, using an expiry index
+and one bounded page of obsolete-row cleanup. Upgraded claims use an attempt
+version: stale workers cannot complete or release a newer attempt. The admitted
+batch is renewed every 30 seconds, including jobs waiting behind a slow job, and
+ownership is checked before reconciliation. Legacy bot claims remain compatible.
+
+Scheduled completion now inserts a durable dispatch inbox record in the same
+Convex transaction that removes the schedule job. The main process claims it,
+renews ownership while queued, runs score/event/reminder work, then acknowledges
+it. Failed or interrupted passes remain available for retry; worker messages are
+hints rather than the delivery record. The consumer stops taking new claims during
+shutdown and drains the current acknowledgment.
+
+Signup and attendance runs use stable per-day/per-offset receipts and original
+audience plans. Signup reservation and its dispatch resume marker commit together;
+resuming that dispatch does not make a new daily claim. Fresh game, local-player,
+response, acknowledgement and absence checks still apply. Confirmed attendance
+receipts rebuild missing attendance logs after a crash. Unknown send outcomes are
+retained for operator review and are excluded from closed-DM counts.
+
+Receipt retention checks five expired plans per minute and removes at most 100
+receipts per plan per pass. Finished scopes become eligible after 30 days; active
+or retryable owners are retained. Automatic scopes are retained while their event
+is active or recently concluded. These guarantees cover the new runtime's recorded
+effects, not pre-upgrade sends or exactly-once delivery during an ambiguous network
+failure. Application/ticket transactions and other Discord effect families remain
+separate work in the implementation TODO register.

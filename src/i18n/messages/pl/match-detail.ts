@@ -119,6 +119,10 @@ export const matchDetailMessages = {
                 "{present} uczestniczył · {excused} usprawiedliwiony · {absent} nie uczestniczył",
             reserveCounts: "{present} uczestniczył · {absent} nie uczestniczył",
             playerCount: "{count} graczy",
+            roleEligibilityUnknown:
+                "Wymagane role Discorda nie s? sprawdzane na tej li?cie.",
+            unplacedTitle: "Zapisani oczekuj?cy na przydzia?",
+            signedUp: "Zapisany",
             memberCount: "{count} graczy",
             loadFromVoice: "Załaduj z kanału głosowego",
             loadingFromVoice: "Odczytywanie kanału głosowego…",

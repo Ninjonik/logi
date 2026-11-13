@@ -1,4 +1,5 @@
 import type { EventDiscordDeletion } from "../../../src/domain/events/deletion"
+import { startOwnedInterval } from "../runtime/task-owner"
 import { Routes, type Client } from "discord.js"
 import { convex, references } from "../convex"
 import { env } from "../environment"
@@ -84,8 +85,7 @@ export function startEventDeletionWorker(
             running = false
         }
     }
-    void tick()
-    const timer = setInterval(() => void tick(), 30_000)
-    timer.unref?.()
-    return () => clearInterval(timer)
+    return startOwnedInterval(tick, 30_000, (error) =>
+        console.warn("[sync/event-deletion.ts] Worker pass failed", error)
+    )
 }

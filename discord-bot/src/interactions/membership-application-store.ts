@@ -211,6 +211,7 @@ export function startApplicationStateCache() {
             })
         },
     })
+    return () => applicationStateCache.stop()
 }
 
 export async function saveApplicationWindow(input: {

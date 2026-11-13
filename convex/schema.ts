@@ -1342,6 +1342,53 @@ export default defineSchema({
         error: v.optional(v.string()),
         createdAt: v.string(),
     }).index("status_nextAttemptAt", ["status", "nextAttemptAt"]),
+    discordScheduledDispatches: defineTable({
+        eventId: v.id("events"),
+        guildId: v.string(),
+        kind: v.string(),
+        dueAt: v.string(),
+        changedEventIds: v.array(v.string()),
+        scoreEventIds: v.array(v.string()),
+        status: v.union(v.literal("pending"), v.literal("processing")),
+        claimToken: v.optional(v.string()),
+        leaseUntil: v.optional(v.number()),
+        retryAt: v.number(),
+        attempts: v.number(),
+        signupReserved: v.optional(v.boolean()),
+        createdAt: v.number(),
+    })
+        .index("status_retryAt", ["status", "retryAt"])
+        .index("status_leaseUntil", ["status", "leaseUntil"]),
+    discordDeliveryPlans: defineTable({
+        ownerKind: v.union(
+            v.literal("reminder"),
+            v.literal("roster"),
+            v.literal("dispatch")
+        ),
+        ownerId: v.string(),
+        eventId: v.id("events"),
+        expiresAt: v.number(),
+        scope: v.string(),
+        recipientIds: v.array(v.string()),
+        createdAt: v.number(),
+    })
+        .index("scope", ["scope"])
+        .index("expiresAt", ["expiresAt"]),
+    discordDeliveryEffects: defineTable({
+        scope: v.string(),
+        key: v.string(),
+        claimToken: v.string(),
+        state: v.union(
+            v.literal("started"),
+            v.literal("sent"),
+            v.literal("refused"),
+            v.literal("uncertain")
+        ),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    })
+        .index("scope_key", ["scope", "key"])
+        .index("scope", ["scope"]),
     eventScheduleJobs: defineTable({
         eventId: v.id("events"),
         kind: v.union(
@@ -1359,12 +1406,14 @@ export default defineSchema({
         dueAt: v.string(),
         status: v.union(v.literal("pending"), v.literal("processing")),
         attempts: v.number(),
+        fenced: v.optional(v.boolean()),
         claimedAt: v.optional(v.string()),
         createdAt: v.string(),
         updatedAt: v.string(),
     })
         .index("eventId", ["eventId"])
         .index("status_dueAt", ["status", "dueAt"])
+        .index("status_claimedAt", ["status", "claimedAt"])
         .index("status", ["status"]),
     // Reminder DMs a clan admin asked for from the dashboard. The bot watches
     // pending rows, sends the DMs and records the outcome; old rows keep the
@@ -1383,6 +1432,11 @@ export default defineSchema({
             v.literal("failed")
         ),
         claimedAt: v.optional(v.string()),
+        claimToken: v.optional(v.string()),
+        leaseUntil: v.optional(v.number()),
+        resumable: v.optional(v.boolean()),
+        retryAt: v.optional(v.number()),
+        deliveryAttempts: v.optional(v.number()),
         completedAt: v.optional(v.string()),
         sentCount: v.optional(v.number()),
         // Recipients whose DM Discord refused (closed DMs, blocked bot);
@@ -1392,6 +1446,8 @@ export default defineSchema({
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
         .index("status", ["status"])
+        .index("status_leaseUntil", ["status", "leaseUntil"])
+        .index("status_retryAt", ["status", "retryAt"])
         .index("requestedAt", ["requestedAt"]),
     // Who the scheduled sign-up and attendance reminders did not reach (board
     // L2-64): one row per match, kind and run (the attendance offset or the
@@ -1443,6 +1499,11 @@ export default defineSchema({
             v.literal("failed")
         ),
         claimedAt: v.optional(v.string()),
+        claimToken: v.optional(v.string()),
+        leaseUntil: v.optional(v.number()),
+        resumable: v.optional(v.boolean()),
+        retryAt: v.optional(v.number()),
+        deliveryAttempts: v.optional(v.number()),
         completedAt: v.optional(v.string()),
         dmSentUserIds: v.optional(v.array(v.string())),
         dmFailedUserIds: v.optional(v.array(v.string())),
@@ -1451,6 +1512,8 @@ export default defineSchema({
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
         .index("status", ["status"])
+        .index("status_leaseUntil", ["status", "leaseUntil"])
+        .index("status_retryAt", ["status", "retryAt"])
         .index("status_requestedAt", ["status", "requestedAt"]),
     stratmaps: defineTable({
         guildId: v.string(),

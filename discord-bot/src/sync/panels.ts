@@ -80,7 +80,6 @@ export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
             }
         )
         .then((row) => row as CalendarPanelRow | null)
-        .catch(() => undefined)
     const requested = panel
         ? isRequestPending(panel.requestedAt, panel.handledRequestAt)
         : false

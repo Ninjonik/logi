@@ -424,7 +424,7 @@ async function addTicketMembers(
     categoryLabel: string,
     ports: TicketPorts
 ) {
-    await guild.members.fetch().catch(() => null)
+    if (category.supportRoleIds.length) await guild.members.fetch()
     const memberIds = [
         ...new Set([
             authorId,

@@ -2,6 +2,7 @@ import {
     appliesAsRecruit,
     canExecuteManagedRoles,
     desiredMembershipRoles,
+    resolveRoleCategory,
     managedRolePolicy,
     planManagedRoleChanges,
     roleAssignmentFingerprint,
@@ -213,7 +214,13 @@ export async function enqueueManagedRoles(
     const policy = await policyFor(ctx, guildId, gameId)
     const assignment = await assignmentFor(ctx, guildId, gameId, userId)
     const categoryId =
-        assignment?.membershipCategoryId ?? input.before?.membershipCategoryId
+        (assignment && resolveRoleCategory(policy, assignment)?.id) ??
+        input.before?.membershipCategoryId
+    const unresolvedCategory = Boolean(
+        assignment &&
+        assignment.status !== "pending" &&
+        !resolveRoleCategory(policy, assignment)
+    )
     if (
         (actor.kind === "application" || actor.kind === "rollback") &&
         (actor.userId !== discordUserId ||
@@ -267,7 +274,7 @@ export async function enqueueManagedRoles(
         categoryId,
         assignmentFingerprint: roleAssignmentFingerprint(assignment),
         policyFingerprint: JSON.stringify(policy),
-        allowedRoleIds: policy.roleIds,
+        allowedRoleIds: unresolvedCategory ? [] : policy.roleIds,
         // A submitted application waits without the clan role (N4-40).
         desiredRoleIds: desiredMembershipRoles(policy, assignment, {
             applicant: actor.kind === "application",

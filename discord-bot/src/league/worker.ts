@@ -9,6 +9,7 @@ import {
 import type { LeagueLinkReplyView } from "../../../src/domain/wardogs-league/link-reply"
 import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
 import { LEAGUE_CARD_KEY_PREFIX } from "../../../src/domain/discord-publications/keys"
+import { TaskOwner, startOwnedInterval } from "../runtime/task-owner"
 import { humanLeagueInput, linkReplyPayload } from "./render"
 import { publishManagedMessage } from "../sync/publication"
 import { makeFunctionReference } from "convex/server"
@@ -113,6 +114,7 @@ export async function sendLeagueLinkReplies(ports: {
 }
 
 export function startLeagueWorker(client: Client) {
+    const intake = new TaskOwner()
     let stopped = false,
         running = false
     const tick = async () => {
@@ -188,9 +190,9 @@ export function startLeagueWorker(client: Client) {
             running = false
         }
     }
-    const timer = setInterval(() => void tick(), 60_000)
-    timer.unref()
-    void tick()
+    const stopPoll = startOwnedInterval(tick, 60_000, (error) =>
+        console.warn("[league] Worker pass failed", error)
+    )
     const cleanup: Array<() => void> = []
     if (env.leagueMessageContent) {
         const pending = new Map<string, Promise<void>>()
@@ -203,68 +205,73 @@ export function startLeagueWorker(client: Client) {
             if (stopped || !input.guildId || queued >= 100) return
             const key = `${input.guildId}:${input.id}`
             queued++
-            const work = (pending.get(key) ?? Promise.resolve())
-                .then(async () => {
-                    if (deleted) {
+            const previous = pending.get(key) ?? Promise.resolve()
+            const work = intake
+                .run(() =>
+                    previous.then(async () => {
+                        if (deleted) {
+                            await convex.mutation(
+                                makeFunctionReference<"mutation">(
+                                    "leagueDiscovery:ingestMessage"
+                                ),
+                                {
+                                    secret: env.internalSecret,
+                                    guildId: input.guildId,
+                                    channelId: input.channelId,
+                                    messageId: input.id,
+                                    urls: [],
+                                    human: true,
+                                    version: Date.now(),
+                                    deleted: true,
+                                }
+                            )
+                            return
+                        }
+                        const message = input.partial
+                            ? await input.fetch()
+                            : input
+                        if (message.author.bot || message.webhookId) return
+                        const settings: GuildTracking["settings"] | null =
+                            await convex.query(
+                                makeFunctionReference<"query">(
+                                    "leagueDiscovery:inputSettings"
+                                ),
+                                {
+                                    secret: env.internalSecret,
+                                    guildId: message.guildId!,
+                                }
+                            )
+                        const urls = humanLeagueInput(
+                            {
+                                guildId: message.guildId,
+                                channelId: message.channelId,
+                                bot: message.author.bot,
+                                webhookId: message.webhookId,
+                                content: message.content,
+                            },
+                            settings?.enabled ? settings.inputChannelId : null,
+                            receivedEdit
+                        )
+                        if (urls === null) return
                         await convex.mutation(
                             makeFunctionReference<"mutation">(
                                 "leagueDiscovery:ingestMessage"
                             ),
                             {
                                 secret: env.internalSecret,
-                                guildId: input.guildId,
-                                channelId: input.channelId,
-                                messageId: input.id,
-                                urls: [],
+                                guildId: message.guildId,
+                                channelId: message.channelId,
+                                messageId: message.id,
+                                urls,
                                 human: true,
-                                version: Date.now(),
-                                deleted: true,
+                                version:
+                                    message.editedTimestamp ??
+                                    message.createdTimestamp,
+                                deleted: false,
                             }
                         )
-                        return
-                    }
-                    const message = input.partial ? await input.fetch() : input
-                    if (message.author.bot || message.webhookId) return
-                    const settings: GuildTracking["settings"] | null =
-                        await convex.query(
-                            makeFunctionReference<"query">(
-                                "leagueDiscovery:inputSettings"
-                            ),
-                            {
-                                secret: env.internalSecret,
-                                guildId: message.guildId!,
-                            }
-                        )
-                    const urls = humanLeagueInput(
-                        {
-                            guildId: message.guildId,
-                            channelId: message.channelId,
-                            bot: message.author.bot,
-                            webhookId: message.webhookId,
-                            content: message.content,
-                        },
-                        settings?.enabled ? settings.inputChannelId : null,
-                        receivedEdit
-                    )
-                    if (urls === null) return
-                    await convex.mutation(
-                        makeFunctionReference<"mutation">(
-                            "leagueDiscovery:ingestMessage"
-                        ),
-                        {
-                            secret: env.internalSecret,
-                            guildId: message.guildId,
-                            channelId: message.channelId,
-                            messageId: message.id,
-                            urls,
-                            human: true,
-                            version:
-                                message.editedTimestamp ??
-                                message.createdTimestamp,
-                            deleted: false,
-                        }
-                    )
-                })
+                    })
+                )
                 .catch(() => {
                     console.warn(
                         "[league] Human link intake could not complete."
@@ -300,7 +307,7 @@ export function startLeagueWorker(client: Client) {
     }
     return () => {
         stopped = true
-        clearInterval(timer)
         cleanup.forEach((stop) => stop())
+        return Promise.all([stopPoll(), intake.stop()])
     }
 }

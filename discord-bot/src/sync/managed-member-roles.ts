@@ -14,6 +14,7 @@ import {
     roleFailureError,
 } from "./role-failure-reports"
 import { reportClanDiscordError } from "../error-reporting"
+import { startOwnedInterval } from "../runtime/task-owner"
 import { makeFunctionReference } from "convex/server"
 import type { Client } from "discord.js"
 import { env } from "../environment"
@@ -228,10 +229,7 @@ export function startManagedRoleWorker(client: Client) {
             running = false
         }
     }
-    const timer = setInterval(() => {
-        void tick()
-    }, 10_000)
-    timer.unref()
-    void tick()
-    return () => clearInterval(timer)
+    return startOwnedInterval(tick, 10_000, (error) =>
+        console.warn("[sync/managed-member-roles.ts] Worker pass failed", error)
+    )
 }

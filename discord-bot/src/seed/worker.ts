@@ -1,4 +1,5 @@
 import type { Client, MessageCreateOptions } from "discord.js"
+import { startOwnedInterval } from "../runtime/task-owner"
 import { makeFunctionReference } from "convex/server"
 
 import {
@@ -450,8 +451,7 @@ export function startSeedWorker(client: Client) {
             ticking = false
         }
     }
-    const timer = setInterval(() => void tick(), TICK_MS)
-    timer.unref()
-    void tick()
-    return () => clearInterval(timer)
+    return startOwnedInterval(tick, TICK_MS, (error) =>
+        console.warn("[seed/worker.ts] Worker pass failed", error)
+    )
 }

@@ -1,0 +1,2711 @@
+{
+  "note": "Route exports/imports discovery, not an authorization verdict. Re-exports and catch-all operation identities require tracing.",
+  "routes": [
+    {
+      "path": "src/app/api/applications/[guildId]/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/membership-application",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/api/web-application-route"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/auth/callback/discord/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "next/server",
+        "next/headers",
+        "@/lib/auth",
+        "@/lib/discord",
+        "@/lib/system-logs",
+        "@/lib/local-redirect",
+        "@/lib/login-redirect",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/auth/discord/refresh/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/bot-status-refresh",
+        "@/lib/cache-tags",
+        "next/server",
+        "@/lib/auth",
+        "@/lib/system-logs",
+        "@/lib/discord"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/auth/discord/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "next/server",
+        "next/headers",
+        "crypto",
+        "@/lib/local-redirect",
+        "@/lib/discord"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/auth/logout/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/dashboard-logout",
+        "@/lib/auth",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/bug-reports/[id]/attachments/[index]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/bug-reports",
+        "convex/server",
+        "@/lib/api/superadmin-route",
+        "convex/nextjs"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/bug-reports/route.ts",
+      "methods": [
+        "GET",
+        "PATCH",
+        "POST"
+      ],
+      "imports": [
+        "@/domain/bug-reports/report",
+        "@/lib/gateways/bug-reports",
+        "@/lib/api/superadmin-route",
+        "@/lib/server-uploads",
+        "@/lib/api/request-bytes",
+        "convex/server",
+        "convex/nextjs",
+        "@/lib/env",
+        "zod"
+      ],
+      "bodyReads": [
+        {
+          "call": "new Response(bytes as BodyInit).json",
+          "count": 1
+        },
+        {
+          "call": "upload.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/cache/revalidate/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/gateways/cache-revalidation",
+        "@/lib/gateways/shared-match-cache",
+        "@/lib/server-route-errors",
+        "@/lib/cache-tags",
+        "convex/server",
+        "@/lib/env",
+        "@/lib/auth",
+        "convex/nextjs"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/cache/roster-image/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/cache-tags",
+        "@/lib/env",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/calendar/[serverId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "convex/server",
+        "convex/nextjs",
+        "@/domain/calendar/ical-feed",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/competitions/[competitionId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/competition-admin"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/competitions/[competitionId]/teams/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/competition-admin"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/competitions/ecl/seed/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/competition-admin"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/competitions/fixtures/[fixtureId]/events/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/competition-admin"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/competitions/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/competition-admin"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/discord/panel-image/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/roster-image-cache",
+        "@/lib/api/panel-image-route",
+        "@/lib/panel-image/service",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/discord/roster-image/[eventId]/route.tsx",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/roster-image-attendance",
+        "@/domain/rosters/slot-portrait",
+        "@/lib/roster-image-assets",
+        "next/server",
+        "next/og",
+        "sharp",
+        "@/lib/roster-image",
+        "@/lib/clan-language/core",
+        "@/lib/clan-language/events",
+        "@/lib/discord-emoji",
+        "@/lib/hll-map-presets",
+        "@/lib/roster-image-cache",
+        "@/lib/env"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 1
+        },
+        {
+          "call": "renderedImage.arrayBuffer",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/image-assets/[file]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/image-public-route",
+        "@/domain/assets/image-asset",
+        "convex/server",
+        "@/lib/env",
+        "convex/nextjs",
+        "zod"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/og/[kind]/[id]/route.tsx",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/read-models/wardogs-match-reports",
+        "@/components/app/wardogs-match-image",
+        "sharp",
+        "next/og",
+        "node:fs/promises",
+        "node:path",
+        "@/lib/read-models/public-profiles",
+        "@/lib/stratmaps",
+        "@/lib/public-image-version",
+        "@/lib/performance-trends",
+        "@/i18n/dictionaries",
+        "@/lib/server-stratmaps",
+        "@/lib/public-image-cache",
+        "@/lib/game-stratmaps",
+        "@/i18n/config",
+        "@/lib/format"
+      ],
+      "bodyReads": [
+        {
+          "call": "source.arrayBuffer",
+          "count": 1
+        },
+        {
+          "call": "rendered.arrayBuffer",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/og/player-match/[playerId]/[eventId]/route.tsx",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/read-models/wardogs-match-reports",
+        "@/components/app/wardogs-match-image",
+        "@/i18n/dictionaries",
+        "@/i18n/config",
+        "next/og",
+        "@/lib/read-models/public-profiles"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/platform-links/steam/callback/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/platform-links"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/platform-links/steam/route.ts",
+      "methods": [
+        "GET",
+        "DELETE"
+      ],
+      "imports": [
+        "@/lib/gateways/platform-links"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/platform-links/steam/start/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/platform-links"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/admin-access/route.ts",
+      "methods": [
+        "PATCH"
+      ],
+      "imports": [
+        "next/server",
+        "convex/server",
+        "convex/nextjs",
+        "zod",
+        "@/lib/read-models/server-context",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/cache-tags",
+        "@/lib/api/request-json",
+        "@/lib/env"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/api-keys/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "imports": [
+        "@/lib/public-api",
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/domain/api/key-access",
+        "@/lib/api/request-json",
+        "@/lib/env"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/articles/[articleId]/route.ts",
+      "methods": [
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/read-models/server-context",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/articles",
+        "@/lib/server-route-errors"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/articles/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/validation/article",
+        "@/lib/read-models/server-context",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/articles",
+        "@/lib/server-route-errors",
+        "@/lib/api/request-json",
+        "@/lib/server-context",
+        "next/server"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 7
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/assignments/[assignmentId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-user-management",
+        "@/lib/read-models/server-context",
+        "@/lib/server-route-errors",
+        "@/lib/server-discord-settings",
+        "@/lib/validation/user-assignment",
+        "@/lib/cache-tags",
+        "@/lib/server-user-management",
+        "@/lib/discord"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/assignments/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-user-management",
+        "@/lib/read-models/server-context",
+        "@/lib/server-route-errors",
+        "@/lib/validation/user-assignment",
+        "@/lib/cache-tags",
+        "@/lib/discord"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/calendar-items/[itemId]/route.ts",
+      "methods": [
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/read-models/server-context",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/cache-tags",
+        "@/lib/gateways/calendar-items",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/calendar-items/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/read-models/server-context",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/validation/calendar-item",
+        "@/lib/cache-tags",
+        "@/lib/gateways/calendar-items",
+        "@/lib/api/request-json",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/competitions/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/clan-competitions"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/dashboard-admins/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/workspace-admin-actions"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-commands/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/discord-commands",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/api/discord-commands-route",
+        "@/lib/cache-tags"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-metadata/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/discord",
+        "@/lib/server-context",
+        "@/lib/system-logs",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panel-graphics/route.ts",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "imports": [
+        "@/lib/api/panel-graphics-route",
+        "../../../../../../convex/dashboardActor",
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/env",
+        "convex/nextjs",
+        "convex/server"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panels/[panelId]/actions/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/discord-panels-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panels/channel-check/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/discord-panels-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panels/controls/[connectionId]/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/discord-panels-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panels/league-preview/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/discord-panels-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panels/preview-image/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/discord-panels-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panels/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/discord-panels-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panels/servers/[connectionId]/route.ts",
+      "methods": [
+        "PUT"
+      ],
+      "imports": [
+        "@/lib/api/discord-panels-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-panels/test-fetch/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/discord-panels-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-seed/[connectionId]/route.ts",
+      "methods": [
+        "PUT",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/discord-seed-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-seed/role/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/discord-seed-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-seed/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/discord-seed-handlers"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/discord-settings/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/domain/discord-publications/destinations",
+        "@/lib/validation/discord-settings",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/cache-tags",
+        "@/lib/server-discord-settings",
+        "@/lib/system-logs",
+        "@/lib/discord",
+        "@/lib/api/request-json",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/enabled-games/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/workspace-admin-actions"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/event-drafts/[eventId]/route.ts",
+      "methods": [
+        "DELETE"
+      ],
+      "imports": [
+        "@/lib/api/event-draft-routes",
+        "@/lib/api/event-draft-route-deps"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/event-drafts/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/event-draft-routes",
+        "@/lib/api/event-draft-route-deps"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/[eventId]/delivery/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/read-models/server-context",
+        "@/lib/read-models/match-detail",
+        "@/lib/api/event-delivery-route",
+        "@/domain/games/game"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/[eventId]/excuses/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/event-excuses-route",
+        "@/lib/read-models/server-context",
+        "@/lib/cache-tags",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/env",
+        "convex/server",
+        "convex/nextjs"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/[eventId]/match-teams/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/match-team-refresh-route",
+        "@/lib/read-models/server-context",
+        "@/lib/api/teams-dashboard-route",
+        "@/lib/cache-tags",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/env",
+        "@/lib/public-api",
+        "convex/server",
+        "convex/nextjs"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/[eventId]/reminders/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/event-reminders-route",
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/env",
+        "convex/server",
+        "convex/nextjs"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/[eventId]/results/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/shared-match-cache",
+        "@/lib/read-models/server-context",
+        "@/lib/cache-tags",
+        "@/lib/api/event-results-route",
+        "@/lib/env",
+        "convex/nextjs",
+        "@/domain/games/game",
+        "convex/server",
+        "@/lib/auth"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/[eventId]/resync-topic-thread/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/cache-tags",
+        "@/lib/server-events",
+        "@/lib/server-context"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/[eventId]/route.ts",
+      "methods": [
+        "DELETE",
+        "PATCH",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/event-route-handlers",
+        "@/lib/server-events",
+        "@/lib/discord",
+        "@/lib/clan-language/core",
+        "@/lib/server-route-errors",
+        "@/domain/discord-messages/direct-message-views",
+        "@/domain/discord-messages/notification-settings",
+        "@/lib/read-models/server-context",
+        "@/lib/server-metadata",
+        "@/lib/clan-language/direct-messages",
+        "@/lib/server-discord-settings",
+        "@/lib/validation/event",
+        "@/lib/cache-tags",
+        "@/domain/discord-messages/message-api",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/server-match-results",
+        "@/domain/discord-messages/match-text",
+        "@/lib/clan-language/system",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/[eventId]/signup/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/validation/event",
+        "@/domain/events/types",
+        "@/domain/events/status",
+        "@/lib/server-route-errors",
+        "next/server",
+        "@/lib/event-signup",
+        "@/lib/cache-tags",
+        "@/domain/assignments/policy",
+        "@/lib/clan-language/events",
+        "@/lib/server-events",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 7
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/events/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/api/event-route-handlers",
+        "@/lib/server-events",
+        "@/lib/read-models/server-context",
+        "@/lib/server-match-results",
+        "@/lib/cache-tags",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/validation/event",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/frontend-settings/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-guild-settings",
+        "@/lib/cache-tags",
+        "@/lib/system-logs",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/game-data-sources/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/game-server-credentials",
+        "@/lib/read-models/server-context",
+        "@/lib/api/game-data-sources-route",
+        "@/lib/gateways/dashboard-actor",
+        "convex/nextjs",
+        "@/lib/env",
+        "convex/server"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/game-data/[connectionId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/api/warcon-route",
+        "@/lib/server-warcon"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/game-data/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/env",
+        "@/lib/api/game-data-route",
+        "convex/nextjs",
+        "convex/server"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/game-history-retention/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/domain/game-data/history-retention",
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/api/game-history-route",
+        "@/domain/game-data/history",
+        "@/lib/env",
+        "convex/nextjs",
+        "@/lib/api/request-json",
+        "convex/server"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/game-history/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/api/game-history-route",
+        "convex/server",
+        "@/lib/env",
+        "convex/nextjs"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/groups/[groupId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/server-groups",
+        "@/lib/cache-tags",
+        "@/lib/server-context",
+        "@/lib/validation/group"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 8
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/groups/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/read-models/server-context",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/cache-tags",
+        "@/lib/server-groups",
+        "@/lib/server-context",
+        "@/lib/validation/group"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 7
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/helper-data/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/server-setup",
+        "@/lib/cache-tags",
+        "@/lib/server-route-errors",
+        "@/lib/api/clan-admin-route",
+        "@/lib/system-logs"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/image-assets/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "../../../../../../convex/dashboardActor",
+        "@/lib/read-models/server-context",
+        "@/domain/assets/image-asset.schema",
+        "@/lib/gateways/dashboard-actor",
+        "convex/nextjs",
+        "@/lib/env",
+        "@/lib/api/image-upload",
+        "@/lib/api/request-bytes",
+        "convex/server",
+        "node:crypto",
+        "zod"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/league-auto-import/route.ts",
+      "methods": [
+        "GET",
+        "PUT",
+        "POST"
+      ],
+      "imports": [
+        "@/domain/wardogs-league/fixture-link",
+        "@/lib/gateways/discord-public-channel",
+        "@/lib/read-models/server-context",
+        "@/domain/wardogs-league/team-api",
+        "@/domain/game-data/credentials.schema",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/api/clan-admin-route",
+        "@/lib/api/request-json",
+        "convex/nextjs",
+        "convex/server",
+        "@/lib/env",
+        "zod"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/league-matches/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/read-models/server-context",
+        "@/lib/api/league-match-route",
+        "@/lib/server-league-matches"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/league-tracking/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/domain/wardogs-league/discovery.schema",
+        "@/lib/gateways/discord-public-channel",
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/env",
+        "convex/nextjs",
+        "@/lib/api/request-json",
+        "convex/server",
+        "zod"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/match-templates/route.ts",
+      "methods": [
+        "PUT"
+      ],
+      "imports": [
+        "@/lib/validation/match-templates",
+        "@/lib/cache-tags",
+        "@/lib/server-match-templates",
+        "@/lib/api/clan-admin-route",
+        "@/lib/server-route-errors",
+        "@/lib/api/request-json"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/member-role-operations/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/member-role-operations-route",
+        "@/lib/read-models/server-context",
+        "convex/server",
+        "@/lib/env",
+        "convex/nextjs"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/membership-application/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/membership-application",
+        "@/lib/api/membership-application-route",
+        "@/lib/api/dashboard-write-origin"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/membership-integrations/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/membership-policy-route",
+        "@/lib/read-models/server-context",
+        "@/lib/env",
+        "convex/nextjs",
+        "convex/server"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/performance-history/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/read-models/performance-history",
+        "@/lib/cache-tags",
+        "@/lib/gateways/dashboard-actor",
+        "@/domain/games/game",
+        "@/lib/server-context",
+        "@/lib/auth",
+        "next/server"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/public-invite/route.ts",
+      "methods": [
+        "PUT"
+      ],
+      "imports": [
+        "@/lib/api/public-invite-route",
+        "@/lib/gateways/public-clan-invite",
+        "@/lib/cache-tags",
+        "@/lib/api/clan-admin-route",
+        "@/lib/server-route-errors"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/rosters/[rosterId]/confirm-meeting-attendance/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-discord-settings",
+        "@/lib/cache-tags",
+        "@/lib/system-logs",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/rosters/[rosterId]/route.ts",
+      "methods": [
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/cache-tags",
+        "@/lib/server-rosters",
+        "@/lib/server-context"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/rosters/[rosterId]/update-notifications/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "imports": [
+        "convex/nextjs",
+        "convex/server",
+        "@/lib/api/roster-update-notifications-route",
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/rosters/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/roster-writes",
+        "@/lib/api/roster-write-route",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/squad-presets/[presetId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/server-squad-presets",
+        "@/lib/cache-tags",
+        "@/lib/validation/squad-preset",
+        "@/lib/api/clan-admin-route"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/squad-presets/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/cache-tags",
+        "@/lib/validation/squad-preset",
+        "@/lib/api/clan-admin-route",
+        "@/lib/server-squad-presets"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/sso-applications/[clientId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/validation/sso-application",
+        "@/lib/sso-server",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/api/request-json",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 7
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/sso-applications/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/sso-server",
+        "@/lib/server-context",
+        "@/lib/auth",
+        "next/server"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/stratmaps/[stratmapId]/route.ts",
+      "methods": [
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/cache-tags",
+        "@/lib/server-stratmaps",
+        "@/lib/server-route-errors"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/team-requests/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/teams/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/teams-dashboard-route",
+        "@/lib/read-models/server-context",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/public-api",
+        "convex/server",
+        "@/lib/env",
+        "convex/nextjs"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/topic-presets/[presetId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/server-topic-presets",
+        "@/lib/cache-tags",
+        "@/lib/validation/topic-preset",
+        "@/lib/api/clan-admin-route"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/topic-presets/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/cache-tags",
+        "@/lib/validation/topic-preset",
+        "@/lib/api/clan-admin-route",
+        "@/lib/server-topic-presets"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/users/[assignmentId]/recheck-name/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/server-user-management",
+        "@/lib/gateways/player-display-name",
+        "@/lib/cache-tags",
+        "@/lib/server-context"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/users/auto-link-platform-ids/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-match-results",
+        "@/lib/cache-tags",
+        "@/domain/games/game",
+        "@/lib/system-logs",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/users/dedupe-player-stats/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/cache-tags",
+        "@/lib/server-player-stats",
+        "@/domain/games/game",
+        "@/lib/system-logs",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/users/import-discord/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-user-management",
+        "@/lib/discord",
+        "@/domain/games/game",
+        "@/lib/cache-tags",
+        "@/lib/system-logs",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/users/link-missing-discord-ids/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/discord",
+        "@/lib/server-match-results",
+        "@/lib/server-player-stats",
+        "@/lib/cache-tags",
+        "@/domain/games/game",
+        "@/lib/system-logs",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/users/merge/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/cache-tags",
+        "@/lib/server-user-management",
+        "@/lib/system-logs",
+        "@/lib/server-context",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/users/migrate-membership-status/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-user-management",
+        "@/lib/read-models/server-context",
+        "@/domain/games/game",
+        "@/lib/server-route-errors",
+        "@/lib/cache-tags",
+        "@/lib/discord",
+        "@/lib/discord",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/webhooks/[webhookId]/deliveries/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-context",
+        "@/lib/webhooks"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/webhooks/[webhookId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE",
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/webhooks",
+        "@/lib/server-context"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 9
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/webhooks/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/webhooks",
+        "@/lib/server-context"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 6
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/website-event-policies/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/website-event-policy-route",
+        "@/lib/env",
+        "convex/nextjs",
+        "convex/server",
+        "@/lib/auth"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/servers/[serverId]/workspace-mode/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/clan-competitions"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/sso/.well-known/openid-configuration/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/sso-routes"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/sso/authorize/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/sso-routes"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/sso/jwks/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/sso-routes"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/sso/logout/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/sso-provider",
+        "@/lib/api/sso-routes",
+        "@/lib/auth",
+        "@/lib/env"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/sso/token/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/sso-routes"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/sso/userinfo/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/sso-routes"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/superadmin/games/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/superadmin-route",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/env",
+        "convex/nextjs",
+        "@/lib/api/request-json",
+        "convex/server",
+        "zod"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/superadmin/image-assets/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/platform-image-access",
+        "@/domain/assets/image-asset.schema",
+        "@/lib/gateways/dashboard-actor",
+        "convex/nextjs",
+        "@/lib/env",
+        "@/lib/api/image-upload",
+        "@/lib/api/request-bytes",
+        "convex/server",
+        "node:crypto",
+        "zod"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/superadmin/platform-settings/channels/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/auth",
+        "@/lib/validation/platform-settings",
+        "@/lib/discord",
+        "@/lib/api/superadmin-route",
+        "@/lib/system-logs"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/superadmin/platform-settings/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/auth",
+        "@/lib/validation/platform-settings",
+        "@/lib/api/superadmin-route",
+        "@/lib/platform-settings",
+        "@/lib/env"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/superadmin/team-requests/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/superadmin-team-requests-route",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/api/superadmin-route",
+        "@/lib/env",
+        "convex/nextjs",
+        "convex/server"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/superadmin/teams/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/superadmin-teams-route",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/api/superadmin-route",
+        "@/lib/env",
+        "convex/nextjs",
+        "convex/server"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/superadmin/teams/scrape/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/competition-admin",
+        "@/lib/gateways/team-scrape",
+        "@/lib/api/team-scrape-route",
+        "@/lib/env"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/uploads/file/[storageId]/[filename]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/server-uploads"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/uploads/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/server-route-errors",
+        "@/lib/api/dashboard-write-origin",
+        "@/lib/gateways/dashboard-actor",
+        "@/lib/server-uploads"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/uploads/url/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/server-route-errors",
+        "@/lib/server-uploads",
+        "@/lib/env"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/user/onboarding/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/auth"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.json",
+          "count": 1
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/user/privacy-export/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "convex/server",
+        "convex/nextjs",
+        "next/server",
+        "jszip",
+        "@/lib/auth",
+        "@/lib/env",
+        "@/lib/api/superadmin-route"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/user/privacy-request/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "convex/server",
+        "convex/nextjs",
+        "next/server",
+        "zod",
+        "@/lib/auth",
+        "@/lib/system-logs",
+        "@/lib/env",
+        "@/lib/api/superadmin-route"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/user/settings/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/auth",
+        "@/lib/validation/user-settings",
+        "@/lib/cache-tags",
+        "@/lib/system-logs",
+        "@/lib/api/superadmin-route",
+        "@/lib/env"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 5
+        },
+        {
+          "call": "request.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/clan/[[...path]]/route.ts",
+      "methods": [
+        "POST",
+        "PATCH",
+        "DELETE",
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/clan-write-cache",
+        "@/lib/api/integration-route",
+        "@/lib/api/membership-route",
+        "@/domain/api/people-summaries",
+        "@/lib/validation/event",
+        "@/lib/api/people-route",
+        "next/server",
+        "node:crypto",
+        "@/lib/public-api",
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/api/page-query",
+        "@/lib/api/game-scope",
+        "@/lib/validation/user-assignment",
+        "@/domain/api/settings-patch",
+        "@/domain/api/roster-mutation",
+        "@/domain/api/preset-mutation",
+        "@/domain/api/idempotency",
+        "@/lib/validation/event"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.text",
+          "count": 9
+        },
+        {
+          "call": "NextResponse.json",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/clan/competitions/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/competition-enrollment-api"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/clan/event-commands/[eventId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/gateways/website-event-commands"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/clan/event-commands/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/website-event-commands"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/clan/events/[eventId]/image/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/read-models/match-image",
+        "@/lib/api/match-image-route",
+        "@/lib/panel-image/service",
+        "@/lib/public-api"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/clan/events/[eventId]/local-settings/route.ts",
+      "methods": [
+        "PATCH"
+      ],
+      "imports": [
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/validation/shared-match-settings",
+        "@/lib/gateways/clan-write-cache",
+        "@/domain/api/idempotency",
+        "convex/server",
+        "@/lib/env",
+        "@/lib/public-api",
+        "convex/nextjs",
+        "node:crypto"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        },
+        {
+          "call": "request.text",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/clan/hll-live/[connectionId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/api/hll-live-route",
+        "@/lib/server-hll-live"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/clan/league-fixtures/overview/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/api/league-fixtures-route",
+        "convex/server",
+        "@/lib/env",
+        "@/lib/public-api",
+        "convex/nextjs"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/clan/league-fixtures/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/api/league-fixtures-route",
+        "convex/server",
+        "@/lib/env",
+        "@/lib/public-api",
+        "convex/nextjs"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/clan/league-matches/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/api/league-match-route",
+        "@/lib/server-league-matches"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/clan/server-game-history/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/api/game-history-route",
+        "convex/server",
+        "@/lib/env",
+        "@/lib/public-api",
+        "convex/nextjs"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/clan/teams/[id]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/teams-route",
+        "@/lib/api/authenticated-clan-route",
+        "@/domain/teams/team",
+        "convex/server",
+        "@/lib/env",
+        "@/lib/public-api",
+        "convex/nextjs"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/clan/teams/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/teams-route",
+        "@/lib/api/authenticated-clan-route",
+        "@/domain/teams/team",
+        "convex/server",
+        "@/lib/env",
+        "@/lib/public-api",
+        "convex/nextjs"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/clan/users/register/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/api/external-registration-route",
+        "@/lib/gateways/external-registration",
+        "@/lib/api/authenticated-clan-route"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/clan/warcon-data/[connectionId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/authenticated-clan-route",
+        "@/lib/api/warcon-route",
+        "@/lib/server-warcon"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/clan/workspace-mode/route.ts",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "imports": [
+        "@/lib/api/competition-enrollment-api"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/docs/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@scalar/nextjs-api-reference"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/me/leagues/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/league-portal",
+        "@/lib/cache-tags",
+        "@/domain/leagues/portal",
+        "@/lib/api/request-json",
+        "next/cache",
+        "@/lib/env"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/me/leagues/teams/[teamId]/logo/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/lib/gateways/team-images"
+      ],
+      "bodyReads": []
+    },
+    {
+      "path": "src/app/api/v1/openapi.json/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/domain/wardogs-league/panels",
+        "@/domain/integrations/change.schema",
+        "@/domain/api/event-summaries",
+        "@/domain/game-data/contracts",
+        "@/lib/api/game-history-openapi",
+        "@/domain/events/tactical-plan",
+        "@/lib/api/people-openapi",
+        "@/lib/api/competition-enrollment-openapi",
+        "@/domain/membership/observation.schema",
+        "@/lib/api/external-registration-openapi",
+        "@/lib/api/wardogs-match-openapi",
+        "@/domain/game-data/warcon-contracts",
+        "@/domain/api/result-summaries",
+        "@/domain/wardogs-league/fixture",
+        "@/domain/wardogs-league/contracts",
+        "@/domain/wardogs-league/all-fixtures",
+        "@/lib/api/league-portal-openapi",
+        "@/domain/game-data/warcon-query",
+        "@/domain/game-data/hll-live",
+        "@/domain/teams/match-teams",
+        "@/lib/api/shared-match-openapi",
+        "@/domain/api/key-access",
+        "@/domain/integrations/change",
+        "next/server",
+        "zod",
+        "@/domain/teams/team",
+        "@/lib/api/website-event-command-openapi",
+        "@/lib/api/settings-openapi",
+        "@/lib/api/generated-openapi-schemas"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/public/clans/[clanId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/collection-query",
+        "@/domain/shared/collection-query",
+        "@/lib/read-models/public-clan-page",
+        "@/lib/read-models/public-profiles",
+        "@/lib/public-api",
+        "next/server"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/public/competitions/[slug]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/collection-query",
+        "@/domain/shared/collection-query",
+        "@/lib/read-models/competitions",
+        "@/lib/public-api",
+        "next/server"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/public/leagues/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/read-models/competitions",
+        "@/lib/public-api"
+      ],
+      "bodyReads": [
+        {
+          "call": "Response.json",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/public/matches/[eventId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/api/collection-query",
+        "@/domain/shared/collection-query",
+        "@/lib/read-models/wardogs-match-reports",
+        "@/lib/read-models/public-profiles",
+        "@/lib/public-api"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/public/matches/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "next/server",
+        "@/lib/api/collection-query",
+        "@/lib/api/game-scope",
+        "@/lib/read-models/public-profiles",
+        "@/lib/public-api"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/v1/public/players/[playerId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "imports": [
+        "@/lib/api/collection-query",
+        "@/domain/shared/collection-query",
+        "@/lib/api/public-player-identity",
+        "@/lib/read-models/public-profiles",
+        "@/lib/public-api",
+        "next/server"
+      ],
+      "bodyReads": [
+        {
+          "call": "NextResponse.json",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "path": "src/app/api/webhooks/github/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "imports": [
+        "@/infrastructure/github/webhook",
+        "convex/server",
+        "@/lib/env",
+        "convex/nextjs",
+        "zod"
+      ],
+      "bodyReads": [
+        {
+          "call": "request.text",
+          "count": 1
+        },
+        {
+          "call": "Response.json",
+          "count": 2
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 import { matchesGameScope, resolveGameScope, type GameId } from "../games/game"
+import { isSignupMembershipAllowed } from "../events/signup-policy"
 import { setRosterAttendanceStatus } from "./attendance-policy"
+import type { SignupMembershipStatus } from "../events/types"
+import { signupListMembership } from "../events/signup-list"
 import type { RosterLike } from "./types"
 
 /** Active clan members belonging to the match's game, counted once per player. */
@@ -8,8 +11,12 @@ export function matchAttendanceMemberIds(
         userId: string
         gameId?: GameId
         paused?: boolean
+        type?: "member" | "reserve_member" | "mercenary"
+        status?: "pending" | "recruit" | "active"
     }[],
-    gameId?: GameId
+    gameId?: GameId,
+    allowedSignupStatuses?: SignupMembershipStatus[],
+    localPlayerIds?: readonly string[]
 ) {
     return [
         ...new Set(
@@ -17,6 +24,15 @@ export function matchAttendanceMemberIds(
                 .filter(
                     (assignment) =>
                         !assignment.paused &&
+                        (!localPlayerIds ||
+                            localPlayerIds.includes(assignment.userId)) &&
+                        (!assignment.type ||
+                            !assignment.status ||
+                            isSignupMembershipAllowed({
+                                event: { allowedSignupStatuses },
+                                membershipStatus:
+                                    signupListMembership(assignment),
+                            })) &&
                         matchesGameScope(
                             assignment.gameId,
                             resolveGameScope(gameId)
@@ -52,6 +68,7 @@ export type MatchAttendanceEntry = {
 
 export type MatchAttendance = {
     entries: MatchAttendanceEntry[]
+    unplacedUserIds: string[]
     declinedUserIds: string[]
     noResponseUserIds: string[]
     counts: {
@@ -75,7 +92,10 @@ function emptyCounts() {
 export function buildMatchAttendance(input: {
     roster: Pick<
         RosterLike,
-        "squads" | "reservePlayerIds" | "reserveAttendances"
+        | "squads"
+        | "reservePlayerIds"
+        | "reserveAttendances"
+        | "notAttendingPlayerIds"
     > | null
     participants: Array<{
         userId: string
@@ -170,15 +190,28 @@ export function buildMatchAttendance(input: {
         })
     }
 
-    const declinedUserIds = input.participants
-        .filter(
-            (participant) =>
-                participant.status === "not_attending" &&
-                !seen.has(participant.userId)
-        )
-        .map((participant) => participant.userId)
+    const unplacedUserIds = [
+        ...new Set(
+            input.participants
+                .filter(
+                    (participant) =>
+                        participant.status === "attending" &&
+                        !seen.has(participant.userId)
+                )
+                .map((participant) => participant.userId)
+        ),
+    ]
+    const declinedUserIds = [
+        ...new Set([
+            ...(input.roster?.notAttendingPlayerIds ?? []),
+            ...input.participants
+                .filter((participant) => participant.status === "not_attending")
+                .map((participant) => participant.userId),
+        ]),
+    ].filter((userId) => !seen.has(userId) && !unplacedUserIds.includes(userId))
     const answered = new Set([
         ...seen,
+        ...declinedUserIds,
         ...input.participants.map((participant) => participant.userId),
     ])
     const noResponseUserIds = [...new Set(input.memberIds)].filter(
@@ -187,7 +220,13 @@ export function buildMatchAttendance(input: {
     counts.declined = declinedUserIds.length
     counts.noResponse = noResponseUserIds.length
 
-    return { entries, declinedUserIds, noResponseUserIds, counts }
+    return {
+        entries,
+        unplacedUserIds,
+        declinedUserIds,
+        noResponseUserIds,
+        counts,
+    }
 }
 
 /**

@@ -8,18 +8,19 @@ import { processAttendanceReminders } from "./sync/attendance-reminders"
 import { syncMembershipPanel } from "./interactions/membership-panel"
 import { syncManagedMemberRoles } from "./sync/managed-member-roles"
 import { syncCalendarPanel, syncTicketPanel } from "./sync/panels"
+import { awaitOwnedOperation } from "./runtime/owned-operation"
 import { reportClanDiscordError } from "./error-reporting"
+import { logError, logInfo, logWarn } from "./log"
 import { syncPayloadEvents } from "./sync/events"
 import type { SyncPayload } from "./types"
-import { logError, logInfo } from "./log"
-import { withTimeout } from "./utils"
 
 export async function syncGuildPayload(
     client: Client,
     queuedEventIds: Set<string>,
     payload: SyncPayload,
     mode: "full" | "events_only" = "full",
-    attendanceReminderEventIds = new Set<string>()
+    attendanceReminderEventIds = new Set<string>(),
+    strict = false
 ) {
     logInfo("guild-sync", "Syncing guild payload", {
         guildId: payload.config.guildId,
@@ -55,6 +56,7 @@ export async function syncGuildPayload(
 
     await syncPayloadEvents(client, queuedEventIds, payload, {
         syncRoles: true,
+        strict,
     })
 
     // Event lifecycle and message changes are user-visible state. Never hold them
@@ -82,10 +84,11 @@ async function runGuildSyncStep(
     execute: () => Promise<void>
 ) {
     try {
-        await withTimeout(
-            execute(),
-            20_000,
-            `${step} for guild ${payload.config.guildId}`
+        await awaitOwnedOperation(execute(), 20_000, () =>
+            logWarn("guild-sync", "Guild sync step is still running", {
+                guildId: payload.config.guildId,
+                step,
+            })
         )
     } catch (error) {
         logError("guild-sync", `Discord bot ${step} failed`, {

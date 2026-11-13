@@ -17,12 +17,20 @@ export type CalendarItemOccurrence = {
 export function expandCalendarItems(
     items: CalendarItem[],
     rangeStart: Date,
-    rangeEnd: Date
+    rangeEnd: Date,
+    options: { limitPerItem?: number } = {}
 ) {
     const occurrences: CalendarItemOccurrence[] = []
 
     for (const item of items) {
-        occurrences.push(...expandCalendarItem(item, rangeStart, rangeEnd))
+        occurrences.push(
+            ...expandCalendarItem(
+                item,
+                rangeStart,
+                rangeEnd,
+                options.limitPerItem
+            )
+        )
     }
 
     return occurrences.sort(
@@ -34,11 +42,21 @@ export function expandCalendarItems(
 function expandCalendarItem(
     item: CalendarItem,
     rangeStart: Date,
-    rangeEnd: Date
+    rangeEnd: Date,
+    limit = Infinity
 ) {
     const baseStart = new Date(item.startAt)
     const baseEnd = new Date(item.endAt)
     const recurrence = item.recurrence
+    if (
+        ![baseStart, baseEnd, rangeStart, rangeEnd].every((date) =>
+            Number.isFinite(date.getTime())
+        ) ||
+        rangeEnd < rangeStart ||
+        baseEnd < baseStart ||
+        limit <= 0
+    )
+        return []
 
     if (!recurrence) {
         return overlapsRange(baseStart, baseEnd, rangeStart, rangeEnd)
@@ -46,46 +64,76 @@ function expandCalendarItem(
             : []
     }
 
-    const durationMs = Math.max(0, baseEnd.getTime() - baseStart.getTime())
+    if (!Number.isSafeInteger(recurrence.interval) || recurrence.interval < 1)
+        return []
+    const durationMs = baseEnd.getTime() - baseStart.getTime()
+    const until = recurrence.until
+        ? new Date(recurrence.until).getTime()
+        : Infinity
+    if (Number.isNaN(until)) return []
+    const end = new Date(Math.min(rangeEnd.getTime(), until))
+    if (end < baseStart) return []
     const occurrences: CalendarItemOccurrence[] = []
-    let occurrenceIndex = 0
-    let currentStart = baseStart
-
-    while (
-        occurrenceIndex < 512 &&
-        currentStart.getTime() <= rangeEnd.getTime()
-    ) {
-        const currentEnd = new Date(currentStart.getTime() + durationMs)
-
-        if (currentStart.getTime() >= baseStart.getTime()) {
-            if (
-                recurrence.until &&
-                currentStart.getTime() > new Date(recurrence.until).getTime()
-            ) {
-                break
-            }
-
-            if (overlapsRange(currentStart, currentEnd, rangeStart, rangeEnd)) {
-                occurrences.push(
-                    toOccurrence(
-                        item,
-                        currentStart,
-                        currentEnd,
-                        occurrenceIndex
-                    )
-                )
-            }
-        }
-
-        occurrenceIndex += 1
-        currentStart = getNextOccurrenceStart(
+    // Seek to the overlap window, preserving the original series index. Historical
+    // occurrences never consume a current-window iteration budget.
+    const first = Math.max(
+        0,
+        approximateIndex(
             baseStart,
             recurrence,
-            occurrenceIndex
+            new Date(rangeStart.getTime() - durationMs)
+        ) - 1
+    )
+    const last = Math.max(0, approximateIndex(baseStart, recurrence, end) + 1)
+    for (
+        let occurrenceIndex = first;
+        occurrenceIndex <= last && occurrences.length < limit;
+        occurrenceIndex++
+    ) {
+        const currentStart =
+            occurrenceIndex === 0
+                ? baseStart
+                : getNextOccurrenceStart(baseStart, recurrence, occurrenceIndex)
+        if (!currentStart || !Number.isFinite(currentStart.getTime())) continue
+        if (currentStart.getTime() > end.getTime()) continue
+        const currentEnd = new Date(currentStart.getTime() + durationMs)
+        if (
+            Number.isFinite(currentEnd.getTime()) &&
+            overlapsRange(currentStart, currentEnd, rangeStart, rangeEnd)
         )
+            occurrences.push(
+                toOccurrence(item, currentStart, currentEnd, occurrenceIndex)
+            )
     }
 
     return occurrences
+}
+
+function approximateIndex(
+    base: Date,
+    recurrence: CalendarItemRecurrence,
+    at: Date
+) {
+    switch (recurrence.frequency) {
+        case "weekly":
+            return Math.floor(
+                (at.getTime() - base.getTime()) /
+                    (recurrence.interval * 7 * 86400000)
+            )
+        case "monthly_date":
+        case "monthly_nth_weekday":
+            return Math.floor(
+                ((at.getUTCFullYear() - base.getUTCFullYear()) * 12 +
+                    at.getUTCMonth() -
+                    base.getUTCMonth()) /
+                    recurrence.interval
+            )
+        case "yearly":
+            return Math.floor(
+                (at.getUTCFullYear() - base.getUTCFullYear()) /
+                    recurrence.interval
+            )
+    }
 }
 
 function toOccurrence(
@@ -181,11 +229,7 @@ function getMonthlyDateOccurrence(
     )
 
     if (candidate.getUTCMonth() !== month) {
-        return getMonthlyDateOccurrence(
-            baseStart,
-            interval,
-            occurrenceIndex + 1
-        )
+        return null
     }
 
     return candidate
@@ -241,7 +285,7 @@ function getYearlyOccurrence(
     )
 
     if (candidate.getUTCMonth() !== month) {
-        return getYearlyOccurrence(baseStart, interval, occurrenceIndex + 1)
+        return null
     }
 
     return candidate

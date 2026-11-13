@@ -57,6 +57,11 @@ export type MatchDetailViewModel = {
     roster: Roster | null
     users: AppUser[]
     memberIds: string[]
+    attendanceAssignments: Array<{
+        userId: string
+        type: "member" | "reserve_member" | "mercenary"
+        status: "pending" | "recruit" | "active"
+    }>
     scoreSettings: RosterScoreSettings
     closeSummary: RosterScoreChangeSummary
     messages: EventDiscordMessages | null
@@ -256,6 +261,7 @@ export function MatchDetailView(model: MatchDetailViewModel) {
                         roster={roster}
                         users={model.users}
                         memberIds={model.memberIds}
+                        assignments={model.attendanceAssignments}
                         scoreSettings={model.scoreSettings}
                         closeSummary={model.closeSummary}
                         canAdmin={canAdmin}

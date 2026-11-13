@@ -118,6 +118,10 @@ export const matchDetailMessages = {
                 "{present} anwesend · {excused} entschuldigt · {absent} nicht gekommen",
             reserveCounts: "{present} anwesend · {absent} nicht",
             playerCount: "{count} Spieler",
+            roleEligibilityUnknown:
+                "Discord-Rollenanforderungen werden in dieser Liste nicht gepr?ft.",
+            unplacedTitle: "Angemeldet, noch ohne Aufstellung",
+            signedUp: "Angemeldet",
             memberCount: "{count} Spieler",
             loadFromVoice: "Aus Sprachkanal laden",
             loadingFromVoice: "Sprachkanal wird gelesen…",

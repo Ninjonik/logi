@@ -156,7 +156,11 @@ export async function createApplicationThread(input: {
         },
         addMembers: async (threadId) => {
             if (!thread || thread.id !== threadId) return
-            await guild.members.fetch().catch(() => null)
+            if (
+                settings?.inviteSupportMembersIndividually !== false &&
+                supportRoleIds.length
+            )
+                await guild.members.fetch()
             const support =
                 settings?.inviteSupportMembersIndividually === false
                     ? []

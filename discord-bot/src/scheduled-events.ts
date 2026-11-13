@@ -12,6 +12,7 @@ import {
 import { resolveScheduledEventEndTime } from "../../src/domain/events/scheduled-event-content"
 import { deriveScheduledEventLifecycle } from "../../src/domain/discord-sync/rules"
 
+import { missingDiscordResource } from "./runtime/discord-resource"
 import { reportClanDiscordError } from "./error-reporting"
 import type { EventRecord } from "./types"
 import { logWarn } from "./log"
@@ -103,7 +104,9 @@ export async function syncScheduledDiscordEvent(input: {
     const scheduledStartTime = new Date(event.meetingStart)
     const scheduledEndTime = resolveScheduledEventEndTime(event)
     let scheduledEvent = scheduledEventId
-        ? await guild.scheduledEvents.fetch(scheduledEventId).catch(() => null)
+        ? await guild.scheduledEvents
+              .fetch(scheduledEventId)
+              .catch(missingDiscordResource(10070))
         : null
 
     // Discord does not allow an active/terminal scheduled event to return to
@@ -314,7 +317,9 @@ export async function syncScheduledDiscordEvent(input: {
 
     return {
         scheduledEventId: scheduledEvent.id,
-        scheduledEventStatus: desiredLifecycle,
+        scheduledEventStatus: getScheduledLifecycleFromDiscordStatus(
+            scheduledEvent.status
+        ),
     }
 }
 
@@ -324,7 +329,7 @@ export async function cancelScheduledDiscordEvent(
 ) {
     const scheduledEvent = await guild.scheduledEvents
         .fetch(scheduledEventId)
-        .catch(() => null)
+        .catch(missingDiscordResource(10070))
     if (!scheduledEvent) {
         return false
     }
@@ -348,7 +353,7 @@ export async function cancelScheduledDiscordEvent(
                         scheduledEventId,
                     },
                 })
-                return null
+                throw error
             })
     }
 

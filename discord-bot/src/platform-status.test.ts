@@ -4,9 +4,35 @@ import test from "node:test"
 
 import {
     runPlatformStatusPass,
+    startPlatformStatusMonitor,
     type PlatformStatusPorts,
 } from "./platform-status"
 import type { ServiceState } from "../../src/domain/discord-messages/service-status"
+import type { Client } from "discord.js"
+
+test("status ticks do not overlap and stopping waits for actual completion", async (t) => {
+    t.mock.timers.enable({ apis: ["setInterval"] })
+    let calls = 0,
+        release!: () => void
+    const stop = startPlatformStatusMonitor({} as Client, async () => {
+        calls++
+        await new Promise<void>((resolve) => {
+            release = resolve
+        })
+    })
+    t.mock.timers.tick(900_000)
+    assert.equal(calls, 1)
+    let drained = false
+    const stopping = stop().then(() => {
+        drained = true
+    })
+    await Promise.resolve()
+    assert.equal(drained, false)
+    release()
+    await stopping
+    t.mock.timers.tick(900_000)
+    assert.equal(calls, 1)
+})
 
 type Json = Record<string, unknown> & { components?: Json[] }
 const textOf = (payload: MessageCreateOptions | MessageEditOptions) => {

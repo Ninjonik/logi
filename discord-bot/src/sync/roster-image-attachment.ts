@@ -1,3 +1,8 @@
+import {
+    cancelResponse,
+    DownloadTooLarge,
+    readResponseBytes,
+} from "../runtime/download"
 import { setTimeout } from "node:timers/promises"
 import { AttachmentBuilder } from "discord.js"
 import { createHash } from "node:crypto"
@@ -33,9 +38,16 @@ async function downloadRosterImage(url: URL, fetchImage: typeof fetch) {
                 response.ok &&
                 response.headers.get("content-type")?.startsWith("image/png")
             )
-                return Buffer.from(await response.arrayBuffer())
+                return Buffer.from(
+                    await readResponseBytes(response, 25 * 1024 * 1024, signal)
+                )
         } catch (error) {
-            if (attempt >= 2 || signal.aborted) throw error
+            if (
+                error instanceof DownloadTooLarge ||
+                attempt >= 2 ||
+                signal.aborted
+            )
+                throw error
             await setTimeout(250 * 2 ** attempt)
             continue
         }
@@ -47,6 +59,7 @@ async function downloadRosterImage(url: URL, fetchImage: typeof fetch) {
             await setTimeout(250 * 2 ** attempt)
             continue
         }
+        cancelResponse(response)
         throw new Error(`Unable to render roster image (${response.status}).`)
     }
 }

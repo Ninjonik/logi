@@ -539,3 +539,19 @@ fall back to group colors in other servers; Unicode emoji remain available.
 The shared roster displays the host's group structure for every participating
 clan. To change the group offer of an accepted invitation, revoke it and invite
 the clan again.
+
+### Interrupted bot delivery
+
+The updated bot remembers delivery progress for manual reminders, roster-change
+notifications, signup reminders and attendance reminders. After a restart it skips
+confirmed sends and continues recipients it has not attempted, while rechecking
+current eligibility. Confirmed sends still count in the final delivery result.
+
+If Discord may have accepted a message but its confirmation was lost, the bot
+keeps that outcome uncertain and does not automatically resend it. This does not
+mean the recipient has closed DMs. Check Discord before explicitly sending another
+reminder or republishing the roster. Interrupted requests from an older bot without
+delivery receipts still require that manual check.
+
+
+The match **Sign-ups and attendance** tab includes players who have signed up but are not yet placed on the roster. It groups players by their membership for the match's game. **No response** includes unpaused members, recruits, reserves and mercenaries whose membership status is allowed for the match; shared matches use the local player audience. Players who already responded or have a roster placement are excluded. Required Discord-role restrictions may further limit who can sign up.

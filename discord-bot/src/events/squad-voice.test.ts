@@ -249,3 +249,62 @@ test("a concluded match removes its channels, then its category", async () => {
     assert.deepEqual(fake.deleted, [ids[1], ids[2], ids[0]])
     assert.ok(fake.channels.has("anchor"), "the configured category stays")
 })
+
+for (const status of ["registration", "concluded"] as const) {
+    test(`temporary voice lookup failure preserves ${status} resources`, async () => {
+        const { guild, created, deleted } = fakeGuild()
+        Object.assign(guild.channels, {
+            fetch: async () => {
+                throw new Error("Discord unavailable")
+            },
+        })
+        await assert.rejects(
+            syncSquadVoiceChannels({
+                guild,
+                event: {
+                    ...boardEvent(),
+                    status,
+                    createSquadVoiceChannels: true,
+                },
+                roster,
+                defaultCategoryId: "anchor",
+                existingIds: ["existing"],
+                names,
+                now: new Date(boardEvent().meetingStart).getTime() + 1,
+            }),
+            /Discord unavailable/
+        )
+        assert.equal(created.length, 0)
+        assert.equal(deleted.length, 0)
+    })
+}
+
+test("failed voice deletion never deletes the category or acknowledges cleanup", async () => {
+    const { guild, created, deleted } = fakeGuild()
+    Object.assign(guild.channels, {
+        fetch: async (id: string) => ({
+            id,
+            type:
+                id === "category"
+                    ? ChannelType.GuildCategory
+                    : ChannelType.GuildVoice,
+            delete: async () => {
+                deleted.push(id)
+                throw new Error("Missing Permissions")
+            },
+        }),
+    })
+    await assert.rejects(
+        syncSquadVoiceChannels({
+            guild,
+            event: { ...boardEvent(), status: "concluded" },
+            roster,
+            defaultCategoryId: "anchor",
+            existingIds: ["category", "voice"],
+            names,
+        }),
+        /Missing Permissions/
+    )
+    assert.deepEqual(deleted, ["voice"])
+    assert.equal(created.length, 0)
+})

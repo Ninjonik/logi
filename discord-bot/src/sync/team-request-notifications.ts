@@ -242,7 +242,7 @@ export function startTeamRequestNotificationLoop(
         schedule?: (tick: () => void, ms: number) => NotificationTimer
         cancel?: (timer: NotificationTimer) => void
     } = {}
-): { tick(): Promise<void>; stop(): void } {
+): { tick(): Promise<void>; stop(): Promise<void> } {
     const schedule =
         options.schedule ??
         ((tick: () => void, ms: number) => setInterval(tick, ms))
@@ -250,13 +250,15 @@ export function startTeamRequestNotificationLoop(
         options.cancel ??
         ((timer: NotificationTimer) =>
             clearInterval(timer as ReturnType<typeof setInterval>))
+    let active: Promise<unknown> | undefined
     let running = false,
         stopped = false
     async function tick() {
         if (running || stopped) return
         running = true
         try {
-            await pass()
+            active = pass()
+            await active
         } catch {
             // The pass reports its own failures; the loop keeps running.
         } finally {
@@ -271,6 +273,10 @@ export function startTeamRequestNotificationLoop(
         stop() {
             stopped = true
             cancel(timer)
+            return Promise.resolve(active).then(
+                () => undefined,
+                () => undefined
+            )
         },
     }
 }

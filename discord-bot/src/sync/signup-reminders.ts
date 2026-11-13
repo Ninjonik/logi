@@ -1,3 +1,8 @@
+import {
+    type DurableDelivery,
+    confirmedDmRefusal,
+    UnattemptedDelivery,
+} from "../runtime/durable-delivery"
 import type { Client } from "discord.js"
 
 import {
@@ -139,9 +144,28 @@ export async function processSignupReminders(
         record?: RecordAutomaticReminderOutcome
         now?: () => number
         claim?: ClaimSignupReminderRun
+        delivery?: DurableDelivery
+        dueAt?: string
     } = {}
 ) {
-    const record = ports.record ?? recordAutomaticReminderOutcome
+    const record =
+        ports.record ??
+        (ports.delivery
+            ? async (
+                  outcome: Parameters<RecordAutomaticReminderOutcome>[0]
+              ) => {
+                  await convex.mutation(
+                      makeFunctionReference<"mutation">(
+                          "eventReminders:recordAutomatic"
+                      ),
+                      {
+                          secret: env.internalSecret,
+                          ...outcome,
+                          owner: ports.delivery?.owner,
+                      }
+                  )
+              }
+            : recordAutomaticReminderOutcome)
     for (const event of payload.events) {
         if (
             !dueEventIds.has(event.id) ||
@@ -179,25 +203,58 @@ export async function processSignupReminders(
         )
         const sentUserIds: string[] = []
         const failedUserIds: string[] = []
-        const recipientIds = [
+        let recipientIds = [
             ...new Set(recipients.map((recipient) => recipient.userId)),
         ]
         if (
             !recipientIds.length ||
-            !(await (ports.claim ?? claimSignupReminderRun)({
+            !(await (
+                ports.claim ??
+                (ports.delivery
+                    ? async () =>
+                          convex.mutation(
+                              makeFunctionReference<"mutation">(
+                                  "discordScheduledDispatch:reserveSignup"
+                              ),
+                              {
+                                  secret: env.internalSecret,
+                                  owner: ports.delivery!.owner,
+                              }
+                          )
+                    : claimSignupReminderRun)
+            )({
                 guildId: payload.config.guildId,
                 eventId: event.id,
             }))
         )
             continue
+        const runKey = signupReminderRunKey(
+            ports.dueAt ? Date.parse(ports.dueAt) : (ports.now ?? Date.now)()
+        )
+        const phase = `signup:${runKey}`
+        if (ports.delivery) {
+            const allowed = await ports.delivery.prepare(phase, recipientIds)
+            recipientIds = recipientIds.filter((id) => allowed.has(id))
+        }
         for (const userId of recipientIds) {
-            const user = await client.users.fetch(userId).catch(() => null)
-            const sent = user
-                ? await user
-                      .send(message)
-                      .then(() => true)
-                      .catch(() => false)
-                : false
+            const send = async () => {
+                const user = await client.users.fetch(userId).catch((error) => {
+                    if (confirmedDmRefusal(error)) return null
+                    throw new UnattemptedDelivery("Recipient lookup failed")
+                })
+                if (!user) return false
+                await user.send(message)
+                return true
+            }
+            const state = ports.delivery
+                ? await ports.delivery.effect(phase, `dm:${userId}`, send)
+                : await send()
+                      .then((sent) =>
+                          sent ? ("sent" as const) : ("refused" as const)
+                      )
+                      .catch(() => "refused" as const)
+            if (state === "uncertain") continue
+            const sent = state === "sent"
             if (!sent) {
                 failedUserIds.push(userId)
                 continue
@@ -213,7 +270,7 @@ export async function processSignupReminders(
             guildId: payload.config.guildId,
             eventId: event.id,
             kind: "signup",
-            runKey: signupReminderRunKey((ports.now ?? Date.now)()),
+            runKey,
             sentUserIds,
             failedUserIds,
         })

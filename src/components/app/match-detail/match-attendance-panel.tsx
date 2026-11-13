@@ -1,7 +1,8 @@
 "use client"
 
+import { signupListMembership } from "@/domain/events/signup-list"
 import { ClipboardList, Loader2, Radio, Save } from "lucide-react"
-import { useMemo, useState, useTransition } from "react"
+import { Fragment, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -83,6 +84,7 @@ export function MatchAttendancePanel({
     roster,
     users,
     memberIds,
+    assignments,
     scoreSettings,
     closeSummary,
     canAdmin,
@@ -101,6 +103,11 @@ export function MatchAttendancePanel({
     roster: Roster | null
     users: AppUser[]
     memberIds: string[]
+    assignments: Array<{
+        userId: string
+        type: "member" | "reserve_member" | "mercenary"
+        status: "pending" | "recruit" | "active"
+    }>
     scoreSettings: RosterScoreSettings
     closeSummary: RosterScoreChangeSummary
     canAdmin: boolean
@@ -132,6 +139,47 @@ export function MatchAttendancePanel({
         () => new Map(users.map((user) => [user.discordId, user])),
         [users]
     )
+    const membershipById = useMemo(
+        () =>
+            new Map(
+                assignments.map((assignment) => [
+                    assignment.userId,
+                    signupListMembership(assignment),
+                ])
+            ),
+        [assignments]
+    )
+    const membershipLabels = dictionary.newMatch.signups.statuses
+    function groupPlayers<T>(items: T[], idOf: (item: T) => string) {
+        const categories = [
+            "member",
+            "recruit",
+            "reserve_member",
+            "mercenary",
+            "unknown",
+        ] as const
+        return categories
+            .map((category) => ({
+                category,
+                label:
+                    category === "unknown"
+                        ? dictionary.common.unknown
+                        : membershipLabels[category],
+                items: items
+                    .filter(
+                        (item) =>
+                            (membershipById.get(idOf(item)) ?? "unknown") ===
+                            category
+                    )
+                    .sort((a, b) =>
+                        (usersById.get(idOf(a))?.name ?? "").localeCompare(
+                            usersById.get(idOf(b))?.name ?? "",
+                            locale
+                        )
+                    ),
+            }))
+            .filter((group) => group.items.length)
+    }
     const savedAttendance = useMemo(
         () =>
             buildMatchAttendance({
@@ -368,7 +416,10 @@ export function MatchAttendancePanel({
             id: "roster",
             label: t.filters.roster.replace(
                 "{count}",
-                String(attendance.entries.length)
+                String(
+                    attendance.entries.length +
+                        attendance.unplacedUserIds.length
+                )
             ),
         },
         {
@@ -525,123 +576,191 @@ export function MatchAttendancePanel({
             </div>
 
             {filter === "roster" ? (
-                <div className="border-border/70 bg-card overflow-x-auto rounded-2xl border">
-                    <Table>
-                        <TableHeader className="bg-muted/40">
-                            <TableRow>
-                                <TableHead scope="col">
-                                    {t.columns.player}
-                                </TableHead>
-                                <TableHead
-                                    scope="col"
-                                    className="hidden md:table-cell"
-                                >
-                                    {t.columns.place}
-                                </TableHead>
-                                <TableHead
-                                    scope="col"
-                                    className="hidden lg:table-cell"
-                                >
-                                    {t.columns.before}
-                                </TableHead>
-                                <TableHead scope="col">
-                                    {t.columns.attendance}
-                                </TableHead>
-                                <TableHead scope="col" className="text-right">
-                                    {t.columns.points}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {attendance.entries.length === 0 ? (
+                <div className="space-y-3">
+                    <div className="border-border/70 bg-card overflow-x-auto rounded-2xl border">
+                        <Table>
+                            <TableHeader className="bg-muted/40">
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={5}
-                                        className="text-muted-foreground py-8 text-center"
+                                    <TableHead scope="col">
+                                        {t.columns.player}
+                                    </TableHead>
+                                    <TableHead
+                                        scope="col"
+                                        className="hidden md:table-cell"
                                     >
-                                        {t.empty}
-                                    </TableCell>
+                                        {t.columns.place}
+                                    </TableHead>
+                                    <TableHead
+                                        scope="col"
+                                        className="hidden lg:table-cell"
+                                    >
+                                        {t.columns.before}
+                                    </TableHead>
+                                    <TableHead scope="col">
+                                        {t.columns.attendance}
+                                    </TableHead>
+                                    <TableHead
+                                        scope="col"
+                                        className="text-right"
+                                    >
+                                        {t.columns.points}
+                                    </TableHead>
                                 </TableRow>
-                            ) : (
-                                attendance.entries.map((entry) => (
-                                    <TableRow key={entry.userId}>
-                                        <TableHead
-                                            scope="row"
-                                            className="max-w-28 font-normal sm:max-w-none"
-                                        >
-                                            <span className="text-foreground block truncate">
-                                                {nameOf(entry.userId)}
-                                            </span>
-                                            <span className="text-muted-foreground mt-0.5 block truncate text-xs font-normal md:hidden">
-                                                {placeOf(entry)}
-                                            </span>
-                                        </TableHead>
-                                        <TableCell className="text-muted-foreground hidden md:table-cell">
-                                            {placeOf(entry)}
-                                        </TableCell>
+                            </TableHeader>
+                            <TableBody>
+                                {attendance.entries.length === 0 ? (
+                                    <TableRow>
                                         <TableCell
-                                            className={cn(
-                                                "hidden max-w-64 truncate lg:table-cell",
-                                                entry.before.kind ===
-                                                    "acknowledged"
-                                                    ? "text-emerald-700 dark:text-emerald-400"
-                                                    : entry.before.kind ===
-                                                        "notice"
-                                                      ? "text-amber-700 dark:text-amber-400"
-                                                      : "text-muted-foreground"
-                                            )}
+                                            colSpan={5}
+                                            className="text-muted-foreground py-8 text-center"
                                         >
-                                            {entry.before.kind === "notice"
-                                                ? t.before.notice.replace(
-                                                      "{reason}",
-                                                      entry.before.reason
-                                                  )
-                                                : t.before[entry.before.kind]}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                                <MarkGroup
-                                                    entry={entry}
-                                                    label={t.markGroupLabel.replace(
-                                                        "{name}",
-                                                        nameOf(entry.userId)
-                                                    )}
-                                                    labels={t.marks}
-                                                    excusedHelp={t.excusedHelp}
-                                                    disabled={
-                                                        !editable || isSaving
-                                                    }
-                                                    onChange={(mark) =>
-                                                        setMark(entry, mark)
-                                                    }
-                                                />
-                                                {entry.mark === "present" &&
-                                                foundInVoice.has(
-                                                    entry.userId
-                                                ) ? (
-                                                    <span className="text-muted-foreground hidden text-xs sm:inline">
-                                                        {t.fromVoice}
-                                                    </span>
-                                                ) : null}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell
-                                            className={cn(
-                                                "text-right font-semibold tabular-nums",
-                                                deltaClass(
-                                                    pointsFor(entry.userId)
-                                                )
-                                            )}
-                                        >
-                                            {formatDelta(
-                                                pointsFor(entry.userId)
-                                            )}
+                                            {t.empty}
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : (
+                                    groupPlayers(
+                                        attendance.entries,
+                                        (entry) => entry.userId
+                                    ).map((group) => (
+                                        <Fragment key={group.category}>
+                                            <TableRow>
+                                                <TableHead
+                                                    colSpan={5}
+                                                    scope="rowgroup"
+                                                >
+                                                    {group.label} ?{" "}
+                                                    {group.items.length}
+                                                </TableHead>
+                                            </TableRow>
+                                            {group.items.map((entry) => (
+                                                <TableRow key={entry.userId}>
+                                                    <TableHead
+                                                        scope="row"
+                                                        className="max-w-28 font-normal sm:max-w-none"
+                                                    >
+                                                        <span className="text-foreground block truncate">
+                                                            {nameOf(
+                                                                entry.userId
+                                                            )}
+                                                        </span>
+                                                        <span className="text-muted-foreground mt-0.5 block truncate text-xs font-normal md:hidden">
+                                                            {placeOf(entry)}
+                                                        </span>
+                                                    </TableHead>
+                                                    <TableCell className="text-muted-foreground hidden md:table-cell">
+                                                        {placeOf(entry)}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className={cn(
+                                                            "hidden max-w-64 truncate lg:table-cell",
+                                                            entry.before
+                                                                .kind ===
+                                                                "acknowledged"
+                                                                ? "text-emerald-700 dark:text-emerald-400"
+                                                                : entry.before
+                                                                        .kind ===
+                                                                    "notice"
+                                                                  ? "text-amber-700 dark:text-amber-400"
+                                                                  : "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {entry.before.kind ===
+                                                        "notice"
+                                                            ? t.before.notice.replace(
+                                                                  "{reason}",
+                                                                  entry.before
+                                                                      .reason
+                                                              )
+                                                            : t.before[
+                                                                  entry.before
+                                                                      .kind
+                                                              ]}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                            <MarkGroup
+                                                                entry={entry}
+                                                                label={t.markGroupLabel.replace(
+                                                                    "{name}",
+                                                                    nameOf(
+                                                                        entry.userId
+                                                                    )
+                                                                )}
+                                                                labels={t.marks}
+                                                                excusedHelp={
+                                                                    t.excusedHelp
+                                                                }
+                                                                disabled={
+                                                                    !editable ||
+                                                                    isSaving
+                                                                }
+                                                                onChange={(
+                                                                    mark
+                                                                ) =>
+                                                                    setMark(
+                                                                        entry,
+                                                                        mark
+                                                                    )
+                                                                }
+                                                            />
+                                                            {entry.mark ===
+                                                                "present" &&
+                                                            foundInVoice.has(
+                                                                entry.userId
+                                                            ) ? (
+                                                                <span className="text-muted-foreground hidden text-xs sm:inline">
+                                                                    {
+                                                                        t.fromVoice
+                                                                    }
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className={cn(
+                                                            "text-right font-semibold tabular-nums",
+                                                            deltaClass(
+                                                                pointsFor(
+                                                                    entry.userId
+                                                                )
+                                                            )
+                                                        )}
+                                                    >
+                                                        {formatDelta(
+                                                            pointsFor(
+                                                                entry.userId
+                                                            )
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </Fragment>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                    {attendance.unplacedUserIds.length ? (
+                        <>
+                            <h3 className="text-sm font-semibold">
+                                {t.unplacedTitle} ?{" "}
+                                {attendance.unplacedUserIds.length}
+                            </h3>
+                            <SimplePlayerList
+                                userIds={attendance.unplacedUserIds}
+                                before={t.signedUp}
+                                points={null}
+                                usersById={usersById}
+                                fallbackName={dictionary.common.unknown}
+                                columns={t.columns}
+                                empty={t.empty}
+                                groups={groupPlayers(
+                                    attendance.unplacedUserIds,
+                                    (id) => id
+                                )}
+                            />
+                        </>
+                    ) : null}
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -650,7 +769,7 @@ export function MatchAttendancePanel({
                             <span className="text-muted-foreground text-sm">
                                 {t.noResponseHint.replace(
                                     "{count}",
-                                    String(reminder.count)
+                                    String(counts.noResponse)
                                 )}
                             </span>
                             <ReminderButton
@@ -662,12 +781,24 @@ export function MatchAttendancePanel({
                             />
                         </div>
                     ) : null}
+                    {filter === "noResponse" &&
+                    event.requiredRoleIds?.length ? (
+                        <p className="text-muted-foreground text-sm">
+                            {t.roleEligibilityUnknown}
+                        </p>
+                    ) : null}
                     <SimplePlayerList
                         userIds={
                             filter === "declined"
                                 ? attendance.declinedUserIds
                                 : attendance.noResponseUserIds
                         }
+                        groups={groupPlayers(
+                            filter === "declined"
+                                ? attendance.declinedUserIds
+                                : attendance.noResponseUserIds,
+                            (id) => id
+                        )}
                         before={
                             filter === "declined"
                                 ? t.before.declined
@@ -764,6 +895,7 @@ function MarkGroup({
 
 function SimplePlayerList({
     userIds,
+    groups,
     before,
     points,
     usersById,
@@ -772,8 +904,9 @@ function SimplePlayerList({
     empty,
 }: {
     userIds: string[]
+    groups: Array<{ category: string; label: string; items: string[] }>
     before: string
-    points: number
+    points: number | null
     usersById: Map<string, AppUser>
     fallbackName: string
     columns: { player: string; before: string; points: string }
@@ -802,26 +935,42 @@ function SimplePlayerList({
                             </TableCell>
                         </TableRow>
                     ) : (
-                        userIds.map((userId) => (
-                            <TableRow key={userId}>
-                                <TableHead scope="row" className="font-normal">
-                                    <span className="text-foreground">
-                                        {usersById.get(userId)?.name ??
-                                            fallbackName}
-                                    </span>
-                                </TableHead>
-                                <TableCell className="text-muted-foreground">
-                                    {before}
-                                </TableCell>
-                                <TableCell
-                                    className={cn(
-                                        "text-right font-semibold tabular-nums",
-                                        deltaClass(points)
-                                    )}
-                                >
-                                    {formatDelta(points)}
-                                </TableCell>
-                            </TableRow>
+                        groups.map((group) => (
+                            <Fragment key={group.category}>
+                                <TableRow>
+                                    <TableHead colSpan={3} scope="rowgroup">
+                                        {group.label} ? {group.items.length}
+                                    </TableHead>
+                                </TableRow>
+                                {group.items.map((userId) => (
+                                    <TableRow key={userId}>
+                                        <TableHead
+                                            scope="row"
+                                            className="font-normal"
+                                        >
+                                            <span className="text-foreground">
+                                                {usersById.get(userId)?.name ??
+                                                    fallbackName}
+                                            </span>
+                                        </TableHead>
+                                        <TableCell className="text-muted-foreground">
+                                            {before}
+                                        </TableCell>
+                                        <TableCell
+                                            className={cn(
+                                                "text-right font-semibold tabular-nums",
+                                                points === null
+                                                    ? undefined
+                                                    : deltaClass(points)
+                                            )}
+                                        >
+                                            {points === null
+                                                ? "?"
+                                                : formatDelta(points)}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </Fragment>
                         ))
                     )}
                 </TableBody>

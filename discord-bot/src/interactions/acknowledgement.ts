@@ -20,6 +20,16 @@ import { cachedClanLanguage } from "../runtime/clan-language"
 
 export const CONTINUE_MODAL_PREFIX = "prepared-modal:"
 const pendingForms = new Map<string, string>()
+const modalCollectors = new Set<() => void>()
+let modalsStopped = false
+
+export function stopPreparedModals() {
+    modalsStopped = true
+    for (const stop of modalCollectors) stop()
+    for (const origin of modalOrigins.values()) clearTimeout(origin.timeout)
+    modalOrigins.clear()
+    pendingForms.clear()
+}
 
 type ModalOrigin = {
     userId: string
@@ -118,7 +128,6 @@ export function protectInteraction<T extends Interaction>(
     delayMs = 1_000
 ): { interaction: T; finish: () => Promise<void> } {
     const source = restoreModalOrigin(received)
-    let timer: ReturnType<typeof setTimeout> | undefined
     let acknowledgement: Promise<unknown> | undefined
     let automatic = false
     let claimed = false
@@ -140,7 +149,7 @@ export function protectInteraction<T extends Interaction>(
     if (!source.isRepliable() && !source.isAutocomplete())
         return { interaction: source, finish: async () => {} }
 
-    timer = setTimeout(() => {
+    const timer = setTimeout(() => {
         if (source.isRepliable() && (source.deferred || source.replied)) return
         if (source.isAutocomplete() && source.responded) return
         automatic = true
@@ -311,6 +320,7 @@ export function protectInteraction<T extends Interaction>(
                 if (property === "showModal" && "showModal" in source)
                     return async (modal: ModalBuilder) => {
                         await initial()
+                        if (modalsStopped) throw new PreparedModalExpired()
                         if (!automatic) return source.showModal(modal)
                         const customId = `${CONTINUE_MODAL_PREFIX}${randomUUID()}`
                         const message = await sendReply({
@@ -326,9 +336,11 @@ export function protectInteraction<T extends Interaction>(
                             ],
                         })
                         replied = true
+                        if (modalsStopped) throw new PreparedModalExpired()
                         pendingForms.set(customId, source.user.id)
-                        const click = await message
-                            .awaitMessageComponent({
+                        const collector =
+                            message.createMessageComponentCollector({
+                                max: 1,
                                 componentType: ComponentType.Button,
                                 time: 300_000,
                                 filter: (candidate) => {
@@ -342,7 +354,15 @@ export function protectInteraction<T extends Interaction>(
                                     return true
                                 },
                             })
-                            .catch(() => null)
+                        const cancel = () => collector.stop("shutdown")
+                        modalCollectors.add(cancel)
+                        const click =
+                            await new Promise<ButtonInteraction | null>(
+                                (resolve) => {
+                                    collector.once("collect", resolve)
+                                    collector.once("end", () => resolve(null))
+                                }
+                            ).finally(() => modalCollectors.delete(cancel))
                         pendingForms.delete(customId)
                         if (!click) {
                             await source.webhook.editMessage(message.id, {

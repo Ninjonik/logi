@@ -1,3 +1,4 @@
+import { TaskOwner } from "../runtime/task-owner"
 import type { Client, Guild } from "discord.js"
 
 import { applicationConfirmationDmView } from "../../../src/domain/membership/application-views"
@@ -103,12 +104,16 @@ async function processSubmission(client: Client, item: Queued) {
 }
 
 export function startApplicationWebSubmissionWorker(client: Client) {
+    const tasks = new TaskOwner()
+    let unsubscribe: (() => void) | undefined
     const processing = new Set<string>()
     const run = (items: readonly Queued[]) => {
         for (const item of items) {
+            if (tasks.stopped) break
             if (processing.has(item.draftId)) continue
             processing.add(item.draftId)
-            void processSubmission(client, item)
+            void tasks
+                .run(() => processSubmission(client, item))
                 .catch((error) =>
                     logError("membership", "Web application failed", {
                         guildId: item.guildId,
@@ -122,7 +127,7 @@ export function startApplicationWebSubmissionWorker(client: Client) {
         const watch = convex.watchQuery(applicationRefs.queuedWeb, {
             secret: env.internalSecret,
         })
-        watch.onUpdate(() => {
+        unsubscribe = watch.onUpdate(() => {
             try {
                 run((watch.localQueryResult() as Queued[] | undefined) ?? [])
             } catch (error) {
@@ -134,5 +139,9 @@ export function startApplicationWebSubmissionWorker(client: Client) {
         })
     } catch (error) {
         logWarn("membership", "Web applications are not watched", { error })
+    }
+    return () => {
+        unsubscribe?.()
+        return tasks.stop()
     }
 }

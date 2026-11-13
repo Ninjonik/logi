@@ -211,3 +211,61 @@ test("setRosterPresence confirms and clears presence, keeping acknowledgements",
     })
     assert.throws(() => setRosterPresence(roster, "stranger", true))
 })
+
+test("attendance includes unplaced signups and excludes ineligible memberships", () => {
+    const assignments = [
+        {
+            userId: "member",
+            type: "member" as const,
+            status: "active" as const,
+        },
+        {
+            userId: "recruit",
+            type: "member" as const,
+            status: "recruit" as const,
+        },
+        {
+            userId: "reserve",
+            type: "reserve_member" as const,
+            status: "active" as const,
+        },
+        {
+            userId: "merc",
+            type: "mercenary" as const,
+            status: "active" as const,
+        },
+        {
+            userId: "pending",
+            type: "member" as const,
+            status: "pending" as const,
+        },
+        {
+            userId: "other",
+            gameId: "wardogs",
+            type: "member" as const,
+            status: "active" as const,
+        },
+    ]
+    const eligible = matchAttendanceMemberIds(assignments, "hell_let_loose", [
+        "member",
+        "recruit",
+        "reserve_member",
+    ])
+    const result = buildMatchAttendance({
+        roster: null,
+        participants: [
+            { userId: "member", status: "attending" },
+            { userId: "guest", status: "attending" },
+        ],
+        notices: [],
+        memberIds: eligible,
+    })
+    assert.deepEqual(result.unplacedUserIds, ["member", "guest"])
+    assert.deepEqual(result.noResponseUserIds, ["recruit", "reserve"])
+    assert.deepEqual(
+        matchAttendanceMemberIds(assignments, "hell_let_loose", undefined, [
+            "merc",
+        ]),
+        ["merc"]
+    )
+})

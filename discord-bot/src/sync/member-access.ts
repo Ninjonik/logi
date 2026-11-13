@@ -4,6 +4,7 @@ import {
     reconcileMembershipSnapshot,
     type FetchedMember,
 } from "./membership-ingress"
+import { mapConcurrent } from "../runtime/work-queue"
 import { makeFunctionReference } from "convex/server"
 import type { Client, GuildMember } from "discord.js"
 
@@ -67,8 +68,10 @@ export async function syncDashboardAdminRoles(
     }
 
     const overrides = payload.guild.adminAccessOverrides ?? {}
-    await Promise.all(
-        Object.entries(overrides).map(async ([userId, isAdmin]) => {
+    await mapConcurrent(
+        Object.entries(overrides),
+        4,
+        async ([userId, isAdmin]) => {
             const member = await guild.members.fetch(userId).catch(() => null)
             if (!member || member.roles.cache.has(roleId) === isAdmin) return
 
@@ -95,7 +98,7 @@ export async function syncDashboardAdminRoles(
                     }
                 )
             })
-        })
+        }
     )
 }
 

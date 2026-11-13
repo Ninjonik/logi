@@ -1,3 +1,5 @@
+import { missingDiscordResource } from "./runtime/discord-resource"
+import { mapConcurrent } from "./runtime/work-queue"
 import type { Guild } from "discord.js"
 
 import { isAdminFixableFailure } from "../../src/domain/discord-messages/bot-errors"
@@ -53,15 +55,17 @@ export async function syncEventRoles(
             event.status === "concluded" ||
             event.createParticipantRoles === false
         ) {
-            await Promise.all(
-                [attendeeRoleId, reserveRoleId]
-                    .filter((id): id is string => Boolean(id))
-                    .map(async (id) =>
-                        (await guild.roles.fetch(id).catch(() => null))
-                            ?.delete(`Event concluded: ${event.name}`)
-                            .catch(() => null)
-                    )
-            )
+            // Failed cleanup must retain the bindings for a later retry.
+            for (const id of [attendeeRoleId, reserveRoleId]) {
+                if (!id) continue
+                const role = await guild.roles
+                    .fetch(id)
+                    .catch(missingDiscordResource(10011))
+                if (role)
+                    await role
+                        .delete(`Event concluded: ${event.name}`)
+                        .catch(missingDiscordResource(10011))
+            }
             if (attendeeRoleId || reserveRoleId)
                 await convex.mutation(references.setDiscordEventRoles, {
                     secret: env.internalSecret,
@@ -70,26 +74,38 @@ export async function syncEventRoles(
                 })
             return { attendeeRoleId: undefined, reserveRoleId: undefined }
         }
-        const existingAttendee = attendeeRoleId
-            ? await guild.roles.fetch(attendeeRoleId).catch(() => null)
+        let existingAttendee = attendeeRoleId
+            ? await guild.roles
+                  .fetch(attendeeRoleId)
+                  .catch(missingDiscordResource(10011))
             : null
-        if (!existingAttendee)
-            attendeeRoleId = (
-                await guild.roles.create({
-                    name: eventRoleName(event, "players", language),
-                    reason: `Event attendees for ${event.name}`,
-                })
-            ).id
-        const existingReserve = reserveRoleId
-            ? await guild.roles.fetch(reserveRoleId).catch(() => null)
+        if (!existingAttendee) {
+            existingAttendee = await guild.roles.create({
+                name: eventRoleName(event, "players", language),
+                reason: `Event attendees for ${event.name}`,
+            })
+            attendeeRoleId = existingAttendee.id
+            // Persist a successful provision before attempting the next role.
+            await convex.mutation(references.setDiscordEventRoles, {
+                secret: env.internalSecret,
+                guildId: guild.id,
+                eventId: event.id as never,
+                attendeeRoleId,
+                reserveRoleId,
+            })
+        }
+        let existingReserve = reserveRoleId
+            ? await guild.roles
+                  .fetch(reserveRoleId)
+                  .catch(missingDiscordResource(10011))
             : null
-        if (!existingReserve)
-            reserveRoleId = (
-                await guild.roles.create({
-                    name: eventRoleName(event, "reserves", language),
-                    reason: `Event reserves for ${event.name}`,
-                })
-            ).id
+        if (!existingReserve) {
+            existingReserve = await guild.roles.create({
+                name: eventRoleName(event, "reserves", language),
+                reason: `Event reserves for ${event.name}`,
+            })
+            reserveRoleId = existingReserve.id
+        }
         if (
             attendeeRoleId !== event.attendeeRoleId ||
             reserveRoleId !== event.reserveRoleId
@@ -120,12 +136,8 @@ export async function syncEventRoles(
             )
                 attendeeIds.add(id)
         for (const id of reserveIds) attendeeIds.delete(id)
-        const attendeeRole = await guild.roles
-            .fetch(attendeeRoleId!)
-            .catch(() => null)
-        const reserveRole = await guild.roles
-            .fetch(reserveRoleId!)
-            .catch(() => null)
+        const attendeeRole = existingAttendee
+        const reserveRole = existingReserve
         // Roles created before the redesign, or before the match was
         // renamed, get the current clan-language names.
         for (const [role, kind] of [
@@ -133,8 +145,7 @@ export async function syncEventRoles(
             [reserveRole, "reserves"],
         ] as const) {
             const name = eventRoleName(event, kind, language)
-            if (role && role.name !== name)
-                await role.setName(name).catch(() => null)
+            if (role && role.name !== name) await role.setName(name)
         }
         const relevantMemberIds = new Set([
             ...attendeeIds,
@@ -142,9 +153,10 @@ export async function syncEventRoles(
             ...(attendeeRole ? attendeeRole.members.keys() : []),
             ...(reserveRole ? reserveRole.members.keys() : []),
         ])
-        const members = await guild.members
-            .fetch({ user: [...relevantMemberIds] })
-            .catch(() => null)
+        if (!relevantMemberIds.size) return { attendeeRoleId, reserveRoleId }
+        const members = await guild.members.fetch({
+            user: [...relevantMemberIds],
+        })
         if (members) {
             // One member's refused change never stops the others; the first
             // refusal an admin must fix (a role above the Logi role, a
@@ -158,12 +170,12 @@ export async function syncEventRoles(
                     )
                         refused.set(roleId, error)
                 })
-            const roleUpdates = [...members.values()].flatMap((member) => {
-                const updates: Promise<unknown>[] = []
+            await mapConcurrent([...members.values()], 4, async (member) => {
+                const updates: Array<() => Promise<unknown>> = []
                 const hasAttendeeRole = member.roles.cache.has(attendeeRoleId!)
                 const hasReserveRole = member.roles.cache.has(reserveRoleId!)
                 if (attendeeIds.has(member.id) !== hasAttendeeRole) {
-                    updates.push(
+                    updates.push(() =>
                         change(attendeeRoleId!, () =>
                             attendeeIds.has(member.id)
                                 ? member.roles.add(attendeeRoleId!)
@@ -172,7 +184,7 @@ export async function syncEventRoles(
                     )
                 }
                 if (reserveIds.has(member.id) !== hasReserveRole) {
-                    updates.push(
+                    updates.push(() =>
                         change(reserveRoleId!, () =>
                             reserveIds.has(member.id)
                                 ? member.roles.add(reserveRoleId!)
@@ -180,9 +192,8 @@ export async function syncEventRoles(
                         )
                     )
                 }
-                return updates
+                for (const update of updates) await update()
             })
-            await Promise.all(roleUpdates)
             for (const [roleId, error] of refused) reportFailure(error, roleId)
         }
     } catch (error) {

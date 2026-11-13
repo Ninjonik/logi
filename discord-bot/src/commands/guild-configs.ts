@@ -24,6 +24,9 @@ export class GuildCommandConfigs {
     private signatures = new Map<string, string>()
     private loaded = false
     private unsubscribe?: () => void
+    private loading?: Promise<void>
+    private revision = 0
+    private retryAt = 0
 
     constructor(private readonly source: GuildConfigSource) {}
 
@@ -39,11 +42,13 @@ export class GuildCommandConfigs {
     stop() {
         this.unsubscribe?.()
         this.unsubscribe = undefined
+        this.revision++
     }
 
     /** Replaces the known configs; returns the servers whose config changed. */
     apply(rows: unknown): string[] {
         if (!Array.isArray(rows)) return []
+        this.revision++
         const next = new Map<string, GuildCommandConfig>()
         for (const row of rows) {
             const parsed = guildCommandConfigSchema.safeParse(row)
@@ -79,10 +84,27 @@ export class GuildCommandConfigs {
     ): Promise<GuildCommandConfig | null> {
         if (!guildId) return null
         if (!this.loaded) {
+            if (!this.loading && Date.now() >= this.retryAt) {
+                const revision = this.revision
+                // Retain the actual operation after a response timeout: another caller
+                // must not start a second uncancellable backend read.
+                this.loading = Promise.resolve()
+                    .then(() => this.source.list())
+                    .then((rows) => {
+                        if (revision === this.revision) this.apply(rows)
+                    })
+                    .catch(() => {
+                        this.retryAt = Date.now() + FALLBACK_READ_MS
+                    })
+                    .finally(() => {
+                        this.loading = undefined
+                    })
+            }
+            if (!this.loading) return this.configs.get(guildId) ?? null
             let timer: ReturnType<typeof setTimeout> | undefined
             try {
-                const rows = await Promise.race([
-                    this.source.list(),
+                await Promise.race([
+                    this.loading,
                     new Promise<undefined>((resolve) => {
                         timer = setTimeout(
                             () => resolve(undefined),
@@ -90,7 +112,6 @@ export class GuildCommandConfigs {
                         )
                     }),
                 ])
-                if (rows !== undefined) this.apply(rows)
             } catch {
                 // The live subscription retries; the command answers without it.
             } finally {

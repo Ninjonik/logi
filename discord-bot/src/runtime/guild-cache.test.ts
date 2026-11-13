@@ -1,3 +1,4 @@
+import { ConvexReactClient } from "convex/react"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -78,4 +79,30 @@ test("GuildCache reports a guild as changed only when one of its cached rows cha
         }),
         ["guild-1"]
     )
+})
+
+test("stopping during initial snapshot loading cannot install a late subscription", async (t) => {
+    let finish!: (snapshot: unknown) => void
+    const initial = new Promise((resolve) => {
+        finish = resolve
+    })
+    let watches = 0
+    t.mock.method(ConvexReactClient.prototype, "query", () => initial)
+    t.mock.method(ConvexReactClient.prototype, "watchQuery", () => {
+        watches++
+        throw new Error("late watch")
+    })
+    const cache = new GuildCache()
+    const starting = cache.start(() => {})
+    cache.stop()
+    finish({
+        guilds: [],
+        configs: [],
+        groups: [],
+        calendarItems: [],
+        squadPresets: [],
+        topicPresets: [],
+    })
+    await starting
+    assert.equal(watches, 0)
 })

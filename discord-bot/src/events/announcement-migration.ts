@@ -16,6 +16,7 @@ import {
     ANNOUNCEMENT_MIGRATIONS_PER_MINUTE,
 } from "../../../src/domain/events/announcement-migration"
 import { announcementReferences } from "./announcement-sync"
+import { TaskOwner } from "../runtime/task-owner"
 import { logInfo, logWarn } from "../log"
 import { env } from "../environment"
 import { convex } from "../convex"
@@ -143,6 +144,8 @@ export function startAnnouncementMigration(
         timers?: MigrationTimers
     } = {}
 ) {
+    const tasks = new TaskOwner()
+    const run = () => tasks.run(tick)
     const attempts = new Map<string, number>()
     const timers = overrides.timers ?? defaultTimers
     let timer: unknown
@@ -182,11 +185,12 @@ export function startAnnouncementMigration(
             })
         }
         if (!stopped)
-            timer = timers.schedule(tick, migrationPassDelayMs(failures))
+            timer = timers.schedule(run, migrationPassDelayMs(failures))
     }
-    timer = timers.schedule(tick, FIRST_RUN_DELAY_MS)
+    timer = timers.schedule(run, FIRST_RUN_DELAY_MS)
     return () => {
         stopped = true
         if (timer !== undefined) timers.cancel(timer)
+        return tasks.stop()
     }
 }

@@ -1,3 +1,4 @@
+import { cancelResponse, readResponseBytes } from "../runtime/download"
 import { readFile } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import { fileURLToPath } from "node:url"
@@ -194,18 +195,23 @@ const remoteImageCache = new Map<
 >()
 async function downloadImage(url: string): Promise<Buffer | null> {
     if (!/^https?:\/\//.test(url)) return null
-    const response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-    if (!response.ok) return null
+    const signal = AbortSignal.timeout(15_000)
+    const response = await fetch(url, { signal })
+    if (!response.ok) {
+        cancelResponse(response)
+        return null
+    }
     if (
         !/^image\/(png|jpeg|webp)\b/.test(
             response.headers.get("content-type") ?? ""
         )
-    )
+    ) {
+        cancelResponse(response)
         return null
-    const length = Number(response.headers.get("content-length"))
-    if (Number.isFinite(length) && length > REMOTE_IMAGE_MAX_BYTES) return null
-    const bytes = Buffer.from(await response.arrayBuffer())
-    return bytes.byteLength > REMOTE_IMAGE_MAX_BYTES ? null : bytes
+    }
+    return Buffer.from(
+        await readResponseBytes(response, REMOTE_IMAGE_MAX_BYTES, signal)
+    )
 }
 /**
  * A clan's uploaded image (a map image from P8 or a panel banner from P2) as
@@ -219,10 +225,11 @@ export async function uploadedImageFile(input: {
     look: keyof typeof MAP_LOOKS
     base: string
 }): Promise<Omit<PanelMapImage, "description"> | null> {
-    const key = `${input.url}:${input.look}`
+    const key = `${input.url}:${input.look}:${input.base}`
     let pending = remoteImageCache.get(key)
     if (!pending) {
-        if (remoteImageCache.size > 200) remoteImageCache.clear()
+        if (remoteImageCache.size >= 200)
+            remoteImageCache.delete(remoteImageCache.keys().next().value!)
         pending = (async () => {
             try {
                 const source = await downloadImage(input.url)
@@ -245,7 +252,8 @@ export async function uploadedImageFile(input: {
         remoteImageCache.set(key, pending)
         // A failed read is tried again on a later pass.
         void pending.then((value) => {
-            if (!value) remoteImageCache.delete(key)
+            if (!value && remoteImageCache.get(key) === pending)
+                remoteImageCache.delete(key)
         })
     }
     return pending

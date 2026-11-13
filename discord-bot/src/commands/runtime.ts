@@ -52,6 +52,7 @@ export async function workspaceOf(guildId: string) {
     }
 }
 
+let commandRegistrationStopped = false
 let registration: ReturnType<typeof createCommandRegistration> | null = null
 
 function registrationFor(client: Client) {
@@ -82,10 +83,19 @@ function registrationFor(client: Client) {
 export async function startCommandRegistration(client: Client) {
     const registrar = registrationFor(client)
     await registrar.registerAll(client.guilds.cache.values())
-    guildCommandConfigs.start((guildIds) => registrar.configsChanged(guildIds))
+    if (!commandRegistrationStopped)
+        guildCommandConfigs.start((guildIds) =>
+            registrar.configsChanged(guildIds)
+        )
 }
 
 /** GuildCreate: the bot was added to a server (M1-18). */
 export async function registerJoinedGuild(client: Client, guild: Guild) {
     await registrationFor(client).registerGuild(guild, "guildCreate")
+}
+
+export async function stopCommandRegistration() {
+    commandRegistrationStopped = true
+    guildCommandConfigs.stop()
+    await registration?.stop()
 }

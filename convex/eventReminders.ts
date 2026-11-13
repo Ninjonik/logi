@@ -1,3 +1,8 @@
+import {
+    requestDeliverySummary,
+    deliveryOwner,
+    ownerDeliverySummary,
+} from "./discordDelivery"
 import { v } from "convex/values"
 
 import {
@@ -20,43 +25,49 @@ import { mutation, query, type MutationCtx } from "./_generated/server"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 
+export async function claimSignupRunForEvent(
+    ctx: MutationCtx,
+    args: { guildId: string; eventId: string },
+    resume = false
+) {
+    const id = ctx.db.normalizeId("events", args.eventId)
+    const event = id ? await ctx.db.get(id) : null
+    if (
+        !event ||
+        event.guildId !== args.guildId ||
+        event.isDraft ||
+        event.kind !== "match" ||
+        event.status !== "registration" ||
+        !resolveSignupReminderStatuses(event.signupReminderStatuses).length
+    )
+        return false
+    const now = new Date()
+    if (resume) return Date.parse(event.registrationEnd) > now.getTime()
+    const lastAt = await lastSignupReminderAt(ctx, event, now.getTime())
+    const dueAt = getSignupReminderDueAt(
+        event.createdAt,
+        event.registrationEnd,
+        now,
+        true,
+        event.registrationStart,
+        lastAt
+    )
+    if (!dueAt || Date.parse(dueAt) > now.getTime()) return false
+    await ctx.db.patch(event._id, {
+        signupReminderClaimedAt: now.toISOString(),
+    })
+    return true
+}
 /** Reserve a scheduled run atomically before Discord sends, across bot processes. */
 export const claimSignupRun = mutation({
     args: { secret: v.string(), guildId: v.string(), eventId: v.string() },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        const id = ctx.db.normalizeId("events", args.eventId)
-        const event = id ? await ctx.db.get(id) : null
-        if (
-            !event ||
-            event.guildId !== args.guildId ||
-            event.isDraft ||
-            event.kind !== "match" ||
-            event.status !== "registration" ||
-            !resolveSignupReminderStatuses(event.signupReminderStatuses).length
-        )
-            return false
-        const now = new Date()
-        const lastAt = await lastSignupReminderAt(ctx, event, now.getTime())
-        const dueAt = getSignupReminderDueAt(
-            event.createdAt,
-            event.registrationEnd,
-            now,
-            true,
-            event.registrationStart,
-            lastAt
-        )
-        if (!dueAt || Date.parse(dueAt) > now.getTime()) return false
-        await ctx.db.patch(event._id, {
-            signupReminderClaimedAt: now.toISOString(),
-        })
-        return true
+        return claimSignupRunForEvent(ctx, args)
     },
 })
 
 const audience = v.union(v.literal("unanswered"), v.literal("unconfirmed"))
-/** A claim the bot never finished may be taken again after this time. */
-const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 
 async function currentRecipients(
     ctx: Pick<MutationCtx, "db">,
@@ -183,7 +194,9 @@ export const listPending = query({
         assertInternalSecret(args.secret)
         const pending = await ctx.db
             .query("eventReminderRequests")
-            .withIndex("status", (q) => q.eq("status", "pending"))
+            .withIndex("status_retryAt", (q) =>
+                q.eq("status", "pending").lte("retryAt", Date.now())
+            )
             .take(50)
         return pending.map((request) => ({
             id: String(request._id),
@@ -199,7 +212,12 @@ export const listPending = query({
  * meantime is reminded.
  */
 export const claim = mutation({
-    args: { secret: v.string(), requestId: v.string() },
+    args: {
+        secret: v.string(),
+        requestId: v.string(),
+        fenced: v.optional(v.boolean()),
+        resumable: v.optional(v.boolean()),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const requestId = ctx.db.normalizeId(
@@ -208,17 +226,14 @@ export const claim = mutation({
         )
         const request = requestId ? await ctx.db.get(requestId) : null
         const now = new Date()
+        if (request?.resumable && !args.resumable) return null
+        if (args.resumable && !args.fenced) return null
         if (
             !request ||
-            (request.status !== "pending" &&
-                !(
-                    request.status === "processing" &&
-                    now.getTime() - new Date(request.claimedAt ?? 0).getTime() >
-                        CLAIM_TIMEOUT_MS
-                ))
-        ) {
+            request.status !== "pending" ||
+            (request.retryAt ?? 0) > Date.now()
+        )
             return null
-        }
         const event = await ctx.db.get(request.eventId)
         if (!event || event.guildId !== request.guildId) {
             await ctx.db.patch(request._id, {
@@ -234,9 +249,18 @@ export const claim = mutation({
         })
         await ctx.db.patch(request._id, {
             status: "processing",
+            resumable: args.resumable,
+            deliveryAttempts: (request.deliveryAttempts ?? 0) + 1,
             claimedAt: now.toISOString(),
+            claimToken: args.fenced
+                ? `${request._id}:${now.toISOString()}`
+                : undefined,
+            leaseUntil: args.fenced ? now.getTime() + 5 * 60_000 : undefined,
         })
         return {
+            claimToken: args.fenced
+                ? `${request._id}:${now.toISOString()}`
+                : undefined,
             id: String(request._id),
             eventId: String(request.eventId),
             guildId: request.guildId,
@@ -249,11 +273,45 @@ export const claim = mutation({
 async function finish(
     ctx: MutationCtx,
     requestId: string,
-    patch: Partial<Doc<"eventReminderRequests">>
+    patch: Partial<Doc<"eventReminderRequests">>,
+    claimToken?: string
 ) {
     const id = ctx.db.normalizeId("eventReminderRequests", requestId)
     const request = id ? await ctx.db.get(id) : null
-    if (!request || request.status !== "processing") return
+    if (
+        !request ||
+        request.status !== "processing" ||
+        (request.claimToken !== undefined && request.claimToken !== claimToken)
+    )
+        return
+    if (
+        request.resumable &&
+        patch.status === "failed" &&
+        (request.deliveryAttempts ?? 0) < 5
+    ) {
+        patch = {
+            ...patch,
+            status: "pending",
+            retryAt: Date.now() + 60_000,
+            leaseUntil: undefined,
+            claimToken: undefined,
+        }
+    } else if (
+        request.resumable &&
+        (patch.status === "sent" || patch.status === "failed")
+    ) {
+        const summary = await requestDeliverySummary(ctx, "reminder", requestId)
+        patch = {
+            ...patch,
+            status:
+                patch.status === "failed" || summary.uncertain
+                    ? "failed"
+                    : "sent",
+            error: summary.uncertain ? "delivery_uncertain" : patch.error,
+            sentCount: summary.sent.length,
+            failedUserIds: summary.refused,
+        }
+    }
     await ctx.db.patch(request._id as Id<"eventReminderRequests">, {
         ...patch,
         completedAt: new Date().toISOString(),
@@ -264,19 +322,25 @@ export const complete = mutation({
     args: {
         secret: v.string(),
         requestId: v.string(),
+        claimToken: v.optional(v.string()),
         sentCount: v.number(),
         // Recipients Discord refused (closed DMs); older bots omit it.
         failedUserIds: v.optional(v.array(v.string())),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        await finish(ctx, args.requestId, {
-            status: "sent",
-            sentCount: Math.max(0, Math.floor(args.sentCount)),
-            ...(args.failedUserIds
-                ? { failedUserIds: args.failedUserIds.slice(0, 500) }
-                : {}),
-        })
+        await finish(
+            ctx,
+            args.requestId,
+            {
+                status: "sent",
+                sentCount: Math.max(0, Math.floor(args.sentCount)),
+                ...(args.failedUserIds
+                    ? { failedUserIds: args.failedUserIds.slice(0, 500) }
+                    : {}),
+            },
+            args.claimToken
+        )
     },
 })
 
@@ -297,6 +361,7 @@ export const recordAutomatic = mutation({
         eventId: v.string(),
         kind: v.union(v.literal("signup"), v.literal("attendance")),
         runKey: v.string(),
+        owner: v.optional(deliveryOwner),
         sentUserIds: v.array(v.string()),
         failedUserIds: v.array(v.string()),
     },
@@ -316,9 +381,33 @@ export const recordAutomatic = mutation({
                     .eq("runKey", runKey)
             )
             .unique()
+        const delivered = args.owner
+            ? await ownerDeliverySummary(
+                  ctx,
+                  args.owner,
+                  args.kind === "signup"
+                      ? `signup:${runKey}`
+                      : `attendance:${runKey.replace(/h$/, "")}`
+              )
+            : null
+        if (
+            delivered &&
+            (delivered.guildId !== args.guildId ||
+                delivered.eventId !== args.eventId)
+        )
+            throw new Error("Delivery scope mismatch")
         const row = {
             sentAt: new Date().toISOString(),
-            ...mergeAutomaticReminderRun(existing, args),
+            ...mergeAutomaticReminderRun(
+                existing,
+                delivered
+                    ? {
+                          ...args,
+                          sentUserIds: delivered.sent,
+                          failedUserIds: delivered.refused,
+                      }
+                    : args
+            ),
         }
         if (existing) await ctx.db.patch(existing._id, row)
         else
@@ -395,12 +484,22 @@ export const latestOutcome = query({
 })
 
 export const fail = mutation({
-    args: { secret: v.string(), requestId: v.string(), error: v.string() },
+    args: {
+        secret: v.string(),
+        requestId: v.string(),
+        error: v.string(),
+        claimToken: v.optional(v.string()),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
-        await finish(ctx, args.requestId, {
-            status: "failed",
-            error: args.error.slice(0, 500),
-        })
+        await finish(
+            ctx,
+            args.requestId,
+            {
+                status: "failed",
+                error: args.error.slice(0, 500),
+            },
+            args.claimToken
+        )
     },
 })
